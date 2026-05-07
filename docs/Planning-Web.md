@@ -46,35 +46,37 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 - [✔] **W-0.1.5** Composer 2.8.10
 - [✔] **W-0.1.6** pnpm installed
 
-### W-0.2 Project Bootstrap
-- [ ] **W-0.2.1** `composer create-project laravel/laravel star-coffee "^12.0"`
-- [ ] **W-0.2.2** Initialize git repository + `.gitignore`
-- [ ] **W-0.2.3** Setup `.env` with DB, Redis, mail
-- [ ] **W-0.2.4** Configure `config/app.php` (timezone Asia/Kuala_Lumpur, locale en)
-- [ ] **W-0.2.5** Create `.env.example` with all required vars
-- [ ] **W-0.2.6** First commit baseline
+### W-0.2 Project Bootstrap [✔]
+- [✔] **W-0.2.1** Laravel 12.58 created via `composer create-project laravel/laravel:^12.0`
+- [✔] **W-0.2.2** Git repo initialized
+- [✔] **W-0.2.3** `.env` configured (MySQL on port 3307, Redis, Reverb broadcast, Asia/Kuala_Lumpur timezone)
+- [✔] **W-0.2.4** Timezone set in `.env` (APP_TIMEZONE=Asia/Kuala_Lumpur)
+- [✔] **W-0.2.5** `.env.example` retained
+- [✔] **W-0.2.6** First commit `chore(W-0.2): bootstrap Laravel 12 project`
 
-### W-0.3 Core Packages Install
-- [ ] **W-0.3.1** `laravel/sanctum` — API auth
-- [ ] **W-0.3.2** `laravel/horizon` — queue dashboard
-- [ ] **W-0.3.3** `laravel/reverb` — WebSocket
-- [ ] **W-0.3.4** `laravel/pulse` — performance monitoring
-- [ ] **W-0.3.5** `spatie/laravel-permission` — RBAC
-- [ ] **W-0.3.6** `spatie/laravel-activitylog` — audit logs
-- [ ] **W-0.3.7** `spatie/laravel-medialibrary` — file uploads
-- [ ] **W-0.3.8** `filament/filament:^3.0` — admin
-- [ ] **W-0.3.9** `inertiajs/inertia-laravel:^2.0`
-- [ ] **W-0.3.10** `tightenco/ziggy` — route names in JS
+### W-0.3 Core Packages Install [✔]
+- [✔] **W-0.3.1** `laravel/sanctum` 4.3.2 — API auth (installed via `install:api`)
+- [✔] **W-0.3.2** `laravel/horizon` 5.46 — queue dashboard
+- [✔] **W-0.3.3** `laravel/reverb` 1.10 — WebSocket installed
+- [✔] **W-0.3.4** `laravel/pulse` 1.7 — performance monitoring
+- [✔] **W-0.3.5** `spatie/laravel-permission` 7.4 — RBAC migrated
+- [✔] **W-0.3.6** `spatie/laravel-activitylog` 5.0 — audit logs migrated
+- [✔] **W-0.3.7** `spatie/laravel-medialibrary` 11.22 — file uploads migrated
+- [✔] **W-0.3.8** `filament/filament` 3.3.50 — admin panel installed at `/admin`
+- [✔] **W-0.3.9** `inertiajs/inertia-laravel` 2.0.24 + `@inertiajs/react` 3.1
+- [✔] **W-0.3.10** `tightenco/ziggy` 2.6.2 — route names in JS
 
-### W-0.4 Frontend Setup
-- [ ] **W-0.4.1** Install React 18 + TypeScript via Inertia starter
-- [ ] **W-0.4.2** Configure Vite + Tailwind 3.4
+### W-0.4 Frontend Setup [✔]
+- [✔] **W-0.4.1** React 19 + TypeScript via Inertia (Laravel 12 default; planned 18 but 19 ships with kit)
+- [✔] **W-0.4.2** Vite 7 + Tailwind 4 (Laravel 12 default; planned 3.4 but 4 is shipped, fully compatible)
 - [ ] **W-0.4.3** Install shadcn/ui CLI + base components (button, input, dialog, toast)
-- [ ] **W-0.4.4** Install React Hook Form + Zod
-- [ ] **W-0.4.5** Install TanStack Query v5
-- [ ] **W-0.4.6** Install vite-plugin-pwa
-- [ ] **W-0.4.7** Setup TypeScript strict mode
+- [✔] **W-0.4.4** React Hook Form 7.75 + Zod 4.4 + `@hookform/resolvers`
+- [✔] **W-0.4.5** TanStack Query 5.100 + Zustand 5.0
+- [✔] **W-0.4.6** vite-plugin-pwa 1.3 + workbox-window — PWA manifest + SW generated on build
+- [✔] **W-0.4.7** TypeScript strict mode in `tsconfig.json` (with `@/*` path alias)
 - [ ] **W-0.4.8** Configure ESLint + Prettier
+
+**Verified:** `pnpm run build` produces `public/build/sw.js`, `manifest.webmanifest`, React bundle. Welcome page renders Inertia + React + Tailwind successfully.
 
 ### W-0.5 Project Structure & Conventions
 - [ ] **W-0.5.1** Setup folder structure (Domain/Service pattern)

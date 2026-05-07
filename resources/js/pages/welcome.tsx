@@ -1,22 +1,32 @@
 import { Head } from '@inertiajs/react';
+import { Coffee } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Welcome() {
     return (
         <>
             <Head title="Welcome" />
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100">
-                <div className="text-center px-6">
-                    <h1 className="text-5xl font-bold text-amber-900 mb-4">Star Coffee</h1>
-                    <p className="text-amber-700 text-lg mb-8">
-                        F&amp;B Platform — Coming Soon
-                    </p>
-                    <div className="inline-flex gap-3 text-sm text-amber-600">
-                        <span className="px-3 py-1 bg-amber-200 rounded-full">Laravel 12</span>
-                        <span className="px-3 py-1 bg-amber-200 rounded-full">React 19 + TS</span>
-                        <span className="px-3 py-1 bg-amber-200 rounded-full">Inertia 2</span>
-                        <span className="px-3 py-1 bg-amber-200 rounded-full">Tailwind 4</span>
-                    </div>
-                </div>
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 p-6">
+                <Card className="w-full max-w-md">
+                    <CardHeader className="items-center text-center">
+                        <div className="mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <Coffee className="size-7" />
+                        </div>
+                        <CardTitle className="text-3xl">Star Coffee</CardTitle>
+                        <CardDescription>F&amp;B Platform — Coming Soon</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-4">
+                        <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
+                            <span className="rounded-full bg-secondary px-3 py-1">Laravel 12</span>
+                            <span className="rounded-full bg-secondary px-3 py-1">React 19</span>
+                            <span className="rounded-full bg-secondary px-3 py-1">Inertia 2</span>
+                            <span className="rounded-full bg-secondary px-3 py-1">Tailwind 4</span>
+                            <span className="rounded-full bg-secondary px-3 py-1">PWA</span>
+                        </div>
+                        <Button className="w-full">Get Started</Button>
+                    </CardContent>
+                </Card>
             </div>
         </>
     );

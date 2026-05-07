@@ -35,19 +35,20 @@
 
 ## Tasks Completed
 - [✔] **W-0.1** Environment verified (PHP 8.4, Node 20, MariaDB on 3307, Redis 8.4, pnpm)
-- [✔] **W-0.2** Laravel 12 bootstrap, git init, `.env` configured, first commit
+- [✔] **W-0.2** Laravel 12 bootstrap, git init, `.env` configured
 - [✔] **W-0.3** All 10 core packages installed + Filament admin at `/admin`
-- [✔] **W-0.4** Frontend: Inertia + React 19 + TS + Tailwind 4 + PWA + RHF/Zod/TanStack/Zustand. Build verified.
+- [✔] **W-0.4** Frontend: Inertia + React 19 + TS strict + Tailwind 4 + shadcn/ui + ESLint + Prettier + RHF/Zod + TanStack + Zustand + PWA
+- [✔] **W-0.5** Folder structure, layouts (app/auth), error pages, Inertia shared data, global types
+- [✔] **W-0.6** User table extended (phone/dob/photo/referral/consent), Login + Register controllers + pages, Filament admin user
+- [✔] **W-0.7** Pest 3 (7 tests passing), Larastan 3.9 (0 errors at level 5), GitHub Actions CI workflow
 
-## Tasks In Progress
-- [ ] **W-0.4.3** shadcn/ui CLI + base components
-- [ ] **W-0.4.8** ESLint + Prettier
+## Tasks Next (Pending Decisions)
+- **W-0.7.1** GitHub repo (blocked on W-DEC-2)
+- **W-0.8** Deployment prep (blocked on W-DEC-1)
+- **W-0.6.4-6** Phone OTP, forgot password, 2FA — deferred to W-3.1 (proper customer auth sprint)
 
-## Tasks Next
-- W-0.5 Project structure & layouts
-- W-0.6 Auth scaffolding (User table extension, login/register/OTP)
-- W-0.7 CI/CD setup
-- W-0.8 Deployment prep (blocked on W-DEC-1, W-DEC-2)
+## Sprint W-0 Status: ~95% Complete (Foundation ready)
+Ready to proceed to **Sprint W-1 — Branches & Staff** at any time.
 
 ---
 

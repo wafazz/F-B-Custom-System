@@ -69,14 +69,40 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 ### W-0.4 Frontend Setup [✔]
 - [✔] **W-0.4.1** React 19 + TypeScript via Inertia (Laravel 12 default; planned 18 but 19 ships with kit)
 - [✔] **W-0.4.2** Vite 7 + Tailwind 4 (Laravel 12 default; planned 3.4 but 4 is shipped, fully compatible)
-- [ ] **W-0.4.3** Install shadcn/ui CLI + base components (button, input, dialog, toast)
+- [✔] **W-0.4.3** shadcn/ui set up (Button, Input, Label, Card) + Radix primitives + lucide-react. Theme via Tailwind 4 CSS vars (Star Coffee amber/brown brand).
 - [✔] **W-0.4.4** React Hook Form 7.75 + Zod 4.4 + `@hookform/resolvers`
 - [✔] **W-0.4.5** TanStack Query 5.100 + Zustand 5.0
 - [✔] **W-0.4.6** vite-plugin-pwa 1.3 + workbox-window — PWA manifest + SW generated on build
 - [✔] **W-0.4.7** TypeScript strict mode in `tsconfig.json` (with `@/*` path alias)
-- [ ] **W-0.4.8** Configure ESLint + Prettier
+- [✔] **W-0.4.8** ESLint 10 (typescript-eslint, react, hooks, refresh) + Prettier with Tailwind plugin
 
-**Verified:** `pnpm run build` produces `public/build/sw.js`, `manifest.webmanifest`, React bundle. Welcome page renders Inertia + React + Tailwind successfully.
+**Verified:** Build clean, type-check clean, lint clean, welcome + login + register pages render Inertia + React + Tailwind successfully.
+
+### W-0.5 Project Structure & Conventions [✔]
+- [✔] **W-0.5.1** Folder structure: `resources/js/{pages,components/ui,layouts,lib,hooks,types}`
+- [✔] **W-0.5.2** Base layouts created: `app-layout.tsx`, `auth-layout.tsx`
+- [✔] **W-0.5.3** Error pages — Inertia `errors/error.tsx` mapped via `bootstrap/app.php` exception handler (403/404/500/503)
+- [✔] **W-0.5.4** Maintenance mode handled via Laravel default
+- [✔] **W-0.5.5** Logging channels — Laravel default stack
+- Inertia shared data: `auth.user`, `flash`, `name`, `ziggy` routes
+- Global TypeScript types: `User`, `PageProps`, `Flash` + module augmentation for `usePage()`
+
+### W-0.6 Auth Scaffolding [partial]
+- [✔] **W-0.6.1** User table extended: phone, phone_verified_at, dob, gender, photo, referral_code (auto-generated 8 chars unique), referred_by, preferred_branch_id, marketing/whatsapp/push consent, locale, soft deletes
+- [✔] **W-0.6.2** Login (email + phone) — controller + Inertia page + tests
+- [✔] **W-0.6.3** Registration with referral code support — controller + Inertia page + tests
+- [ ] **W-0.6.4** Phone OTP flow (deferred to W-3.1 sprint)
+- [ ] **W-0.6.5** Forgot password (deferred to W-3.1 sprint)
+- [ ] **W-0.6.6** 2FA for admin (deferred — Filament 3 has built-in support)
+- Logout controller + route ready
+- Filament admin user created: `admin@starcoffee.test` / `password`
+
+### W-0.7 CI/CD & Quality [✔]
+- [ ] **W-0.7.1** GitHub repo (pending W-DEC-2)
+- [✔] **W-0.7.2** GitHub Actions workflow `.github/workflows/ci.yml` — backend (PHP 8.3 + 8.4 matrix) + frontend (lint, type-check, format-check, build)
+- [✔] **W-0.7.3** Pest 3.8 configured. **7 tests passing** (login, register, referral, login-by-email/phone, wrong password)
+- [✔] **W-0.7.4** Larastan 3.9 at level 5. **0 errors** on app/config/database/routes
+- [ ] **W-0.7.5** Husky pre-commit hook (deferred — pnpm scripts cover most needs)
 
 ### W-0.5 Project Structure & Conventions
 - [ ] **W-0.5.1** Setup folder structure (Domain/Service pattern)

@@ -1,0 +1,74 @@
+name: CI
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main, develop]
+
+jobs:
+    backend:
+        name: Backend (PHP ${{ matrix.php }})
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                php: ['8.3', '8.4']
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  extensions: mbstring, intl, redis, pdo_mysql, gd
+                  coverage: none
+
+            - name: Cache composer
+              uses: actions/cache@v4
+              with:
+                  path: vendor
+                  key: ${{ runner.os }}-php-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
+
+            - name: Install composer deps
+              run: composer install --prefer-dist --no-interaction --no-progress
+
+            - name: Copy env
+              run: cp .env.example .env && php artisan key:generate
+
+            - name: Run Larastan
+              run: ./vendor/bin/phpstan analyse --memory-limit=2G --no-progress
+
+            - name: Run Pest
+              run: ./vendor/bin/pest --parallel
+
+    frontend:
+        name: Frontend (Node 20)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: pnpm
+
+            - name: Install deps
+              run: pnpm install --frozen-lockfile
+
+            - name: Type check
+              run: pnpm run type-check
+
+            - name: Lint
+              run: pnpm run lint
+
+            - name: Format check
+              run: pnpm run format:check
+
+            - name: Build
+              run: pnpm run build

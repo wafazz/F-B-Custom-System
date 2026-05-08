@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Coffee, Heart, Home, ShoppingBag, User } from 'lucide-react';
+import { Heart, Home, ShoppingBag, User } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useBranchStore } from '@/stores/branch-store';
@@ -26,8 +26,12 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
             <header className="border-border bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
                 <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
-                        <Coffee className="text-primary size-5" />
-                        <span className="hidden sm:inline">Star Coffee</span>
+                        <img
+                            src="/images/logo.jpg"
+                            alt="Star Coffee"
+                            className="size-9 rounded-full object-cover"
+                        />
+                        <span className="hidden text-sm sm:inline">Star Coffee</span>
                     </Link>
                     {showBranchPicker && (
                         <Link

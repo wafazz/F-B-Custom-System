@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Coffee, MapPin, Phone } from 'lucide-react';
+import { MapPin, Phone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { useBranchStore } from '@/stores/branch-store';
@@ -46,9 +46,13 @@ export default function BranchSelect({ branches }: Props) {
                                 onClick={() => handlePick(branch)}
                                 className="border-border bg-card flex w-full items-start gap-3 rounded-xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
                             >
-                                <div className="bg-primary/10 text-primary flex size-12 flex-shrink-0 items-center justify-center rounded-full">
-                                    <Coffee className="size-6" />
-                                </div>
+                                <img
+                                    src={
+                                        branch.logo ? `/storage/${branch.logo}` : '/images/logo.jpg'
+                                    }
+                                    alt={branch.name}
+                                    className="size-12 flex-shrink-0 rounded-full object-cover"
+                                />
                                 <div className="flex-1">
                                     <div className="flex items-center justify-between gap-2">
                                         <h3 className="font-semibold">{branch.name}</h3>

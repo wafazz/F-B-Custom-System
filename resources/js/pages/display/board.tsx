@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Coffee, Wifi, WifiOff } from 'lucide-react';
+import { Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { getEcho } from '@/lib/echo';
 
@@ -97,17 +97,11 @@ export default function DisplayBoard({
             <div className="flex h-screen flex-col bg-gradient-to-br from-slate-950 to-amber-950 text-white">
                 <header className="flex items-center justify-between border-b border-white/10 px-12 py-6">
                     <div className="flex items-center gap-4">
-                        {branch.logo ? (
-                            <img
-                                src={`/storage/${branch.logo}`}
-                                alt={branch.name}
-                                className="size-12 rounded-full"
-                            />
-                        ) : (
-                            <div className="flex size-12 items-center justify-center rounded-full bg-amber-600">
-                                <Coffee className="size-7" />
-                            </div>
-                        )}
+                        <img
+                            src={branch.logo ? `/storage/${branch.logo}` : '/images/logo.jpg'}
+                            alt={branch.name}
+                            className="size-16 rounded-full object-cover ring-2 ring-amber-500/30"
+                        />
                         <div>
                             <h1 className="text-3xl font-bold">{branch.name}</h1>
                             <p className="text-sm text-amber-200/80">Order Display Board</p>

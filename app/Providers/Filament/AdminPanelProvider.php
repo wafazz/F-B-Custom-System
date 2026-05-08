@@ -30,6 +30,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName('Star Coffee House')
+            ->brandLogo(asset('images/logo.jpg'))
+            ->brandLogoHeight('2.5rem')
+            ->favicon(asset('favicon.png'))
             ->colors([
                 'primary' => Color::Amber,
             ])

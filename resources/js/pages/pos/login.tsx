@@ -1,5 +1,4 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BranchOption {
@@ -32,11 +31,13 @@ export default function PosLogin({ branches }: Props) {
                     className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl"
                 >
                     <div className="flex flex-col items-center">
-                        <div className="mb-3 flex size-14 items-center justify-center rounded-full bg-amber-600 text-white">
-                            <Coffee className="size-7" />
-                        </div>
-                        <h1 className="text-xl font-bold">Star Coffee POS</h1>
-                        <p className="text-xs text-slate-400">Branch staff sign in</p>
+                        <img
+                            src="/images/logo.jpg"
+                            alt="Star Coffee House"
+                            className="mb-3 size-20 rounded-full object-cover ring-2 ring-amber-500/30"
+                        />
+                        <h1 className="text-xl font-bold">POS Sign In</h1>
+                        <p className="text-xs text-slate-400">Branch staff terminal</p>
                     </div>
 
                     <div className="space-y-1">

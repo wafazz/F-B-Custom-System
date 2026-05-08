@@ -21,13 +21,20 @@ export default function PosLayout({ children }: { children: ReactNode }) {
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100">
             <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-6 py-3">
-                <div>
-                    <h1 className="text-lg font-bold tracking-tight">Star Coffee POS</h1>
-                    {branch && (
-                        <p className="text-xs text-slate-400">
-                            {branch.name} · {branch.code}
-                        </p>
-                    )}
+                <div className="flex items-center gap-3">
+                    <img
+                        src="/images/logo.jpg"
+                        alt="Star Coffee"
+                        className="size-10 rounded-full object-cover"
+                    />
+                    <div>
+                        <h1 className="text-lg font-bold tracking-tight">POS</h1>
+                        {branch && (
+                            <p className="text-xs text-slate-400">
+                                {branch.name} · {branch.code}
+                            </p>
+                        )}
+                    </div>
                 </div>
                 <nav className="flex items-center gap-1 text-sm">
                     <NavLink

@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Services\Loyalty\LoyaltyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,7 +28,7 @@ class ProfileController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'date_of_birth' => $user->date_of_birth instanceof Carbon ? $user->date_of_birth->format('Y-m-d') : $user->date_of_birth,
+                'date_of_birth' => $user->date_of_birth ? \Illuminate\Support\Carbon::parse((string) $user->date_of_birth)->format('Y-m-d') : null,
                 'gender' => $user->gender,
                 'preferred_branch_id' => $user->preferred_branch_id,
                 'locale' => $user->locale,

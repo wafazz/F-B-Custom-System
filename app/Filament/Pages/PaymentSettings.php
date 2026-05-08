@@ -3,7 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Services\Settings\SettingsRepository;
-use Filament\Actions\Action;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -127,20 +126,6 @@ class PaymentSettings extends Page implements HasForms
             ->body('Billplz client adapter not yet implemented. Once `BillplzGateway::ping()` is wired this button will hit /api/v3/check_balance and report the response.')
             ->info()
             ->send();
-    }
-
-    /** @return array<int, Action> */
-    protected function getFormActions(): array
-    {
-        return [
-            Action::make('save')
-                ->label('Save settings')
-                ->submit('save'),
-            Action::make('testConnection')
-                ->label('Test connection')
-                ->color('gray')
-                ->action('testConnection'),
-        ];
     }
 
     public static function shouldRegisterNavigation(): bool

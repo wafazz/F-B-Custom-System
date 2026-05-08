@@ -1,0 +1,100 @@
+/* Star Coffee House — Filament admin theme overrides
+   Loaded after Filament's own stylesheet via viteTheme(), so these
+   wins on specificity. Matches the logo: black bg, amber accent, white type. */
+
+:root {
+    --sc-amber: #f59e0b;
+    --sc-amber-glow: rgba(245, 158, 11, 0.18);
+}
+
+/* ─── Login screen — full black canvas with amber edge glow ─── */
+.fi-simple-layout {
+    background:
+        radial-gradient(circle at top left, rgba(245, 158, 11, 0.10), transparent 50%),
+        radial-gradient(circle at bottom right, rgba(245, 158, 11, 0.06), transparent 55%),
+        #000000 !important;
+    min-height: 100vh;
+}
+
+.fi-simple-main-ctn {
+    background: transparent !important;
+}
+
+.fi-simple-main {
+    background: #0a0a0a !important;
+    border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    border-radius: 1rem !important;
+    box-shadow:
+        0 0 0 1px rgba(245, 158, 11, 0.05),
+        0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+    color: #f5f5f5 !important;
+    ring: none !important;
+}
+
+/* Brand logo on login = circular amber-ringed crop */
+.fi-simple-main .fi-logo {
+    margin-bottom: 0.5rem !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+.fi-simple-main .fi-logo img {
+    height: 5rem !important;
+    width: 5rem !important;
+    border-radius: 9999px !important;
+    object-fit: cover !important;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.30) !important;
+}
+
+.fi-simple-header-heading {
+    color: #ffffff !important;
+    text-align: center !important;
+}
+
+.fi-simple-header-subheading {
+    color: rgba(255, 255, 255, 0.55) !important;
+    text-align: center !important;
+}
+
+/* Form fields on login */
+.fi-simple-main .fi-input {
+    background: #1a1a1a !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+
+.fi-simple-main .fi-input::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.fi-simple-main .fi-input:focus {
+    border-color: var(--sc-amber) !important;
+    box-shadow: 0 0 0 2px var(--sc-amber-glow) !important;
+}
+
+.fi-simple-main .fi-fo-field-wrp-label,
+.fi-simple-main label {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Primary button (Sign in) */
+.fi-simple-main .fi-btn-color-primary,
+.fi-simple-main button[type='submit'] {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: #000000 !important;
+    font-weight: 600 !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.fi-simple-main .fi-btn-color-primary:hover,
+.fi-simple-main button[type='submit']:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45) !important;
+}
+
+/* Validation messages */
+.fi-simple-main .fi-fo-field-wrp-error-message {
+    color: #fca5a5 !important;
+}

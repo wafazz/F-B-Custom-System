@@ -164,6 +164,12 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 
 
+
+
+
+
+
+
 - [✔] **W-2.3.1** Migration: `branch_stock` (quantity, low_threshold, is_available, track_quantity, last_restocked_at) + `stock_movements` audit table
 - [✔] **W-2.3.2** Stock management UI in Filament — `StockRelationManager` on ProductResource
 - [✔] **W-2.3.3** Mark out-of-stock toggle — quick action that broadcasts BranchStockChanged

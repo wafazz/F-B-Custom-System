@@ -16,6 +16,7 @@ export default defineConfig({
         tailwindcss(),
         VitePWA({
             registerType: 'autoUpdate',
+            devOptions: { enabled: true, type: 'module' },
             includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
             manifest: {
                 name: 'Star Coffee',
@@ -50,8 +51,14 @@ export default defineConfig({
         },
     },
     server: {
+        host: '127.0.0.1',
+        port: 5173,
+        strictPort: false,
         watch: {
             ignored: ['**/storage/framework/views/**'],
+        },
+        hmr: {
+            host: '127.0.0.1',
         },
     },
 });

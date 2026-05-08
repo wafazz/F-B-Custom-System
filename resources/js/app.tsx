@@ -3,6 +3,7 @@ import '../css/app.css';
 
 import { createInertiaApp, type ResolvedComponent } from '@inertiajs/react';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { queryClient } from '@/lib/query-client';
 
@@ -10,7 +11,7 @@ const appName = import.meta.env.VITE_APP_NAME || 'Star Coffee';
 
 const pages = import.meta.glob<ResolvedComponent>('./pages/**/*.tsx');
 
-createInertiaApp({
+void createInertiaApp({
     title: (title) => (title ? `${title} — ${appName}` : appName),
     resolve: async (name) => {
         const importer = pages[`./pages/${name}.tsx`];
@@ -19,9 +20,11 @@ createInertiaApp({
     },
     setup({ el, App, props }) {
         createRoot(el).render(
-            <QueryClientProvider client={queryClient}>
-                <App {...props} />
-            </QueryClientProvider>,
+            createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                createElement(App, props),
+            ),
         );
     },
     progress: {

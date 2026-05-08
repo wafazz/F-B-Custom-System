@@ -15,8 +15,17 @@ class OrderPolicy
         return $user->can('view_any_order');
     }
 
-    public function view(User $user, Order $order): bool
+    public function view(?User $user, Order $order): bool
     {
+        // Guest who placed this order in their session can see it.
+        if ($order->user_id === null && in_array($order->id, (array) session('placed_order_ids', []), true)) {
+            return true;
+        }
+
+        if (! $user) {
+            return false;
+        }
+
         // Customers can always view their own orders.
         if ($order->user_id === $user->getKey()) {
             return true;

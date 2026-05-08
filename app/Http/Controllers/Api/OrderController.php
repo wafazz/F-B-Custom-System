@@ -56,6 +56,13 @@ class OrderController extends Controller
             'payment_reference' => $bill->reference,
         ]);
 
+        // Track guest-placed orders so they can see their own confirmation page.
+        if ($order->user_id === null && $request->hasSession()) {
+            $ids = (array) $request->session()->get('placed_order_ids', []);
+            $ids[] = $order->id;
+            $request->session()->put('placed_order_ids', array_slice(array_unique($ids), -20));
+        }
+
         return response()->json([
             'order' => $this->present($order->fresh(['items.modifiers'])),
             'payment' => [

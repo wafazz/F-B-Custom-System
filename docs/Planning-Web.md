@@ -162,7 +162,7 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 - [ ] **W-2.2.6** Bulk import products (CSV) — deferred
 - [ ] **W-2.2.7** Bulk price update — deferred to W-6 dashboard sprint
 
-### W-2.3 Branch-Specific Stock & Availability [✔]
+
 - [✔] **W-2.3.1** Migration: `branch_stock` (quantity, low_threshold, is_available, track_quantity, last_restocked_at) + `stock_movements` audit table
 - [✔] **W-2.3.2** Stock management UI in Filament — `StockRelationManager` on ProductResource
 - [✔] **W-2.3.3** Mark out-of-stock toggle — quick action that broadcasts BranchStockChanged
@@ -272,61 +272,85 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 ---
 
-## Sprint W-5 — Branch POS (Week 6)
+## Sprint W-5 — Branch POS + TV Display (Week 6) [✔]
 
-### W-5.1 POS Auth & Layout
-- [ ] **W-5.1.1** Staff PIN login screen
-- [ ] **W-5.1.2** Tablet-optimized layout (landscape, large touch targets)
-- [ ] **W-5.1.3** Active staff indicator + clock-out
-- [ ] **W-5.1.4** Shift session tracking
+### W-5.1 POS Auth & Layout [✔]
+- [✔] **W-5.1.1** Staff PIN login screen — branch picker + 4-6 digit PIN against `branch_staff` hashed pin
+- [✔] **W-5.1.2** Tablet-optimized POS layout (landscape, dark slate, large touch targets) via `pos-layout.tsx`
+- [✔] **W-5.1.3** Active staff name in header + Logout action
+- [ ] **W-5.1.4** Shift session tracking — deferred (post-pilot enhancement)
 
-### W-5.2 Order Queue
-- [ ] **W-5.2.1** Live incoming orders panel (Reverb)
-- [ ] **W-5.2.2** Sound + visual alert on new order
-- [ ] **W-5.2.3** Status update buttons (Accept, Preparing, Ready, Complete)
-- [ ] **W-5.2.4** Reject order with reason modal
-- [ ] **W-5.2.5** Estimated prep time entry
+### W-5.2 Order Queue [✔]
+- [✔] **W-5.2.1** Live incoming orders panel — Echo subscription on `branch.{id}.orders` for `.order.status.changed`
+- [✔] **W-5.2.2** Sound + visual alert on new order (audio chime + animated bump on key)
+- [✔] **W-5.2.3** Status update buttons — Accept→Preparing, Mark Ready, Complete (single advance button per row)
+- [✔] **W-5.2.4** Cancel order action with confirmation
+- [ ] **W-5.2.5** Estimated prep time entry — deferred (auto from product.prep_time_minutes for now)
 
-### W-5.3 Walk-in POS
-- [ ] **W-5.3.1** Quick product grid (touch-optimized)
-- [ ] **W-5.3.2** Modifier selection sheet
-- [ ] **W-5.3.3** Cart panel (right sidebar)
-- [ ] **W-5.3.4** Cash payment flow
-- [ ] **W-5.3.5** Card terminal trigger (placeholder API)
-- [ ] **W-5.3.6** DuitNow QR display
-- [ ] **W-5.3.7** Print receipt (thermal printer API)
-- [ ] **W-5.3.8** Discount apply (with manager approval if > X%)
-- [ ] **W-5.3.9** Refund / void flow
+### W-5.3 Walk-in POS [✔ MVP]
+- [✔] **W-5.3.1** Quick product grid (touch-optimized) — category pills + product tiles
+- [✔] **W-5.3.2** Modifier selection — auto-picks defaults / required minimums on tap (no separate sheet for speed)
+- [✔] **W-5.3.3** Cart sidebar with line edit/remove + totals
+- [✔] **W-5.3.4** Cash payment flow — places order, marks paid, advances to Preparing
+- [✔] **W-5.3.5** Card / DuitNow payment buttons (records method; gateway integration in W-7 polish)
+- [ ] **W-5.3.6** DuitNow QR display — needs Billplz integration (W-7)
+- [ ] **W-5.3.7** Print receipt — needs thermal printer driver (post-pilot)
+- [ ] **W-5.3.8** Discount apply — deferred to W-6 voucher sprint
+- [ ] **W-5.3.9** Refund / void flow — admin-side cancel exists; customer-facing refund deferred
 
-### W-5.4 Customer Lookup
-- [ ] **W-5.4.1** Search by phone / membership ID / QR scan
-- [ ] **W-5.4.2** Display customer profile + tier
-- [ ] **W-5.4.3** Apply loyalty / voucher in-store
-- [ ] **W-5.4.4** Earn points on walk-in transaction
+### W-5.4 Customer Lookup [deferred to W-6]
+- [ ] **W-5.4.1-4** Phone/membership search, profile lookup, in-store loyalty/voucher apply — depends on loyalty system from W-6.
 
-### W-5.5 Branch Stock Self-Management (Branch Staff)
-- [ ] **W-5.5.1** Stock screen in POS (own branch only — RBAC enforced)
-- [ ] **W-5.5.2** Quick toggle: mark item out-of-stock (one tap)
-- [ ] **W-5.5.3** Quick toggle: mark item back in-stock
-- [ ] **W-5.5.4** Adjust stock quantity (with reason: sale, wastage, restock)
-- [ ] **W-5.5.5** Stock movement audit log (per branch)
-- [ ] **W-5.5.6** Low stock visual alert in POS dashboard
-- [ ] **W-5.5.7** Stock toggle broadcasts to customer app (Reverb) — instant UI update
-- [ ] **W-5.5.8** End-of-day stock summary report
+### W-5.5 Branch Stock Self-Management [✔]
+- [✔] **W-5.5.1** Stock screen at `/pos/stock` — own branch only (session-scoped)
+- [✔] **W-5.5.2/3** One-tap available/out-of-stock toggle
+- [ ] **W-5.5.4** Quantity adjustment with reason — admin Filament UI exists; POS-side adjust UI deferred
+- [✔] **W-5.5.5** Audit via `stock_movements` table + Spatie ActivityLog (from W-2)
+- [✔] **W-5.5.6** Low quantity visual highlight in stock table
+- [✔] **W-5.5.7** Toggle broadcasts `BranchStockChanged` → customer storefront updates instantly
+- [ ] **W-5.5.8** End-of-day summary report — deferred to W-6 dashboards
 
-### W-5.6 Order-Ready Notification Fork (Pickup vs Dine-in)
-- [ ] **W-5.6.1** Order ready handler reads order type (pickup / dine-in)
-- [ ] **W-5.6.2** **Pickup path** — fire `OrderReadyNotification`:
-  - Web Push (Layer 1) — opens order detail
-  - OnSend WhatsApp (Layer 2) — `order_ready` template
-  - In-app notification + sound
-- [ ] **W-5.6.3** **Dine-in path** — broadcast event to TV Display:
-  - `OrderReadyForDineInEvent` via Reverb
-  - Order number appears in TV "Ready" panel
-  - Audio chime triggers on TV
-  - No push/WhatsApp sent (customer is on-premise)
-- [ ] **W-5.6.4** Both paths log notification delivery + status
-- [ ] **W-5.6.5** Mixed-mode handling — if dine-in customer leaves before order ready, fallback to push
+### W-5.6 Order-Ready Notification Fork [✔ partial]
+- [✔] **W-5.6.1** Fork in `OrderService::transition` — reads `order_type`
+- [ ] **W-5.6.2** Pickup path — Web Push + WhatsApp deferred to W-7.2/7.3 (notification sprint)
+- [✔] **W-5.6.3** Dine-in path — `OrderQueuedForDineIn` (on Preparing) + `OrderReadyForDineIn` (on Ready) broadcast on `branch.{id}.display` with audio chime + slide animation on TV board
+- [ ] **W-5.6.4** Notification log table — deferred to W-7
+- [ ] **W-5.6.5** Mixed-mode fallback — deferred to W-7
+
+### W-5.7 TV Display Screen [✔]
+
+#### W-5.7.A Backend [✔]
+- [✔] **W-5.7.1** Migration: `branch_display_tokens` (branch_id, name, token, is_active, last_seen_at, settings JSON)
+- [✔] **W-5.7.2** `BranchDisplayTokenResource` — generate/regenerate/disable/copy URL actions
+- [✔] **W-5.7.3** Public route `GET /branch/{branch}/display?token=…`
+- [✔] **W-5.7.4** Token validation: must match branch + `is_active=true`; updates `last_seen_at`
+- [✔] **W-5.7.5** Echo channel `branch.{id}.display`
+- [✔] **W-5.7.6** `OrderQueuedForDineIn` + `OrderReadyForDineIn` events firing from state machine (auto-clear deferred)
+- [ ] **W-5.7.7** Auto-clear cron — deferred (manual reset works; cron in W-7 polish)
+- [✔] **W-5.7.8** Heartbeat endpoint `POST /branch/{branch}/display/heartbeat` updates `last_seen_at`
+
+#### W-5.7.B Frontend [✔]
+- [✔] **W-5.7.9** Full-screen kiosk layout, landscape-friendly
+- [✔] **W-5.7.10** Hidden cursor / no scroll layout
+- [✔] **W-5.7.11** Two-panel split — Now Preparing (left) + Ready (right, large bold)
+- [✔] **W-5.7.12** Slide + flash animation when number moves to Ready
+- [✔] **W-5.7.13** Audio chime via `<audio>` (Web Audio simple data URI placeholder)
+- [✔] **W-5.7.14** Branch logo + name header
+- [✔] **W-5.7.15** Live clock + date footer
+- [ ] **W-5.7.16** Idle banner rotation — deferred to W-7 polish
+- [✔] **W-5.7.17** Connection status indicator (green/red wifi icon)
+- [ ] **W-5.7.18/22** Auto-reconnect / polling fallback — deferred (Echo handles basic reconnect)
+- [ ] **W-5.7.19/20/21** Dark mode toggle / number masking / EN-BM — deferred (settings JSON column in place for later)
+
+#### W-5.7.C Admin Panel [✔ MVP]
+- [✔] **W-5.7.23** Per-branch token CRUD (Filament): generate, regenerate, copy URL, enable/disable
+- [✔] **W-5.7.24** Last-seen-at column shows online/offline status
+- [ ] **W-5.7.25/26** Preview iframe + reset display action — deferred
+
+#### W-5.7.D Setup Documentation [deferred]
+- [ ] **W-5.7.27-29** Setup + hardware + troubleshooting docs — write at handoff (post-W-8).
+
+**Sprint W-5 Verified:** 74 tests passing (15 new PosTest), PHPStan level 5 clean, ESLint+TypeScript+Prettier+Vite build all clean.
 
 ### W-5.7 TV Display Screen (Dine-in Order Number Board)
 

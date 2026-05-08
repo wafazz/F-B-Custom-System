@@ -3,6 +3,11 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Pos\PinLoginController;
+use App\Http\Controllers\Pos\QueueController as PosQueueController;
+use App\Http\Controllers\Pos\StockController as PosStockController;
+use App\Http\Controllers\Pos\WalkInController;
+use App\Http\Controllers\Web\DisplayController;
 use App\Http\Controllers\Web\OrderPagesController;
 use App\Http\Controllers\Web\StorefrontController;
 use Illuminate\Support\Facades\Route;
@@ -28,3 +33,23 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('logout', LogoutController::class)->name('logout');
 });
+
+// POS (Branch staff)
+Route::prefix('pos')->name('pos.')->group(function () {
+    Route::get('login', [PinLoginController::class, 'show'])->name('login');
+    Route::post('login', [PinLoginController::class, 'store'])->name('login.store');
+    Route::post('logout', [PinLoginController::class, 'destroy'])->name('logout');
+
+    Route::middleware('pos')->group(function () {
+        Route::get('/', [PosQueueController::class, 'index'])->name('queue');
+        Route::post('orders/{order}/transition', [PosQueueController::class, 'transition'])->name('orders.transition');
+        Route::get('stock', [PosStockController::class, 'index'])->name('stock');
+        Route::post('stock/{product}/toggle', [PosStockController::class, 'toggle'])->name('stock.toggle');
+        Route::get('walk-in', [WalkInController::class, 'index'])->name('walk-in');
+        Route::post('walk-in', [WalkInController::class, 'store'])->name('walk-in.store');
+    });
+});
+
+// TV Display (token-authed, no user session)
+Route::get('branch/{branch}/display', [DisplayController::class, 'show'])->name('display.show');
+Route::post('branch/{branch}/display/heartbeat', [DisplayController::class, 'heartbeat'])->name('display.heartbeat');

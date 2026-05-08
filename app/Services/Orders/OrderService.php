@@ -3,6 +3,9 @@
 namespace App\Services\Orders;
 
 use App\Enums\OrderStatus;
+use App\Enums\OrderType;
+use App\Events\OrderQueuedForDineIn;
+use App\Events\OrderReadyForDineIn;
 use App\Events\OrderStatusChanged;
 use App\Models\Branch;
 use App\Models\BranchStock;
@@ -184,7 +187,16 @@ class OrderService
             $this->restoreStock($order);
         }
 
-        event(new OrderStatusChanged($order->fresh() ?? $order, $previous->value));
+        $fresh = $order->fresh() ?? $order;
+        event(new OrderStatusChanged($fresh, $previous->value));
+
+        if ($order->order_type === OrderType::DineIn) {
+            if ($next === OrderStatus::Preparing) {
+                event(new OrderQueuedForDineIn($fresh));
+            } elseif ($next === OrderStatus::Ready) {
+                event(new OrderReadyForDineIn($fresh));
+            }
+        }
 
         return $order;
     }

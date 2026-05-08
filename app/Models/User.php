@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,7 +14,7 @@ use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
@@ -67,5 +70,26 @@ class User extends Authenticatable
         } while (static::where('referral_code', $code)->exists());
 
         return $code;
+    }
+
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'branch_staff')
+            ->using(BranchStaff::class)
+            ->withPivot(['pin', 'employment_type', 'hired_at', 'ended_at', 'is_active', 'is_primary'])
+            ->withTimestamps();
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->hasAnyRole([
+            'super_admin',
+            'hq_admin',
+            'ops_manager',
+            'mkt_manager',
+            'branch_manager',
+            'cashier',
+            'barista',
+        ]);
     }
 }

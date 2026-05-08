@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-08
+**Last Updated:** 2026-05-08 (W-1 closed)
 
 ---
 
@@ -40,15 +40,19 @@
 - [✔] **W-0.4** Frontend: Inertia + React 19 + TS strict + Tailwind 4 + shadcn/ui + ESLint + Prettier + RHF/Zod + TanStack + Zustand + PWA
 - [✔] **W-0.5** Folder structure, layouts (app/auth), error pages, Inertia shared data, global types
 - [✔] **W-0.6** User table extended (phone/dob/photo/referral/consent), Login + Register controllers + pages, Filament admin user
-- [✔] **W-0.7** Pest 3 (7 tests passing), Larastan 3.9 (0 errors at level 5), GitHub Actions CI workflow
+- [✔] **W-0.7** Pest 3, Larastan 3.9 level 5, GitHub Actions CI workflow
+- [✔] **W-1.1** Branches: migration + model + factory + seeder + Filament resource (operating hours, SST, image upload, status toggle)
+- [✔] **W-1.2** Staff: branch_staff pivot + dual RelationManagers (BranchResource & UserResource) + PIN reset + suspend toggle
+- [✔] **W-1.3** RBAC: 8 roles, 48 permissions, 4 policies, Filament Shield UI, branch_manager scope isolation
 
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
 - **W-0.8** Deployment prep (blocked on W-DEC-1)
 - **W-0.6.4-6** Phone OTP, forgot password, 2FA — deferred to W-3.1 (proper customer auth sprint)
+- **W-1.1.6** Branch map pin picker — needs Google Maps API key
 
-## Sprint W-0 Status: ~95% Complete (Foundation ready)
-Ready to proceed to **Sprint W-1 — Branches & Staff** at any time.
+## Sprint Status: W-0 [✔] · W-1 [✔] — 25 tests passing, PHPStan clean
+Ready to proceed to **Sprint W-2 — Menu & Catalog** (categories, products, modifiers, branch-specific stock).
 
 ---
 
@@ -98,3 +102,4 @@ Ready to proceed to **Sprint W-1 — Branches & Staff** at any time.
 - Added TV Display Screen feature for dine-in order numbers.
 - Added branch-specific stock filtering, real-time stock sync, customer flow with splash → branch select → storefront.
 - Bootstrapped the entire Laravel project end-to-end. Verified Inertia + React render successfully.
+- **W-1 closed:** Branch + Staff modules + RBAC. Branch resource (operating hours, SST, image upload, branch-scoped query); Staff via dual RelationManagers (PIN reset, suspend/reinstate, multi-branch); 4 hand-written policies (Branch, BranchStaff, User, Role) wired to 48 generated permissions across 8 roles. Branch managers isolated to their assigned branches via `BranchPolicy::scopeAllows()` + Filament query filter. Fixed Shield-generated RolePolicy placeholder bug (`{{ ForceDelete }}` → `force_delete_role` etc.).

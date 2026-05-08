@@ -15,6 +15,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public const RESOURCES = [
         'branch', 'branch::staff', 'user', 'role',
         'category', 'product', 'modifier::group', 'branch::stock',
+        'order',
     ];
 
     public const ACTIONS = [
@@ -84,6 +85,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $allProduct = self::slugsFor('product');
         $allModifier = self::slugsFor('modifier::group');
         $allStock = self::slugsFor('branch::stock');
+        $allOrder = self::slugsFor('order');
 
         $readBranch = ['view_any_branch', 'view_branch'];
         $readBranchStaff = ['view_any_branch::staff', 'view_branch::staff'];
@@ -94,6 +96,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_any_modifier::group', 'view_modifier::group',
         ];
         $readStock = ['view_any_branch::stock', 'view_branch::stock'];
+        $readOrder = ['view_any_order', 'view_order'];
+        $manageOrder = array_merge($readOrder, ['update_order']);
 
         $branchManagerScope = array_merge(
             $readBranch,
@@ -102,25 +106,29 @@ class RolesAndPermissionsSeeder extends Seeder
             $readUser,
             $readCatalog,
             $allStock,
+            $allOrder,
         );
 
         return [
             'hq_admin' => array_merge(
                 $allBranch, $allBranchStaff, $allUser,
                 $allCategory, $allProduct, $allModifier, $allStock,
+                $allOrder,
                 ['view_any_role', 'view_role'],
             ),
             'ops_manager' => array_merge(
                 $allBranch, $allBranchStaff, $allUser,
                 $allCategory, $allProduct, $allModifier, $allStock,
+                $allOrder,
             ),
             'mkt_manager' => array_merge(
                 $readBranch, $readUser,
                 $allCategory, $allProduct,
+                $readOrder,
             ),
             'branch_manager' => $branchManagerScope,
-            'cashier' => array_merge($readBranch, $readBranchStaff, $readCatalog, $readStock),
-            'barista' => array_merge($readBranch, $readCatalog),
+            'cashier' => array_merge($readBranch, $readBranchStaff, $readCatalog, $readStock, $manageOrder),
+            'barista' => array_merge($readBranch, $readCatalog, $manageOrder),
             'customer' => [],
         ];
     }

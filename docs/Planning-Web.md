@@ -225,47 +225,50 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 ---
 
-## Sprint W-4 — Cart, Checkout & Orders (Week 5)
+## Sprint W-4 — Cart, Checkout & Orders (Week 5) [✔]
 
-### W-4.1 Cart (Branch-Bound)
-- [ ] **W-4.1.1** Cart state (Zustand persist) — bound to one branch_id
-- [ ] **W-4.1.2** Line item edit/remove
-- [ ] **W-4.1.3** Voucher input field with validation
-- [ ] **W-4.1.4** Loyalty redemption slider
-- [ ] **W-4.1.5** Order notes textarea
-- [ ] **W-4.1.6** Pickup time selector (ASAP / scheduled)
-- [ ] **W-4.1.7** Cart totals (subtotal, SST, discount, grand total)
-- [ ] **W-4.1.8** Cart validation on checkout — re-verify all items still available at branch (handle race conditions)
-- [ ] **W-4.1.9** Stock conflict UI — if item went out-of-stock during browsing, show alert + remove from cart
-- [ ] **W-4.1.10** Branch switch warning — "Switching branch will clear your cart. Continue?"
+### W-4.1 Cart (Branch-Bound) [✔]
+- [✔] **W-4.1.1** Cart state in Zustand `cartStore` (persisted, branch-bound) — already shipped in W-3
+- [✔] **W-4.1.2** Line item edit (increment/decrement) + remove on `storefront/cart.tsx`
+- [ ] **W-4.1.3** Voucher input — deferred to W-6 (vouchers sprint)
+- [ ] **W-4.1.4** Loyalty redemption slider — deferred to W-6
+- [✔] **W-4.1.5** Order notes textarea
+- [ ] **W-4.1.6** Pickup time selector (scheduled) — defaults to ASAP; scheduled deferred to W-7 polish
+- [✔] **W-4.1.7** Cart totals — subtotal + SST + grand total
+- [✔] **W-4.1.8** Cart validation on checkout — `OrderService::place` re-validates branch + stock + availability under transaction
+- [✔] **W-4.1.9** Stock conflict — `Insufficient stock` / `out of stock` errors surface to checkout UI
+- [✔] **W-4.1.10** Branch switch warning — `cartStore.rebindBranch()` clears + alerts (shipped in W-3)
 
-### W-4.2 Order Backend
-- [ ] **W-4.2.1** Migrations: `orders`, `order_items`, `order_item_modifiers`
-- [ ] **W-4.2.2** Order service (calculation, SST, discounts)
-- [ ] **W-4.2.3** Order state machine (Received → Preparing → Ready → Completed)
-- [ ] **W-4.2.4** Order events (broadcast via Reverb)
-- [ ] **W-4.2.5** Order number generator (branch-prefixed)
+### W-4.2 Order Backend [✔]
+- [✔] **W-4.2.1** Migrations: `orders` (number, branch, user, type, table, status enum, payment status enum, totals, timestamps for each state), `order_items`, `order_item_modifiers`
+- [✔] **W-4.2.2** `OrderService::place(OrderPayload)` — atomic calc (line × modifiers × SST), stock validation, single transaction with `lockForUpdate()`
+- [✔] **W-4.2.3** State machine via `OrderStatus` enum + `allowedTransitions()` + `OrderService::transition()` (Pending → Preparing → Ready → Completed; Cancel from any non-terminal; Refunded only from Completed)
+- [✔] **W-4.2.4** `OrderStatusChanged` event broadcasts on `orders.{id}` + `branch.{id}.orders` channels with `order.status.changed`
+- [✔] **W-4.2.5** Branch-prefixed order number `{CODE}-{YYMMDD}-{####}` via `Order::generateNumber()`
+- [✔] **W-2.3.8/9 wired** — `applyMovement('sale', -qty)` on placement; `'adjustment', +qty` on cancellation
 
-### W-4.3 Checkout & Payment (Billplz)
-- [ ] **W-4.3.1** Checkout page with totals breakdown
-- [ ] **W-4.3.2** **Order type selector — Pickup or Dine-in** (radio cards)
-- [ ] **W-4.3.3** Dine-in: table number entry / QR scan
-- [ ] **W-4.3.4** Pickup: pickup time selector (ASAP / scheduled)
-- [ ] **W-4.3.5** Billplz integration (collection setup)
-- [ ] **W-4.3.6** Bill creation API call
-- [ ] **W-4.3.7** Webhook handler (signature verify)
-- [ ] **W-4.3.8** DuitNow QR display + verification
-- [ ] **W-4.3.9** eWallet redirect flow
-- [ ] **W-4.3.10** Order confirmation page (with pickup code or table number)
-- [ ] **W-4.3.11** Receipt email (queued mailable)
-- [ ] **W-4.3.12** Order broadcast → branch POS queue + TV display (if dine-in)
+### W-4.3 Checkout & Payment [✔ MVP]
+- [✔] **W-4.3.1** Checkout page (`storefront/checkout.tsx`) — totals breakdown
+- [✔] **W-4.3.2** Order type selector — Pickup / Dine-in radio cards
+- [✔] **W-4.3.3** Dine-in: table number input
+- [ ] **W-4.3.4** Pickup time scheduling — deferred (ASAP only for MVP)
+- [✔] **W-4.3.5** Payment gateway abstraction — `PaymentGateway` contract + `StubGateway` for dev; Billplz adapter slot ready
+- [✔] **W-4.3.6** `POST /api/orders` → places order + creates payment bill
+- [ ] **W-4.3.7** Real Billplz webhook signature verify — adapter contract has `verifyWebhook()`; concrete impl deferred until credentials land
+- [ ] **W-4.3.8/9** DuitNow QR + eWallet redirect — Billplz handles these once integrated
+- [✔] **W-4.3.10** Order confirmation page (`storefront/order.tsx`) with order number + status timeline + dine-in table / pickup info
+- [ ] **W-4.3.11** Receipt email — deferred (needs W-DEC-6 email provider)
+- [✔] **W-4.3.12** Order broadcast — `OrderStatusChanged` already broadcasts on `branch.{id}.orders`; POS queue UI in W-5, TV display in W-5.7
+- [✔] **Dev simulate-paid** — `/orders/{order}/simulate-paid?reference=…` marks paid + auto-advances to Preparing (Billplz-replaceable)
 
-### W-4.4 Order Tracking
-- [ ] **W-4.4.1** Order detail page (live status)
-- [ ] **W-4.4.2** WebSocket subscription via Reverb
-- [ ] **W-4.4.3** Order history list (paginated)
-- [ ] **W-4.4.4** Reorder button
-- [ ] **W-4.4.5** Cancel order flow (within X minutes)
+### W-4.4 Order Tracking [✔]
+- [✔] **W-4.4.1** Live order detail page with status pills + payment badge + items + totals
+- [✔] **W-4.4.2** Echo subscription on `orders.{id}` channel for `.order.status.changed`
+- [✔] **W-4.4.3** Order history page (`storefront/orders.tsx`) — `/orders` route auth-gated, latest 30
+- [ ] **W-4.4.4** Reorder button — deferred to W-7 polish
+- [ ] **W-4.4.5** Customer-facing cancel within X minutes — deferred (admin can cancel from Filament for now)
+
+**Sprint W-4 Verified:** 59 tests passing (15 new OrderTest), PHPStan level 5 clean, ESLint+TypeScript+Prettier+Vite build all clean. Permissions matrix at 108 (9 resources × 12 actions) — `order` resource added, cashier/barista now get `view_*_order + update_order`.
 
 ---
 

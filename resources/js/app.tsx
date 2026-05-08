@@ -20,11 +20,7 @@ void createInertiaApp({
     },
     setup({ el, App, props }) {
         createRoot(el).render(
-            createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                createElement(App, props),
-            ),
+            createElement(QueryClientProvider, { client: queryClient }, createElement(App, props)),
         );
     },
     progress: {

@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-08 (W-3 closed)
+**Last Updated:** 2026-05-09 (W-4 closed)
 
 ---
 
@@ -48,6 +48,7 @@
 - [✔] **W-2.2** Filament: Category, Product (gallery + modifier picker + branch availability/pricing relation + stock relation), ModifierGroup with Options builder
 - [✔] **W-2.3** Stock model with `applyMovement()` (atomic transaction + audit), branch-scoped menu API at `GET /api/branches/{branch}/menu`, BranchStockChanged event broadcasting on `branch.{id}.stock`. Order-side decrement deferred to W-4.
 - [✔] **W-3** Customer storefront: splash → branch select → menu (real-time stock via Reverb). Inertia + React 19 pages, Zustand persisted cart bound to a branch, ModifierSheet sheet for product picker, TanStack Query for menu fetching. Mobile-first layout with bottom nav.
+- [✔] **W-4** Cart → Checkout → Order placement → Live tracking. `orders`/`order_items`/`order_item_modifiers` schema, `OrderStatus` + `OrderType` + `PaymentStatus` enums, `OrderService::place` (atomic, locks branch row, validates stock, decrements via `BranchStock::applyMovement`, computes SST), state machine with `allowedTransitions`, `OrderStatusChanged` event on `orders.{id}` + `branch.{id}.orders`. Frontend cart/checkout/order/orders pages with Echo live status. `PaymentGateway` interface + `StubGateway` (Billplz adapter pluggable later); `/orders/{order}/simulate-paid` dev callback marks paid + advances to Preparing. Filament `OrderResource` for staff with quick advance/cancel actions, branch-scoped query for branch_manager.
 
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
@@ -58,8 +59,8 @@
 - **W-2.3.4** Low stock notifications — needs email provider (W-DEC-6)
 - **W-2.3.8/9** Stock decrement on order events — deferred to W-4 (orders sprint)
 
-## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] — 44 tests passing, lint+typecheck+phpstan clean
-Ready to proceed to **Sprint W-4 — Cart, Checkout, Orders** (Billplz integration, order state machine, Reverb broadcasts to POS+TV).
+## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] — 59 tests passing, lint+typecheck+phpstan clean
+Ready to proceed to **Sprint W-5 — Branch POS + TV Display** (staff PIN login, live order queue with sound alerts, walk-in POS, dine-in TV display board).
 
 ---
 

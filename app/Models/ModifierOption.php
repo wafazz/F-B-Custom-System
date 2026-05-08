@@ -30,6 +30,7 @@ class ModifierOption extends Model
         ];
     }
 
+    /** @return BelongsTo<ModifierGroup, $this> */
     public function group(): BelongsTo
     {
         return $this->belongsTo(ModifierGroup::class, 'modifier_group_id');

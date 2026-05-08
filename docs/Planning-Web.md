@@ -2,7 +2,7 @@
 
 **Project:** Star Coffee — Multi-branch F&B Platform
 **Phase:** 1 of 3 — Web App + PWA (Customer Web + Admin Portal + Branch POS)
-**Stack:** Laravel 12 + Filament 3 + Inertia 2 + React 18 + TypeScript + Tailwind + shadcn/ui
+**Stack:** Laravel 12 + Filament 3 + Inertia 3 + React 19 + TypeScript + Tailwind 4 + shadcn/ui
 **Target Duration:** ~10 weeks
 **Started:** 2026-05-08
 **Task ID Prefix:** `W-` (Web)
@@ -24,8 +24,8 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 | Sprint | ID | Week | Focus | Status |
 |---|---|---|---|---|
-| Foundation | W-0 | 1 | Setup, packages, auth, CI/CD | [ ] |
-| Branches & Staff | W-1 | 2 | Branch + staff CRUD + RBAC | [ ] |
+| Foundation | W-0 | 1 | Setup, packages, auth, CI/CD | [✔] |
+| Branches & Staff | W-1 | 2 | Branch + staff CRUD + RBAC | [✔] |
 | Menu & Catalog | W-2 | 3 | Categories, products, modifiers | [✔] |
 | Customer Web Frontend | W-3 | 4 | Auth UI, home, browse, branch select | [✔] |
 | Cart, Checkout, Orders | W-4 | 5 | Cart, Billplz, order tracking | [ ] |
@@ -36,7 +36,7 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 ---
 
-## Sprint W-0 — Foundation (Week 1)
+## Sprint W-0 — Foundation (Week 1) [✔]
 
 ### W-0.1 Environment & Setup [✔]
 - [✔] **W-0.1.1** PHP 8.4.10 (Herd) — exceeds 8.3 minimum
@@ -87,7 +87,7 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 - Inertia shared data: `auth.user`, `flash`, `name`, `ziggy` routes
 - Global TypeScript types: `User`, `PageProps`, `Flash` + module augmentation for `usePage()`
 
-### W-0.6 Auth Scaffolding [partial]
+### W-0.6 Auth Scaffolding [✔ MVP]
 - [✔] **W-0.6.1** User table extended: phone, phone_verified_at, dob, gender, photo, referral_code (auto-generated 8 chars unique), referred_by, preferred_branch_id, marketing/whatsapp/push consent, locale, soft deletes
 - [✔] **W-0.6.2** Login (email + phone) — controller + Inertia page + tests
 - [✔] **W-0.6.3** Registration with referral code support — controller + Inertia page + tests
@@ -104,28 +104,6 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 - [✔] **W-0.7.4** Larastan 3.9 at level 5. **0 errors** on app/config/database/routes
 - [ ] **W-0.7.5** Husky pre-commit hook (deferred — pnpm scripts cover most needs)
 
-### W-0.5 Project Structure & Conventions
-- [ ] **W-0.5.1** Setup folder structure (Domain/Service pattern)
-- [ ] **W-0.5.2** Create base layouts (Auth, App, Admin)
-- [ ] **W-0.5.3** Setup error pages (404, 500, 403)
-- [ ] **W-0.5.4** Setup maintenance mode page
-- [ ] **W-0.5.5** Configure logging channels
-
-### W-0.6 Auth Scaffolding
-- [ ] **W-0.6.1** User table migration (phone, DOB, photo, referral_code)
-- [ ] **W-0.6.2** Login (email + phone tabs)
-- [ ] **W-0.6.3** Registration with email verification
-- [ ] **W-0.6.4** Phone OTP flow (placeholder SMS provider)
-- [ ] **W-0.6.5** Forgot password
-- [ ] **W-0.6.6** 2FA for admin (TOTP)
-
-### W-0.7 CI/CD & Quality
-- [ ] **W-0.7.1** Setup GitHub repo
-- [ ] **W-0.7.2** GitHub Actions: lint + test + build
-- [ ] **W-0.7.3** Pest 3 test runner configured
-- [ ] **W-0.7.4** PHPStan / Larastan setup
-- [ ] **W-0.7.5** Husky pre-commit hook (PHP CS Fixer + ESLint)
-
 ### W-0.8 Deployment Prep
 - [ ] **W-0.8.1** Provision VPS (decision pending)
 - [ ] **W-0.8.2** Setup Cloudflare DNS
@@ -135,31 +113,33 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 ---
 
-## Sprint W-1 — Branches & Staff (Week 2)
+## Sprint W-1 — Branches & Staff (Week 2) [✔]
 
-### W-1.1 Branch Module (Admin)
-- [ ] **W-1.1.1** Migration: `branches` (name, code, address, lat, lng, phone, status)
-- [ ] **W-1.1.2** Branch model + factory + seeder
-- [ ] **W-1.1.3** Operating hours per day (JSON or related table)
-- [ ] **W-1.1.4** Filament resource: list, create, edit, soft delete
-- [ ] **W-1.1.5** Branch status toggle (open/closed)
-- [ ] **W-1.1.6** Map pin picker (Google Maps API)
-- [ ] **W-1.1.7** Branch image upload (cover + logo)
+### W-1.1 Branch Module (Admin) [✔]
+- [✔] **W-1.1.1** Migration: `branches` (name, code, address, lat/lng, phone, email, postal/city/state, operating_hours JSON, sst, status, accepts_orders, sort_order, soft deletes)
+- [✔] **W-1.1.2** Branch model + factory + seeder (3 KL branches seeded)
+- [✔] **W-1.1.3** Operating hours per day — JSON column with `defaultOperatingHours()` helper + `isOpenNow()` checker
+- [✔] **W-1.1.4** Filament resource: list, create, edit, soft delete + restore
+- [✔] **W-1.1.5** Branch status toggle (`accepts_orders` quick action) + status enum (active/closed/maintenance)
+- [ ] **W-1.1.6** Map pin picker (Google Maps API) — deferred (needs API key, W-DEC pending)
+- [✔] **W-1.1.7** Branch image upload (cover + logo) via Filament FileUpload
 
-### W-1.2 Staff Module (Admin)
-- [ ] **W-1.2.1** Migration: `staff` (linked to users, branch_id, role, pin)
-- [ ] **W-1.2.2** Filament resource: CRUD
-- [ ] **W-1.2.3** PIN reset flow
-- [ ] **W-1.2.4** Ban/unban toggle
-- [ ] **W-1.2.5** Multi-branch assignment
-- [ ] **W-1.2.6** Soft delete with history preserved
+### W-1.2 Staff Module (Admin) [✔]
+- [✔] **W-1.2.1** Migration: `branch_staff` pivot (user_id, branch_id, pin hashed, employment_type, hired_at, ended_at, is_active, is_primary)
+- [✔] **W-1.2.2** Filament management via two RelationManagers — `BranchResource→StaffRelationManager` + `UserResource→BranchesRelationManager`
+- [✔] **W-1.2.3** PIN reset flow — generates 6-digit PIN, hashes, shows once via persistent notification
+- [✔] **W-1.2.4** Suspend/Reinstate toggle (per-branch via `is_active` pivot) + Ban/Unban for User account (soft delete)
+- [✔] **W-1.2.5** Multi-branch assignment via pivot (unique user_id+branch_id pair enforced)
+- [✔] **W-1.2.6** Soft delete preserves history (User has SoftDeletes; pivot rows preserved)
 
-### W-1.3 RBAC
-- [ ] **W-1.3.1** Spatie Permission seeder with default roles
-- [ ] **W-1.3.2** Roles: SuperAdmin, HQAdmin, OpsManager, MktManager, BranchManager, Cashier, Barista
-- [ ] **W-1.3.3** Filament permission UI
-- [ ] **W-1.3.4** Policy classes for each model
-- [ ] **W-1.3.5** Branch-scoped data isolation (Branch Manager sees only own branch)
+### W-1.3 RBAC [✔]
+- [✔] **W-1.3.1** Spatie Permission seeder with 8 roles + 96 resource permissions (12 actions × 8 resources after W-2)
+- [✔] **W-1.3.2** Roles: super_admin, hq_admin, ops_manager, mkt_manager, branch_manager, cashier, barista, customer
+- [✔] **W-1.3.3** Filament Shield 3.9 plugin enabled — permission UI at `/admin/shield/roles`
+- [✔] **W-1.3.4** Policy classes: BranchPolicy, BranchStaffPolicy, UserPolicy, RolePolicy (auto-discovered)
+- [✔] **W-1.3.5** Branch-scoped isolation — `BranchPolicy::scopeAllows()` + `BranchResource::getEloquentQuery()` filter for branch_manager role
+
+**Sprint W-1 Verified:** 25 tests passing, PHPStan level 5 clean, Pint formatted.
 
 ---
 

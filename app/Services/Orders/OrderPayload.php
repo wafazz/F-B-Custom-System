@@ -19,5 +19,7 @@ class OrderPayload
         public ?string $notes = null,
         /** @var array<string, mixed>|null */
         public ?array $customerSnapshot = null,
+        public ?string $voucherCode = null,
+        public int $loyaltyRedeemPoints = 0,
     ) {}
 }

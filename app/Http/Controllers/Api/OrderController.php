@@ -40,6 +40,8 @@ class OrderController extends Controller
                 'email' => $request->user()->email,
                 'phone' => $request->user()->phone,
             ] : null,
+            voucherCode: $request->input('voucher_code'),
+            loyaltyRedeemPoints: (int) $request->input('loyalty_redeem_points', 0),
         );
 
         try {

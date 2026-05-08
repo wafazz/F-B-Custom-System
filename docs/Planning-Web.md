@@ -28,9 +28,9 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 | Branches & Staff | W-1 | 2 | Branch + staff CRUD + RBAC | [✔] |
 | Menu & Catalog | W-2 | 3 | Categories, products, modifiers | [✔] |
 | Customer Web Frontend | W-3 | 4 | Auth UI, home, browse, branch select | [✔] |
-| Cart, Checkout, Orders | W-4 | 5 | Cart, Billplz, order tracking | [ ] |
-| Branch POS + TV Display | W-5 | 6 | POS, order queue, walk-in, TV dine-in display | [ ] |
-| Loyalty/Voucher/Dashboard | W-6 | 7 | Loyalty, vouchers, tiers, analytics | [ ] |
+| Cart, Checkout, Orders | W-4 | 5 | Cart, Billplz, order tracking | [✔] |
+| Branch POS + TV Display | W-5 | 6 | POS, order queue, walk-in, TV dine-in display | [✔] |
+| Loyalty/Voucher/Dashboard | W-6 | 7 | Loyalty, vouchers, tiers, analytics | [✔] |
 | PWA & Polish | W-7 | 8 | PWA, web push, referral | [ ] |
 | Pilot & Launch | W-8 | 9-10 | QA, pilot branch, production launch | [ ] |
 
@@ -161,6 +161,7 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 - [✔] **W-2.2.5** Branch-specific price override in same RelationManager
 - [ ] **W-2.2.6** Bulk import products (CSV) — deferred
 - [ ] **W-2.2.7** Bulk price update — deferred to W-6 dashboard sprint
+
 
 
 - [✔] **W-2.3.1** Migration: `branch_stock` (quantity, low_threshold, is_available, track_quantity, last_restocked_at) + `stock_movements` audit table
@@ -410,56 +411,47 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 ---
 
-## Sprint W-6 — Loyalty, Vouchers, Membership, Dashboard (Week 7)
+## Sprint W-6 — Loyalty, Vouchers, Membership, Dashboard (Week 7) [✔]
 
-### W-6.1 Loyalty Engine
-- [ ] **W-6.1.1** Migrations: `loyalty_points`, `point_transactions`
-- [ ] **W-6.1.2** Earn rules engine (per RM spent, configurable)
-- [ ] **W-6.1.3** Redemption flow (points → discount)
-- [ ] **W-6.1.4** Points expiry job (12-month rolling)
-- [ ] **W-6.1.5** Birthday bonus job (cron daily)
-- [ ] **W-6.1.6** Manual point adjustment (admin, with reason)
-- [ ] **W-6.1.7** Customer points history page
+### W-6.1 Loyalty Engine [✔]
+- [✔] **W-6.1.1** Migration: `point_transactions` (single source of truth — running balance via `balance_after` column on each row)
+- [✔] **W-6.1.2** Earn rule: 1 point per RM subtotal × tier multiplier; fires on Order → Completed transition (configurable via `LoyaltyService::POINTS_PER_RINGGIT`)
+- [✔] **W-6.1.3** Redemption — `OrderPayload.loyaltyRedeemPoints` → `LoyaltyService::redeem` records `-points` row, OrderService discounts subtotal (100 pts = RM 1)
+- [ ] **W-6.1.4** Points expiry job (12-month rolling) — deferred (cron in W-7 polish)
+- [ ] **W-6.1.5** Birthday bonus job — deferred (needs notification stack from W-7)
+- [ ] **W-6.1.6** Manual admin adjustment UI — deferred (record type already supports `adjustment`)
+- [✔] **W-6.1.7** Customer points history page (`/loyalty`) — balance + tier + history list
 
-### W-6.2 Voucher System
-- [ ] **W-6.2.1** Migrations: `vouchers`, `voucher_codes`, `voucher_redemptions`
-- [ ] **W-6.2.2** Voucher templates (Filament builder)
-- [ ] **W-6.2.3** Bulk code generation
-- [ ] **W-6.2.4** Apply at checkout (validation)
-- [ ] **W-6.2.5** Customer voucher wallet UI (active/used/expired tabs)
-- [ ] **W-6.2.6** Voucher distribution to segment
+### W-6.2 Voucher System [✔]
+- [✔] **W-6.2.1** Migrations: `vouchers` + `voucher_redemptions`
+- [✔] **W-6.2.2** `VoucherResource` Filament builder — code, percentage/fixed, min subtotal, max discount cap, branch scope, validity window, status
+- [ ] **W-6.2.3** Bulk code generation — deferred (single-code per voucher works for MVP)
+- [✔] **W-6.2.4** Apply at checkout — `VoucherService::find` + `discountFor` validate code, branch scope, min subtotal, per-user/total caps
+- [ ] **W-6.2.5** Customer voucher wallet UI — deferred (W-7 polish)
+- [ ] **W-6.2.6** Distribution to segments — deferred (segments need W-7 customer marketing tools)
 
-### W-6.3 Membership Tiers
-- [ ] **W-6.3.1** Migrations: `membership_tiers`, `customer_tiers`
-- [ ] **W-6.3.2** Tier configuration UI (Filament)
-- [ ] **W-6.3.3** Tier auto-upgrade job (daily cron)
-- [ ] **W-6.3.4** Tier display on customer profile
-- [ ] **W-6.3.5** Tier-based earn multiplier
-- [ ] **W-6.3.6** Tier progress bar UI
+### W-6.3 Membership Tiers [✔]
+- [✔] **W-6.3.1** Migrations: `membership_tiers` (slug, min_lifetime_spend, earn_multiplier, color) + `customer_tier` (one row per user, lifetime_spend, achieved_at)
+- [✔] **W-6.3.2** `MembershipTierResource` Filament UI
+- [✔] **W-6.3.3** Auto-upgrade — `LoyaltyService::applyTierUpgrade` runs on Order → Completed; bumps tier when lifetime spend crosses threshold
+- [✔] **W-6.3.4** Tier display on `/loyalty` page (current tier + multiplier + color)
+- [✔] **W-6.3.5** Earn multiplier feeds into `LoyaltyService::earnFromOrder` (Bronze 1×, Silver 1.25×, Gold 1.5×, Platinum 2×)
+- [✔] **W-6.3.6** Tier progress bar UI on `/loyalty` page (RM-to-next-tier indicator)
+- [✔] **Seeder:** `LoyaltySeeder` creates Bronze/Silver/Gold/Platinum tiers (0/200/500/1500 RM thresholds)
 
-### W-6.4 Promotion Engine
-- [ ] **W-6.4.1** Migrations: `promotions`, `promotion_rules`
-- [ ] **W-6.4.2** Filament promo builder
-- [ ] **W-6.4.3** Eligibility engine (tier, segment, branch, time)
-- [ ] **W-6.4.4** Auto-apply best promo logic
-- [ ] **W-6.4.5** Promo banner CMS
+### W-6.4 Promotion Engine [deferred to W-7]
+- [ ] **W-6.4.1-5** Auto-apply best promo, eligibility engine, banner CMS — deferred. Voucher system covers code-based promos for MVP.
 
-### W-6.5 Admin Dashboard
-- [ ] **W-6.5.1** Sales summary widgets (today, week, month)
-- [ ] **W-6.5.2** Revenue trend chart (line)
-- [ ] **W-6.5.3** Top products chart
-- [ ] **W-6.5.4** Order type distribution pie
-- [ ] **W-6.5.5** Hourly sales heatmap
-- [ ] **W-6.5.6** Filter by branch + date range
-- [ ] **W-6.5.7** Export to CSV / Excel
-- [ ] **W-6.5.8** Drill-down detailed reports
+### W-6.5 Admin Dashboard [✔ MVP]
+- [✔] **W-6.5.1** `SalesOverviewWidget` — today/week/month revenue + order count stats
+- [✔] **W-6.5.3** `TopProductsWidget` — last-30-day units sold + revenue per product (top 10)
+- [ ] **W-6.5.2/4/5** Revenue trend chart, order-type pie, hourly heatmap — deferred to W-7 polish
+- [ ] **W-6.5.6/7/8** Branch+date filters, CSV export, drill-down — deferred
 
-### W-6.6 Branch Detail Dashboard
-- [ ] **W-6.6.1** Per-branch dashboard widgets
-- [ ] **W-6.6.2** Today's live orders
-- [ ] **W-6.6.3** Staff on duty
-- [ ] **W-6.6.4** Stock levels overview
-- [ ] **W-6.6.5** Customer feedback / ratings
+### W-6.6 Branch Detail Dashboard [deferred]
+- [ ] **W-6.6.1-5** Per-branch widgets — deferred (branch_manager scope on OrderResource already filters; dedicated dashboard in W-7).
+
+**Sprint W-6 Verified:** 88 tests passing (14 new LoyaltyVoucherTest), PHPStan level 5 clean, ESLint+TypeScript+Prettier+Vite build clean. Permissions matrix at 132 (11 resources × 12 actions) — `voucher` + `membership::tier` resources added.
 
 ---
 

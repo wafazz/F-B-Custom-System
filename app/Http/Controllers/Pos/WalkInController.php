@@ -7,6 +7,7 @@ use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\Orders\OrderLinePayload;
 use App\Services\Orders\OrderPayload;
@@ -36,9 +37,9 @@ class WalkInController extends Controller
 
         $byCategory = [];
         foreach ($products as $p) {
-            /** @var \App\Models\Category|null $category */
+            /** @var Category|null $category */
             $category = $p->category;
-            $cat = $category instanceof \App\Models\Category ? $category->name : 'Other';
+            $cat = $category instanceof Category ? $category->name : 'Other';
             $byCategory[$cat][] = [
                 'id' => $p->id,
                 'name' => $p->name,

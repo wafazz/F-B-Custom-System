@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-09 (W-5 closed)
+**Last Updated:** 2026-05-09 (W-6 closed)
 
 ---
 
@@ -50,6 +50,7 @@
 - [✔] **W-3** Customer storefront: splash → branch select → menu (real-time stock via Reverb). Inertia + React 19 pages, Zustand persisted cart bound to a branch, ModifierSheet sheet for product picker, TanStack Query for menu fetching. Mobile-first layout with bottom nav.
 - [✔] **W-4** Cart → Checkout → Order placement → Live tracking. `orders`/`order_items`/`order_item_modifiers` schema, `OrderStatus` + `OrderType` + `PaymentStatus` enums, `OrderService::place` (atomic, locks branch row, validates stock, decrements via `BranchStock::applyMovement`, computes SST), state machine with `allowedTransitions`, `OrderStatusChanged` event on `orders.{id}` + `branch.{id}.orders`. Frontend cart/checkout/order/orders pages with Echo live status. `PaymentGateway` interface + `StubGateway` (Billplz adapter pluggable later); `/orders/{order}/simulate-paid` dev callback marks paid + advances to Preparing. Filament `OrderResource` for staff with quick advance/cancel actions, branch-scoped query for branch_manager.
 - [✔] **W-5** Branch POS + TV Display. POS PIN login (branch_staff hashed pin), `EnsurePosSession` middleware, `pos-layout` (dark slate tablet UI), live order queue (Echo + sound chime + advance/cancel actions), POS stock toggle (broadcasts BranchStockChanged), walk-in POS (touch product grid + cart sidebar + cash/card/duitnow payment, marks paid + advances to Preparing). TV Display: `branch_display_tokens` table, public `/branch/{branch}/display?token=…` route, kiosk page with two-panel Now-Preparing / Ready layout, Echo subscription + slide+flash animation, heartbeat endpoint. `OrderQueuedForDineIn` + `OrderReadyForDineIn` events fire from state machine for dine-in orders only (pickup path notifications deferred to W-7).
+- [✔] **W-6** Loyalty + Vouchers + Tiers + Admin dashboard. `point_transactions` table is the single source of truth (each row stores `balance_after` so balance = latest row). `LoyaltyService::earnFromOrder` runs on Order→Completed (1pt per RM × tier multiplier); `redeem` consumes points at checkout; `refundFromOrder` reverses on Refunded transition; `applyTierUpgrade` bumps customer_tier on lifetime spend crossings. Tiers seeded: Bronze 0 / Silver 200 (1.25×) / Gold 500 (1.5×) / Platinum 1500 (2×). Vouchers: percentage or fixed, min subtotal, max discount cap, branch scope JSON, per-user + global use caps. `OrderService::place` accepts `voucherCode` + `loyaltyRedeemPoints` and recomputes SST proportionally on the discounted subtotal. Filament: `VoucherResource` + `MembershipTierResource` + `SalesOverviewWidget` (today/week/month) + `TopProductsWidget` (last 30d top 10). Customer `/loyalty` page shows balance + tier + progress + history.
 
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
@@ -60,8 +61,8 @@
 - **W-2.3.4** Low stock notifications — needs email provider (W-DEC-6)
 - **W-2.3.8/9** Stock decrement on order events — deferred to W-4 (orders sprint)
 
-## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] · W-5 [✔] — 74 tests passing, lint+typecheck+phpstan clean
-Ready to proceed to **Sprint W-6 — Loyalty, Vouchers, Membership, Dashboard** (loyalty engine, voucher templates, tier system, admin sales dashboard).
+## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] · W-5 [✔] · W-6 [✔] — 88 tests passing, lint+typecheck+phpstan clean
+Ready to proceed to **Sprint W-7 — PWA, Notifications, Referral, Polish** (PWA install prompt, web push, OnSend WhatsApp, referral program).
 
 ---
 

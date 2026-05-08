@@ -28,6 +28,8 @@ class StoreOrderRequest extends FormRequest
             'lines.*.modifier_option_ids' => ['array'],
             'lines.*.modifier_option_ids.*' => ['integer', 'exists:modifier_options,id'],
             'lines.*.notes' => ['nullable', 'string', 'max:200'],
+            'voucher_code' => ['nullable', 'string', 'max:40'],
+            'loyalty_redeem_points' => ['nullable', 'integer', 'min:0', 'max:100000'],
         ];
     }
 }

@@ -14,11 +14,18 @@ use App\Models\ModifierOption;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\Loyalty\LoyaltyService;
+use App\Services\Vouchers\VoucherService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class OrderService
 {
+    public function __construct(
+        protected VoucherService $vouchers,
+        protected LoyaltyService $loyalty,
+    ) {}
+
     public function place(OrderPayload $payload): Order
     {
         if (count($payload->lines) === 0) {
@@ -112,7 +119,32 @@ class OrderService
 
             $sstAmount = round($sstAmount, 2);
             $subtotal = round($subtotal, 2);
-            $total = round($subtotal + $sstAmount, 2);
+
+            // Voucher discount
+            $voucher = null;
+            $voucherDiscount = 0.0;
+            if (! empty($payload->voucherCode)) {
+                $voucher = $this->vouchers->find($payload->voucherCode, $branch->id, $payload->userId);
+                $voucherDiscount = $this->vouchers->discountFor($voucher, $subtotal);
+            }
+
+            // Loyalty redemption
+            $loyaltyDiscount = 0.0;
+            if ($payload->loyaltyRedeemPoints > 0 && $payload->userId !== null) {
+                $available = $this->loyalty->balance($payload->userId);
+                if ($available < $payload->loyaltyRedeemPoints) {
+                    throw new RuntimeException('Insufficient loyalty points.');
+                }
+                $loyaltyDiscount = $this->loyalty->dollarsForPoints($payload->loyaltyRedeemPoints);
+            }
+
+            $discountTotal = round(min($subtotal, $voucherDiscount + $loyaltyDiscount), 2);
+
+            // Recompute SST on discounted subtotal proportionally.
+            if ($discountTotal > 0 && $subtotal > 0) {
+                $sstAmount = round($sstAmount * (($subtotal - $discountTotal) / $subtotal), 2);
+            }
+            $total = round(($subtotal - $discountTotal) + $sstAmount, 2);
 
             $order = Order::create([
                 'number' => Order::generateNumber($branch->code),
@@ -124,11 +156,18 @@ class OrderService
                 'status' => OrderStatus::Pending,
                 'subtotal' => $subtotal,
                 'sst_amount' => $sstAmount,
-                'discount_amount' => 0,
+                'discount_amount' => $discountTotal,
                 'total' => $total,
                 'notes' => $payload->notes,
                 'customer_snapshot' => $payload->customerSnapshot,
             ]);
+
+            if ($voucher !== null) {
+                $this->vouchers->commit($voucher, $order, $voucherDiscount);
+            }
+            if ($loyaltyDiscount > 0 && $payload->userId !== null) {
+                $this->loyalty->redeem($payload->userId, $payload->loyaltyRedeemPoints, $order);
+            }
 
             foreach ($itemsToInsert as $row) {
                 /** @var Product $product */
@@ -196,6 +235,14 @@ class OrderService
             } elseif ($next === OrderStatus::Ready) {
                 event(new OrderReadyForDineIn($fresh));
             }
+        }
+
+        if ($next === OrderStatus::Completed && $fresh->user_id !== null) {
+            $this->loyalty->earnFromOrder($fresh);
+            $this->loyalty->applyTierUpgrade($fresh->user_id, (float) $fresh->subtotal);
+        }
+        if ($next === OrderStatus::Refunded && $fresh->user_id !== null) {
+            $this->loyalty->refundFromOrder($fresh);
         }
 
         return $order;

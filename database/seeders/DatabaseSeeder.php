@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             BranchSeeder::class,
             MenuSeeder::class,
+            LoyaltySeeder::class,
         ]);
     }
 }

@@ -24,9 +24,9 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 | Sprint | ID | Week | Focus | Status |
 |---|---|---|---|---|
-| Foundation | W-0 | 1 | Setup, packages, auth, CI/CD | [✔] |
-| Branches & Staff | W-1 | 2 | Branch + staff CRUD + RBAC | [✔] |
-| Menu & Catalog | W-2 | 3 | Categories, products, modifiers | [ ] |
+| Foundation | W-0 | 1 | Setup, packages, auth, CI/CD | [ ] |
+| Branches & Staff | W-1 | 2 | Branch + staff CRUD + RBAC | [ ] |
+| Menu & Catalog | W-2 | 3 | Categories, products, modifiers | [✔] |
 | Customer Web Frontend | W-3 | 4 | Auth UI, home, browse, branch select | [ ] |
 | Cart, Checkout, Orders | W-4 | 5 | Cart, Billplz, order tracking | [ ] |
 | Branch POS + TV Display | W-5 | 6 | POS, order queue, walk-in, TV dine-in display | [ ] |
@@ -135,66 +135,66 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 ---
 
-## Sprint W-1 — Branches & Staff (Week 2) [✔]
+## Sprint W-1 — Branches & Staff (Week 2)
 
-### W-1.1 Branch Module (Admin) [✔]
-- [✔] **W-1.1.1** Migration: `branches` (name, code, address, lat/lng, phone, email, postal/city/state, operating_hours JSON, sst, status, accepts_orders, sort_order, soft deletes)
-- [✔] **W-1.1.2** Branch model + factory + seeder (3 KL branches seeded)
-- [✔] **W-1.1.3** Operating hours per day (JSON column with `defaultOperatingHours()` helper + `isOpenNow()` checker)
-- [✔] **W-1.1.4** Filament resource: list, create, edit, soft delete + restore
-- [✔] **W-1.1.5** Branch status toggle (`accepts_orders` quick action) + status enum (active/closed/maintenance)
-- [ ] **W-1.1.6** Map pin picker (Google Maps API) — deferred (needs API key W-DEC pending)
-- [✔] **W-1.1.7** Branch image upload (cover + logo) via Filament FileUpload
+### W-1.1 Branch Module (Admin)
+- [ ] **W-1.1.1** Migration: `branches` (name, code, address, lat, lng, phone, status)
+- [ ] **W-1.1.2** Branch model + factory + seeder
+- [ ] **W-1.1.3** Operating hours per day (JSON or related table)
+- [ ] **W-1.1.4** Filament resource: list, create, edit, soft delete
+- [ ] **W-1.1.5** Branch status toggle (open/closed)
+- [ ] **W-1.1.6** Map pin picker (Google Maps API)
+- [ ] **W-1.1.7** Branch image upload (cover + logo)
 
-### W-1.2 Staff Module (Admin) [✔]
-- [✔] **W-1.2.1** Migration: `branch_staff` pivot (user_id, branch_id, pin hashed, employment_type, hired_at, ended_at, is_active, is_primary)
-- [✔] **W-1.2.2** Filament management via two RelationManagers — `BranchResource→StaffRelationManager` + `UserResource→BranchesRelationManager`
-- [✔] **W-1.2.3** PIN reset flow — generates 6-digit PIN, hashes, shows once via persistent notification
-- [✔] **W-1.2.4** Suspend/Reinstate toggle (per-branch via `is_active` pivot) + Ban/Unban for User account (soft delete)
-- [✔] **W-1.2.5** Multi-branch assignment via pivot (unique user_id+branch_id pair enforced)
-- [✔] **W-1.2.6** Soft delete preserves history (User has SoftDeletes; pivot rows preserved)
+### W-1.2 Staff Module (Admin)
+- [ ] **W-1.2.1** Migration: `staff` (linked to users, branch_id, role, pin)
+- [ ] **W-1.2.2** Filament resource: CRUD
+- [ ] **W-1.2.3** PIN reset flow
+- [ ] **W-1.2.4** Ban/unban toggle
+- [ ] **W-1.2.5** Multi-branch assignment
+- [ ] **W-1.2.6** Soft delete with history preserved
 
-### W-1.3 RBAC [✔]
-- [✔] **W-1.3.1** Spatie Permission seeder with 8 roles + 48 resource permissions (12 actions × 4 resources)
-- [✔] **W-1.3.2** Roles: super_admin, hq_admin, ops_manager, mkt_manager, branch_manager, cashier, barista, customer
-- [✔] **W-1.3.3** Filament Shield 3.9 plugin enabled — permission UI at `/admin/shield/roles`
-- [✔] **W-1.3.4** Policy classes: BranchPolicy, BranchStaffPolicy, UserPolicy, RolePolicy (auto-discovered)
-- [✔] **W-1.3.5** Branch-scoped isolation — `BranchPolicy::scopeAllows()` + `BranchResource::getEloquentQuery()` filter for branch_manager role
-
-**Sprint W-1 Verified:** 25 tests passing (16 BranchTest + 9 prior), PHPStan level 5 clean, Pint formatted.
+### W-1.3 RBAC
+- [ ] **W-1.3.1** Spatie Permission seeder with default roles
+- [ ] **W-1.3.2** Roles: SuperAdmin, HQAdmin, OpsManager, MktManager, BranchManager, Cashier, Barista
+- [ ] **W-1.3.3** Filament permission UI
+- [ ] **W-1.3.4** Policy classes for each model
+- [ ] **W-1.3.5** Branch-scoped data isolation (Branch Manager sees only own branch)
 
 ---
 
-## Sprint W-2 — Menu & Catalog (Week 3)
+## Sprint W-2 — Menu & Catalog (Week 3) [✔]
 
-### W-2.1 Category & Product Models
-- [ ] **W-2.1.1** Migration: `categories` (name, slug, image, sort_order, status)
-- [ ] **W-2.1.2** Migration: `products` (name, description, base_price, sku, sst_applicable, etc.)
-- [ ] **W-2.1.3** Migration: `product_modifier_groups` + `modifier_options`
-- [ ] **W-2.1.4** Migration: `branch_product` (pivot for availability + price override)
-- [ ] **W-2.1.5** Models + relationships
-- [ ] **W-2.1.6** Seeders with sample coffee/pastry data
+### W-2.1 Category & Product Models [✔]
+- [✔] **W-2.1.1** Migration: `categories` (parent_id, name, slug, image, icon, sort_order, status, soft deletes)
+- [✔] **W-2.1.2** Migration: `products` (category_id, name, slug, description, sku unique, base_price, sst_applicable, image, gallery JSON, calories, prep_time_minutes, status enum, is_featured, soft deletes)
+- [✔] **W-2.1.3** Migrations: `modifier_groups` + `modifier_options` + `product_modifier_group` pivot
+- [✔] **W-2.1.4** Migration: `branch_product` pivot (is_available + price_override)
+- [✔] **W-2.1.5** Models with relations: Category, Product (+ availableAtBranch + priceForBranch), ModifierGroup/Option, BranchStock + StockMovement
+- [✔] **W-2.1.6** `MenuSeeder` — 5 categories, 4 modifier groups, 13 options, 14 products, 42 branch-product + 42 stock rows
 
-### W-2.2 Filament Resources
-- [ ] **W-2.2.1** Category CRUD with image upload
-- [ ] **W-2.2.2** Product CRUD with image gallery
-- [ ] **W-2.2.3** Modifier groups builder UI (Size, Sugar, Milk, Add-ons)
-- [ ] **W-2.2.4** Branch availability toggle per product
-- [ ] **W-2.2.5** Branch-specific pricing override
-- [ ] **W-2.2.6** Bulk import products (CSV)
-- [ ] **W-2.2.7** Bulk price update
+### W-2.2 Filament Resources [✔]
+- [✔] **W-2.2.1** CategoryResource — image, parent picker, slug auto-fill
+- [✔] **W-2.2.2** ProductResource — image + gallery (multi-upload reorderable), modifier picker, status enum, featured quick action
+- [✔] **W-2.2.3** ModifierGroupResource + OptionsRelationManager (reorderable)
+- [✔] **W-2.2.4** Branch availability toggle per product — `BranchAvailabilityRelationManager` (with "Attach to all branches" bulk)
+- [✔] **W-2.2.5** Branch-specific price override in same RelationManager
+- [ ] **W-2.2.6** Bulk import products (CSV) — deferred
+- [ ] **W-2.2.7** Bulk price update — deferred to W-6 dashboard sprint
 
-### W-2.3 Branch-Specific Stock & Availability (Core Feature)
-- [ ] **W-2.3.1** Migration: `branch_stock` (product_id, branch_id, quantity, low_threshold, is_available)
-- [ ] **W-2.3.2** Stock management UI in Filament (HQ admin view)
-- [ ] **W-2.3.3** Mark out-of-stock toggle (admin)
-- [ ] **W-2.3.4** Low stock alert email/notification (HQ + branch manager)
-- [ ] **W-2.3.5** **Branch-scoped menu API endpoint** — `GET /api/branches/{branch}/menu` returns only products where `branch_product.is_available=true` AND `branch_stock.quantity > 0`
-- [ ] **W-2.3.6** Eloquent scope: `Product::availableAtBranch($branchId)` for reuse
-- [ ] **W-2.3.7** Real-time stock event broadcast (Reverb) when item goes out-of-stock → customer UI auto-updates
-- [ ] **W-2.3.8** Stock decrement on order confirmation (atomic transaction, prevents oversell)
-- [ ] **W-2.3.9** Stock restore on order cancel/refund
-- [ ] **W-2.3.10** Stock audit log (who changed, when, before/after qty)
+### W-2.3 Branch-Specific Stock & Availability [✔]
+- [✔] **W-2.3.1** Migration: `branch_stock` (quantity, low_threshold, is_available, track_quantity, last_restocked_at) + `stock_movements` audit table
+- [✔] **W-2.3.2** Stock management UI in Filament — `StockRelationManager` on ProductResource
+- [✔] **W-2.3.3** Mark out-of-stock toggle — quick action that broadcasts BranchStockChanged
+- [ ] **W-2.3.4** Low stock alert email/notification — deferred (depends on W-DEC-6 email provider)
+- [✔] **W-2.3.5** Branch-scoped menu API endpoint — `GET /api/branches/{branch}/menu`
+- [✔] **W-2.3.6** Eloquent scope `Product::availableAtBranch($branchId)`
+- [✔] **W-2.3.7** Real-time stock event `BranchStockChanged` on `branch.{id}.stock` channel
+- [ ] **W-2.3.8** Stock decrement on order confirmation — `applyMovement()` ready; OrderService wiring deferred to W-4
+- [ ] **W-2.3.9** Stock restore on order cancel — deferred to W-4
+- [✔] **W-2.3.10** Stock audit log — `stock_movements` table + Spatie ActivityLog
+
+**Sprint W-2 Verified:** 40 tests passing (15 new MenuTest + 25 prior), PHPStan level 5 clean, Pint formatted. Permissions matrix expanded to 96 (8 resources × 12 actions).
 
 ---
 

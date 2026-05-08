@@ -156,6 +156,6 @@ test('users cannot delete themselves', function () {
     expect($admin->can('delete', $admin))->toBeFalse();
 });
 
-test('permissions seeder creates all 48 resource permissions', function () {
-    expect(Permission::count())->toBe(48);
+test('permissions seeder creates all resource permissions', function () {
+    expect(Permission::count())->toBe(96);
 });

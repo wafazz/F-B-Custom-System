@@ -12,7 +12,10 @@ use Spatie\Permission\PermissionRegistrar;
 class RolesAndPermissionsSeeder extends Seeder
 {
     /** Resource models that get the standard 12 permission slugs. */
-    public const RESOURCES = ['branch', 'branch::staff', 'user', 'role'];
+    public const RESOURCES = [
+        'branch', 'branch::staff', 'user', 'role',
+        'category', 'product', 'modifier::group', 'branch::stock',
+    ];
 
     public const ACTIONS = [
         'view', 'view_any', 'create', 'update',
@@ -77,29 +80,47 @@ class RolesAndPermissionsSeeder extends Seeder
         $allBranch = self::slugsFor('branch');
         $allBranchStaff = self::slugsFor('branch::staff');
         $allUser = self::slugsFor('user');
-        $allRole = self::slugsFor('role');
+        $allCategory = self::slugsFor('category');
+        $allProduct = self::slugsFor('product');
+        $allModifier = self::slugsFor('modifier::group');
+        $allStock = self::slugsFor('branch::stock');
 
         $readBranch = ['view_any_branch', 'view_branch'];
         $readBranchStaff = ['view_any_branch::staff', 'view_branch::staff'];
         $readUser = ['view_any_user', 'view_user'];
+        $readCatalog = [
+            'view_any_category', 'view_category',
+            'view_any_product', 'view_product',
+            'view_any_modifier::group', 'view_modifier::group',
+        ];
+        $readStock = ['view_any_branch::stock', 'view_branch::stock'];
 
         $branchManagerScope = array_merge(
             $readBranch,
             ['update_branch'],
             $allBranchStaff,
             $readUser,
+            $readCatalog,
+            $allStock,
         );
 
         return [
             'hq_admin' => array_merge(
                 $allBranch, $allBranchStaff, $allUser,
+                $allCategory, $allProduct, $allModifier, $allStock,
                 ['view_any_role', 'view_role'],
             ),
-            'ops_manager' => array_merge($allBranch, $allBranchStaff, $allUser),
-            'mkt_manager' => array_merge($readBranch, $readUser),
+            'ops_manager' => array_merge(
+                $allBranch, $allBranchStaff, $allUser,
+                $allCategory, $allProduct, $allModifier, $allStock,
+            ),
+            'mkt_manager' => array_merge(
+                $readBranch, $readUser,
+                $allCategory, $allProduct,
+            ),
             'branch_manager' => $branchManagerScope,
-            'cashier' => array_merge($readBranch, $readBranchStaff),
-            'barista' => $readBranch,
+            'cashier' => array_merge($readBranch, $readBranchStaff, $readCatalog, $readStock),
+            'barista' => array_merge($readBranch, $readCatalog),
             'customer' => [],
         ];
     }

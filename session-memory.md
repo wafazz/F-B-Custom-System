@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-08 (W-1 closed)
+**Last Updated:** 2026-05-08 (W-2 closed)
 
 ---
 
@@ -44,15 +44,21 @@
 - [✔] **W-1.1** Branches: migration + model + factory + seeder + Filament resource (operating hours, SST, image upload, status toggle)
 - [✔] **W-1.2** Staff: branch_staff pivot + dual RelationManagers (BranchResource & UserResource) + PIN reset + suspend toggle
 - [✔] **W-1.3** RBAC: 8 roles, 48 permissions, 4 policies, Filament Shield UI, branch_manager scope isolation
+- [✔] **W-2.1** Catalog schema: categories, products, modifier_groups + options + product pivot, branch_product pivot, branch_stock + stock_movements; full Eloquent models w/ slug auto-gen + scopes
+- [✔] **W-2.2** Filament: Category, Product (gallery + modifier picker + branch availability/pricing relation + stock relation), ModifierGroup with Options builder
+- [✔] **W-2.3** Stock model with `applyMovement()` (atomic transaction + audit), branch-scoped menu API at `GET /api/branches/{branch}/menu`, BranchStockChanged event broadcasting on `branch.{id}.stock`. Order-side decrement deferred to W-4.
 
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
 - **W-0.8** Deployment prep (blocked on W-DEC-1)
 - **W-0.6.4-6** Phone OTP, forgot password, 2FA — deferred to W-3.1 (proper customer auth sprint)
 - **W-1.1.6** Branch map pin picker — needs Google Maps API key
+- **W-2.2.6/7** Bulk product CSV / price update — deferred (MVP-skippable)
+- **W-2.3.4** Low stock notifications — needs email provider (W-DEC-6)
+- **W-2.3.8/9** Stock decrement on order events — deferred to W-4 (orders sprint)
 
-## Sprint Status: W-0 [✔] · W-1 [✔] — 25 tests passing, PHPStan clean
-Ready to proceed to **Sprint W-2 — Menu & Catalog** (categories, products, modifiers, branch-specific stock).
+## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] — 40 tests passing, PHPStan clean
+Ready to proceed to **Sprint W-3 — Customer Web Frontend** (auth UI, splash, branch select, menu browse, cart entry).
 
 ---
 
@@ -103,3 +109,4 @@ Ready to proceed to **Sprint W-2 — Menu & Catalog** (categories, products, mod
 - Added branch-specific stock filtering, real-time stock sync, customer flow with splash → branch select → storefront.
 - Bootstrapped the entire Laravel project end-to-end. Verified Inertia + React render successfully.
 - **W-1 closed:** Branch + Staff modules + RBAC. Branch resource (operating hours, SST, image upload, branch-scoped query); Staff via dual RelationManagers (PIN reset, suspend/reinstate, multi-branch); 4 hand-written policies (Branch, BranchStaff, User, Role) wired to 48 generated permissions across 8 roles. Branch managers isolated to their assigned branches via `BranchPolicy::scopeAllows()` + Filament query filter. Fixed Shield-generated RolePolicy placeholder bug (`{{ ForceDelete }}` → `force_delete_role` etc.).
+- **W-2 closed:** Menu & Catalog. Categories (nested via parent_id) + Products (with gallery, sst_applicable, prep_time, featured) + reusable Modifier Groups + Options. Branch-specific availability + price override via `branch_product` pivot. `branch_stock` table with `track_quantity` flag (off = always available) + low_threshold + audit via `stock_movements` morphs table. `BranchStock::applyMovement()` is the single atomic mutation entry point — handles quantity update, audit row, and broadcasts `BranchStockChanged` event when availability flips. Public branch-scoped menu API at `GET /api/branches/{branch}/menu`. PHPStan caveat: chained `->map()` on Eloquent\Collection doesn't narrow types — rewrite as foreach + presenter helper, or add `@return BelongsToMany<ChildModel, $this>` to relationships.

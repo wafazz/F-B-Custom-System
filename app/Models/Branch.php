@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -57,6 +58,18 @@ class Branch extends Model
             ->using(BranchStaff::class)
             ->withPivot(['pin', 'employment_type', 'hired_at', 'ended_at', 'is_active'])
             ->withTimestamps();
+    }
+
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'branch_product')
+            ->withPivot(['is_available', 'price_override'])
+            ->withTimestamps();
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(BranchStock::class);
     }
 
     public function scopeActive(Builder $query): Builder

@@ -1,0 +1,112 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\Category;
+use App\Models\Product;
+use Illuminate\Http\JsonResponse;
+
+class BranchMenuController extends Controller
+{
+    /** Public read-only menu — branch-scoped, only available + in-stock items. */
+    public function __invoke(Branch $branch): JsonResponse
+    {
+        if ($branch->status !== 'active' || ! $branch->accepts_orders) {
+            return response()->json([
+                'branch' => ['id' => $branch->id, 'code' => $branch->code, 'name' => $branch->name, 'status' => $branch->status],
+                'categories' => [],
+                'message' => 'Branch is not accepting orders right now.',
+            ]);
+        }
+
+        $products = Product::availableAtBranch($branch->id)
+            ->with([
+                'category',
+                'modifierGroups.options' => fn ($q) => $q->where('is_available', true),
+                'branches' => fn ($q) => $q->where('branches.id', $branch->id),
+                'stocks' => fn ($q) => $q->where('branch_id', $branch->id),
+            ])
+            ->orderBy('category_id')
+            ->orderBy('sort_order')
+            ->get();
+
+        /** @var array<int, array<string, mixed>> $byCategory */
+        $byCategory = [];
+        foreach ($products as $product) {
+            /** @var Category $category */
+            $category = $product->category;
+            $catId = $category->getKey();
+            if (! isset($byCategory[$catId])) {
+                $byCategory[$catId] = [
+                    'id' => $catId,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                    'icon' => $category->icon,
+                    'sort_order' => $category->sort_order,
+                    'products' => [],
+                ];
+            }
+            $byCategory[$catId]['products'][] = $this->presentProduct($product, $branch->id);
+        }
+
+        $categories = array_values($byCategory);
+        usort($categories, fn ($a, $b) => $a['sort_order'] <=> $b['sort_order']);
+
+        return response()->json([
+            'branch' => [
+                'id' => $branch->id,
+                'code' => $branch->code,
+                'name' => $branch->name,
+                'sst_rate' => (float) $branch->sst_rate,
+                'sst_enabled' => $branch->sst_enabled,
+                'status' => $branch->status,
+            ],
+            'categories' => $categories,
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    protected function presentProduct(Product $product, int $branchId): array
+    {
+        $modifierGroups = [];
+        foreach ($product->modifierGroups as $group) {
+            $options = [];
+            foreach ($group->options as $option) {
+                $options[] = [
+                    'id' => $option->getKey(),
+                    'name' => $option->name,
+                    'price_delta' => (float) $option->price_delta,
+                    'is_default' => $option->is_default,
+                ];
+            }
+            $modifierGroups[] = [
+                'id' => $group->getKey(),
+                'name' => $group->name,
+                'selection_type' => $group->selection_type,
+                'is_required' => $group->is_required,
+                'min_select' => $group->min_select,
+                'max_select' => $group->max_select,
+                'options' => $options,
+            ];
+        }
+
+        return [
+            'id' => $product->getKey(),
+            'sku' => $product->sku,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'description' => $product->description,
+            'price' => $product->priceForBranch($branchId),
+            'base_price' => (float) $product->base_price,
+            'image' => $product->image,
+            'gallery' => $product->gallery,
+            'calories' => $product->calories,
+            'prep_time_minutes' => $product->prep_time_minutes,
+            'is_featured' => $product->is_featured,
+            'sst_applicable' => $product->sst_applicable,
+            'modifier_groups' => $modifierGroups,
+        ];
+    }
+}

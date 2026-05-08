@@ -1,5 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
-import { Coffee, Minus, Plus, Trash2 } from 'lucide-react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { Coffee, LogIn, Minus, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
@@ -10,6 +10,8 @@ interface Props {
 }
 
 export default function Cart({ branch }: Props) {
+    const { auth } = usePage().props as unknown as { auth: { user: { id: number } | null } };
+    const isAuthed = auth.user !== null;
     const lines = useCartStore((s) => s.lines);
     const notes = useCartStore((s) => s.notes);
     const setNotes = useCartStore((s) => s.setNotes);
@@ -145,15 +147,34 @@ export default function Cart({ branch }: Props) {
                         </div>
                     </div>
 
+                    {!isAuthed && (
+                        <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                            <LogIn className="mt-0.5 size-3.5 flex-shrink-0" />
+                            <span>
+                                Sign in or create an account to checkout — we'll bring your cart with
+                                you.
+                            </span>
+                        </div>
+                    )}
+
                     <div className="mt-4">
-                        <Link href={`/branches/${branch.id}/checkout`}>
-                            <Button
-                                className="w-full"
-                                disabled={!isMatch || !branch.accepts_orders}
-                            >
-                                Continue to checkout
-                            </Button>
-                        </Link>
+                        {isAuthed ? (
+                            <Link href={`/branches/${branch.id}/checkout`}>
+                                <Button
+                                    className="w-full"
+                                    disabled={!isMatch || !branch.accepts_orders}
+                                >
+                                    Continue to checkout
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Link href={`/login?redirect=/branches/${branch.id}/checkout`}>
+                                <Button className="w-full">
+                                    <LogIn className="mr-1.5 size-4" />
+                                    Sign in to checkout
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </>
             )}

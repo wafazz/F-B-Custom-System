@@ -12,8 +12,12 @@ use Inertia\Response;
 
 class LoginController extends Controller
 {
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        if ($redirect = $request->query('redirect')) {
+            $request->session()->put('url.intended', (string) $redirect);
+        }
+
         return Inertia::render('auth/login');
     }
 

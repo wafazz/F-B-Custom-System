@@ -31,9 +31,11 @@ export default function Login() {
                         onChange={(e) => setData('identifier', e.target.value)}
                         autoComplete="username"
                         required
-                        className="w-full rounded-md border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        className="w-full rounded-md border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                     />
-                    {errors.identifier && <p className="text-xs text-red-400">{errors.identifier}</p>}
+                    {errors.identifier && (
+                        <p className="text-xs text-red-400">{errors.identifier}</p>
+                    )}
                 </div>
                 <div className="space-y-1.5">
                     <label htmlFor="password" className="text-xs font-medium text-white/70">
@@ -46,7 +48,7 @@ export default function Login() {
                         onChange={(e) => setData('password', e.target.value)}
                         autoComplete="current-password"
                         required
-                        className="w-full rounded-md border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        className="w-full rounded-md border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                     />
                     {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
                 </div>

@@ -151,8 +151,8 @@ export default function Cart({ branch }: Props) {
                         <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                             <LogIn className="mt-0.5 size-3.5 flex-shrink-0" />
                             <span>
-                                Sign in or create an account to checkout — we'll bring your cart with
-                                you.
+                                Sign in or create an account to checkout — we'll bring your cart
+                                with you.
                             </span>
                         </div>
                     )}

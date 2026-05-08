@@ -22,7 +22,10 @@ export default function AuthLayout({ children, title, description }: AuthLayoutP
                         src="/images/logo.jpg"
                         alt="Star Coffee House"
                         className="size-24 rounded-full object-cover"
-                        style={{ boxShadow: '0 0 0 4px rgba(245, 158, 11, 0.30), 0 0 30px rgba(245, 158, 11, 0.20)' }}
+                        style={{
+                            boxShadow:
+                                '0 0 0 4px rgba(245, 158, 11, 0.30), 0 0 30px rgba(245, 158, 11, 0.20)',
+                        }}
                     />
                 </Link>
                 <div

@@ -3,15 +3,16 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Web\AccountController;
 use App\Http\Controllers\Pos\PinLoginController;
 use App\Http\Controllers\Pos\QueueController as PosQueueController;
 use App\Http\Controllers\Pos\StockController as PosStockController;
 use App\Http\Controllers\Pos\WalkInController;
+use App\Http\Controllers\Web\AccountController;
 use App\Http\Controllers\Web\DisplayController;
 use App\Http\Controllers\Web\InfoPagesController;
 use App\Http\Controllers\Web\LoyaltyController;
 use App\Http\Controllers\Web\OrderPagesController;
+use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReferralController;
 use App\Http\Controllers\Web\StorefrontController;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +21,9 @@ Route::get('/', [StorefrontController::class, 'splash'])->name('home');
 Route::get('/branches', [StorefrontController::class, 'selectBranch'])->name('branches.select');
 Route::get('/branches/{branch}/menu', [StorefrontController::class, 'menu'])->name('branches.menu');
 Route::get('/branches/{branch}/cart', [OrderPagesController::class, 'cart'])->name('branches.cart');
-Route::get('/branches/{branch}/checkout', [OrderPagesController::class, 'checkout'])->name('branches.checkout');
+Route::get('/branches/{branch}/checkout', [OrderPagesController::class, 'checkout'])
+    ->middleware('auth')
+    ->name('branches.checkout');
 
 Route::get('/orders', [OrderPagesController::class, 'index'])->middleware('auth')->name('orders.index');
 Route::get('/orders/{order}', [OrderPagesController::class, 'show'])->middleware('can:view,order')->name('orders.show');
@@ -43,6 +46,11 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', LogoutController::class)->name('logout');
+    Route::get('profile', [ProfileController::class, 'show'])->name('profile');
+    Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('profile/password', [ProfileController::class, 'updatePassword'])
+        ->middleware('throttle:5,1')
+        ->name('profile.password');
     Route::get('account/data-export', [AccountController::class, 'dataExport'])->name('account.data-export');
     Route::delete('account', [AccountController::class, 'destroy'])->middleware('throttle:3,60')->name('account.destroy');
 });

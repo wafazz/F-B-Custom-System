@@ -172,8 +172,9 @@ test('illegal status transitions are rejected', function () {
 
 test('POST /api/orders creates an order and returns payment stub URL', function () {
     [$branch, $product] = array_values(makeMenu());
+    $user = User::factory()->create();
 
-    $response = $this->postJson('/api/orders', [
+    $response = $this->actingAs($user)->postJson('/api/orders', [
         'branch_id' => $branch->id,
         'order_type' => 'pickup',
         'lines' => [['product_id' => $product->id, 'quantity' => 1]],
@@ -183,6 +184,16 @@ test('POST /api/orders creates an order and returns payment stub URL', function 
         ->assertJsonPath('order.status', 'pending')
         ->assertJsonPath('payment.method', 'stub');
     expect(Order::count())->toBe(1);
+});
+
+test('POST /api/orders is rejected for guests', function () {
+    [$branch, $product] = array_values(makeMenu());
+
+    $this->postJson('/api/orders', [
+        'branch_id' => $branch->id,
+        'order_type' => 'pickup',
+        'lines' => [['product_id' => $product->id, 'quantity' => 1]],
+    ])->assertUnauthorized();
 });
 
 test('order number format is unique per branch per day', function () {
@@ -204,8 +215,9 @@ test('order number format is unique per branch per day', function () {
 
 test('simulate-paid stub callback marks order paid and advances to Preparing', function () {
     [$branch, $product] = array_values(makeMenu());
+    $user = User::factory()->create();
 
-    $createResponse = $this->postJson('/api/orders', [
+    $createResponse = $this->actingAs($user)->postJson('/api/orders', [
         'branch_id' => $branch->id,
         'order_type' => 'pickup',
         'lines' => [['product_id' => $product->id, 'quantity' => 1]],
@@ -213,7 +225,7 @@ test('simulate-paid stub callback marks order paid and advances to Preparing', f
     $orderId = $createResponse->json('order.id');
     $reference = $createResponse->json('payment.reference');
 
-    $this->get("/orders/{$orderId}/simulate-paid?reference={$reference}")
+    $this->actingAs($user)->get("/orders/{$orderId}/simulate-paid?reference={$reference}")
         ->assertRedirect("/orders/{$orderId}");
 
     $order = Order::find($orderId);

@@ -17,6 +17,11 @@ class OrderPolicy
 
     public function view(User $user, Order $order): bool
     {
+        // Customers can always view their own orders.
+        if ($order->user_id === $user->getKey()) {
+            return true;
+        }
+
         return $user->can('view_order') && $this->scopeAllows($user, $order);
     }
 

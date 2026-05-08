@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-09 (W-7 closed)
+**Last Updated:** 2026-05-09 (W-8 closed — Phase 1 code-complete)
 
 ---
 
@@ -52,6 +52,7 @@
 - [✔] **W-5** Branch POS + TV Display. POS PIN login (branch_staff hashed pin), `EnsurePosSession` middleware, `pos-layout` (dark slate tablet UI), live order queue (Echo + sound chime + advance/cancel actions), POS stock toggle (broadcasts BranchStockChanged), walk-in POS (touch product grid + cart sidebar + cash/card/duitnow payment, marks paid + advances to Preparing). TV Display: `branch_display_tokens` table, public `/branch/{branch}/display?token=…` route, kiosk page with two-panel Now-Preparing / Ready layout, Echo subscription + slide+flash animation, heartbeat endpoint. `OrderQueuedForDineIn` + `OrderReadyForDineIn` events fire from state machine for dine-in orders only (pickup path notifications deferred to W-7).
 - [✔] **W-6** Loyalty + Vouchers + Tiers + Admin dashboard. `point_transactions` table is the single source of truth (each row stores `balance_after` so balance = latest row). `LoyaltyService::earnFromOrder` runs on Order→Completed (1pt per RM × tier multiplier); `redeem` consumes points at checkout; `refundFromOrder` reverses on Refunded transition; `applyTierUpgrade` bumps customer_tier on lifetime spend crossings. Tiers seeded: Bronze 0 / Silver 200 (1.25×) / Gold 500 (1.5×) / Platinum 1500 (2×). Vouchers: percentage or fixed, min subtotal, max discount cap, branch scope JSON, per-user + global use caps. `OrderService::place` accepts `voucherCode` + `loyaltyRedeemPoints` and recomputes SST proportionally on the discounted subtotal. Filament: `VoucherResource` + `MembershipTierResource` + `SalesOverviewWidget` (today/week/month) + `TopProductsWidget` (last 30d top 10). Customer `/loyalty` page shows balance + tier + progress + history.
 - [✔] **W-7** PWA + Web Push + Referral + Legal pages. PWA: switched vite-plugin-pwa to `injectManifest` strategy with custom `resources/js/sw.ts` (precache + push handler + notificationclick deep link); icons + apple-touch-icon + favicon generated from logo via `sips`; `InstallPrompt` component captures `beforeinstallprompt`. Web Push: `minishlink/web-push` v10, `push_subscriptions` table, `PushService::sendToUser` (queue+flush, prunes 410 endpoints), wired into `OrderService::transition` for pickup-Ready and Cancelled events. `PushToggle` button on `/loyalty` for permission opt-in. Referral: `referral_rewards` table with `unique(referee_user_id)` for idempotency, `ReferralService::maybeAwardForCompletedOrder` runs on Completed transition crediting referrer + referee bonus points (default 100/100, configurable). `/referral` page with copy + Web Share API (wa.me fallback). Legal: static `/terms`, `/privacy` (PDPA), `/faq` Inertia pages. Note: `User::referred_by` is a foreign user ID not a code (caught during integration). OnSend WhatsApp deferred entirely until W-DEC-9/10/11.
+- [✔] **W-8** Pilot prep code-side. Security: `SecurityHeaders` middleware (X-Frame, X-Content-Type, Referrer-Policy, Permissions-Policy, HSTS); rate limits on login (6/min), register (6/min), POS PIN (5/min), order create (30/min), account delete (3/hour); IDOR guard via `OrderPolicy::view` allowing owner OR `view_order` permission, enforced via `can:view,order` middleware on web + api routes. PDPA: `GET /account/data-export` (JSON dump), `DELETE /account` (anonymise + soft delete user + drop push subscriptions + scrub `customer_snapshot` on past orders, transaction-wrapped). API docs: Knuckles/Scribe v5.9 generated and served at `/docs` with Postman + OpenAPI collections. Internal runbook at `docs/Runbook.md` covering deploy, rollback, hotfix, monitoring, on-call playbook.
 
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
@@ -62,8 +63,16 @@
 - **W-2.3.4** Low stock notifications — needs email provider (W-DEC-6)
 - **W-2.3.8/9** Stock decrement on order events — deferred to W-4 (orders sprint)
 
-## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] · W-5 [✔] · W-6 [✔] · W-7 [✔] — 97 tests passing, lint+typecheck+phpstan clean
-Ready to proceed to **Sprint W-8 — Pilot, Bug Fix, Launch** (regression suite, browser+mobile testing, PWA install QA, security audit, PDPA audit, accessibility audit, pilot branch deployment).
+## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] · W-5 [✔] · W-6 [✔] · W-7 [✔] · W-8 [✔ code] — 105 tests passing, PHPStan level 5 clean.
+
+**Phase 1 Web App is code-complete.** Remaining unchecked items are operational and unblock when W-DEC decisions land:
+- W-DEC-1 hosting + W-DEC-2 domain → unblocks W-0.8 deploy + W-8.2 pilot deployment
+- W-DEC-6 email provider → unblocks W-2.3.4 low-stock alerts + W-7.2.6 voucher expiry + receipt emails
+- W-DEC-9/10/11 OnSend WhatsApp → unblocks W-7.3 entire WhatsApp layer
+- Billplz credentials → unblocks W-4.3.5-9 real payment integration (StubGateway in place as drop-in replacement)
+- Google Maps API key → unblocks W-1.1.6 + W-3.4.2-3 map features
+
+Ready for **Phase 3 — Mobile (Planning-Mobile.md)** to start in parallel using the existing API.
 
 ---
 

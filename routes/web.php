@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BillplzWebhookController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -28,6 +29,10 @@ Route::get('/branches/{branch}/checkout', [OrderPagesController::class, 'checkou
 Route::get('/orders', [OrderPagesController::class, 'index'])->middleware('auth')->name('orders.index');
 Route::get('/orders/{order}', [OrderPagesController::class, 'show'])->middleware('can:view,order')->name('orders.show');
 Route::get('/orders/{order}/simulate-paid', [OrderPagesController::class, 'simulatePaid'])->name('orders.simulate-paid');
+
+// Billplz hosted-page redirect (customer's browser, not server-to-server)
+Route::get('/payments/billplz/return/{order}', [BillplzWebhookController::class, 'return'])
+    ->name('billplz.return');
 
 Route::get('/loyalty', [LoyaltyController::class, 'show'])->middleware('auth')->name('loyalty');
 Route::get('/referral', [ReferralController::class, 'show'])->middleware('auth')->name('referral');

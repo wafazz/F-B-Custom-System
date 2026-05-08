@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Payments\BillplzGateway;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\StubGateway;
 use App\Services\Settings\SettingsRepository;
@@ -16,6 +17,12 @@ class PaymentServiceProvider extends ServiceProvider
 
         $this->app->bind(PaymentGateway::class, function () {
             return match ($this->resolveDriver()) {
+                'billplz' => new BillplzGateway(
+                    apiKey: (string) config('services.billplz.api_key'),
+                    collectionId: (string) config('services.billplz.collection_id'),
+                    signatureKey: (string) config('services.billplz.x_signature'),
+                    sandbox: (bool) config('services.billplz.sandbox', true),
+                ),
                 default => new StubGateway,
             };
         });

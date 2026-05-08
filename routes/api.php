@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BillplzWebhookController;
 use App\Http\Controllers\Api\BranchMenuController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PushSubscriptionController;
@@ -19,6 +20,10 @@ Route::post('/orders', [OrderController::class, 'store'])
 Route::get('/orders/{order}', [OrderController::class, 'show'])
     ->middleware(['web', 'can:view,order'])
     ->name('api.orders.show');
+
+// Billplz server-to-server callback (signature-verified inside the controller)
+Route::post('/billplz/webhook', [BillplzWebhookController::class, 'webhook'])
+    ->name('billplz.webhook');
 
 Route::get('/push/vapid-key', [PushSubscriptionController::class, 'vapidKey'])->name('api.push.vapid');
 Route::post('/push/subscribe', [PushSubscriptionController::class, 'subscribe'])

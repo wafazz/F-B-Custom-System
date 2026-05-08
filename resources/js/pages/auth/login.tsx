@@ -34,7 +34,7 @@ export default function Login() {
                         required
                     />
                     {errors.identifier && (
-                        <p className="text-xs text-destructive">{errors.identifier}</p>
+                        <p className="text-destructive text-xs">{errors.identifier}</p>
                     )}
                 </div>
                 <div className="space-y-2">
@@ -48,7 +48,7 @@ export default function Login() {
                         required
                     />
                     {errors.password && (
-                        <p className="text-xs text-destructive">{errors.password}</p>
+                        <p className="text-destructive text-xs">{errors.password}</p>
                     )}
                 </div>
                 <label className="flex items-center gap-2 text-sm">
@@ -62,7 +62,7 @@ export default function Login() {
                 <Button type="submit" className="w-full" disabled={processing}>
                     {processing ? 'Logging in...' : 'Login'}
                 </Button>
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-center text-sm">
                     New here?{' '}
                     <Link href="/register" className="text-primary hover:underline">
                         Create an account

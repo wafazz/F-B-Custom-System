@@ -35,7 +35,7 @@ export default function Register() {
                         autoComplete="name"
                         required
                     />
-                    {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                    {errors.name && <p className="text-destructive text-xs">{errors.name}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -47,7 +47,7 @@ export default function Register() {
                         autoComplete="email"
                         required
                     />
-                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+                    {errors.email && <p className="text-destructive text-xs">{errors.email}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="phone">Phone (Malaysian format)</Label>
@@ -60,7 +60,7 @@ export default function Register() {
                         autoComplete="tel"
                         required
                     />
-                    {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+                    {errors.phone && <p className="text-destructive text-xs">{errors.phone}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
@@ -73,7 +73,7 @@ export default function Register() {
                         required
                     />
                     {errors.password && (
-                        <p className="text-xs text-destructive">{errors.password}</p>
+                        <p className="text-destructive text-xs">{errors.password}</p>
                     )}
                 </div>
                 <div className="space-y-2">
@@ -96,13 +96,13 @@ export default function Register() {
                         placeholder="ABCD1234"
                     />
                     {errors.referral_code && (
-                        <p className="text-xs text-destructive">{errors.referral_code}</p>
+                        <p className="text-destructive text-xs">{errors.referral_code}</p>
                     )}
                 </div>
                 <Button type="submit" className="w-full" disabled={processing}>
                     {processing ? 'Creating account...' : 'Create account'}
                 </Button>
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-center text-sm">
                     Already have an account?{' '}
                     <Link href="/login" className="text-primary hover:underline">
                         Login

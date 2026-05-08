@@ -14,7 +14,7 @@ export default function AuthLayout({ children, title, description }: AuthLayoutP
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 p-4">
             <div className="w-full max-w-md space-y-6">
                 <Link href="/" className="flex flex-col items-center gap-2">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <div className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">
                         <Coffee className="size-6" />
                     </div>
                     <span className="text-lg font-semibold">Star Coffee</span>
@@ -23,7 +23,7 @@ export default function AuthLayout({ children, title, description }: AuthLayoutP
                     <div className="mb-6 space-y-1 text-center">
                         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
                         {description && (
-                            <p className="text-sm text-muted-foreground">{description}</p>
+                            <p className="text-muted-foreground text-sm">{description}</p>
                         )}
                     </div>
                     {children}

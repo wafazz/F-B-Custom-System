@@ -3,10 +3,12 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Web\StorefrontController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('welcome'))->name('home');
+Route::get('/', [StorefrontController::class, 'splash'])->name('home');
+Route::get('/branches', [StorefrontController::class, 'selectBranch'])->name('branches.select');
+Route::get('/branches/{branch}/menu', [StorefrontController::class, 'menu'])->name('branches.menu');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'create'])->name('login');

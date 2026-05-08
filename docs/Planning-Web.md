@@ -27,7 +27,7 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 | Foundation | W-0 | 1 | Setup, packages, auth, CI/CD | [ ] |
 | Branches & Staff | W-1 | 2 | Branch + staff CRUD + RBAC | [ ] |
 | Menu & Catalog | W-2 | 3 | Categories, products, modifiers | [✔] |
-| Customer Web Frontend | W-3 | 4 | Auth UI, home, browse, branch select | [ ] |
+| Customer Web Frontend | W-3 | 4 | Auth UI, home, browse, branch select | [✔] |
 | Cart, Checkout, Orders | W-4 | 5 | Cart, Billplz, order tracking | [ ] |
 | Branch POS + TV Display | W-5 | 6 | POS, order queue, walk-in, TV dine-in display | [ ] |
 | Loyalty/Voucher/Dashboard | W-6 | 7 | Loyalty, vouchers, tiers, analytics | [ ] |
@@ -198,53 +198,50 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 ---
 
-## Sprint W-3 — Customer Web Frontend (Week 4)
+## Sprint W-3 — Customer Web Frontend (Week 4) [✔]
 
-### W-3.1 Customer Auth + Onboarding Flow (Inertia + React)
+### W-3.1 Customer Auth + Onboarding Flow (Inertia + React) [✔ MVP]
 
-**Canonical flow:** Splash → Session Check → (Auth if needed) → Branch Select → Storefront
+**Canonical flow:** Splash → Session Check → Branch Select → Storefront
 
-- [ ] **W-3.1.1** Splash screen (1-2s brand animation, lazy-load app shell behind)
-- [ ] **W-3.1.2** Session/cache detection middleware — auto-route logged-in users
-- [ ] **W-3.1.3** Login page (email/phone tabs)
-- [ ] **W-3.1.4** Register page with referral code field
-- [ ] **W-3.1.5** "Already have an account? Login" link on register screen
-- [ ] **W-3.1.6** "New here? Register" link on login screen
-- [ ] **W-3.1.7** OTP verification page (email + phone)
-- [ ] **W-3.1.8** Forgot password flow
-- [ ] **W-3.1.9** Profile setup page (DOB, photo, preferred branch) — required before first order
-- [ ] **W-3.1.10** Auto-redirect after auth: → Branch Selection (if no preferred branch) → Storefront
-- [ ] **W-3.1.11** Auto-redirect after splash: → Storefront if session valid + branch selected
-- [ ] **W-3.1.12** Guest browse mode — allow menu view without login (login required at checkout)
-- [ ] **W-3.1.13** App layout with header (logo, points, cart badge, branch name)
-- [ ] **W-3.1.14** Mobile responsive bottom nav (Home, Order, Loyalty, Profile)
+- [✔] **W-3.1.1** Splash page (`storefront/splash.tsx`) with brand animation + 1.2s auto-redirect
+- [✔] **W-3.1.2** Splash uses Inertia shared `auth` + persisted Zustand `branchStore` to decide next route
+- [✔] **W-3.1.3** Login page (email/phone tabs) — exists from W-0.6
+- [✔] **W-3.1.4** Register page with referral code field — exists from W-0.6
+- [✔] **W-3.1.5/6** Cross-links between login/register — exists from W-0.6
+- [ ] **W-3.1.7** OTP verification — deferred to W-3.x patch (needs SMS provider)
+- [ ] **W-3.1.8** Forgot password — deferred (needs email provider W-DEC-6)
+- [ ] **W-3.1.9** Profile setup page — deferred to W-6 (loyalty/profile sprint)
+- [✔] **W-3.1.10/11** Auto-redirect logic: splash → branches if no branch selected → storefront once selected
+- [✔] **W-3.1.12** Guest browse mode — storefront/menu routes are public
+- [✔] **W-3.1.13** App layout (`storefront-layout.tsx`) — header w/ logo, branch picker, cart badge, login link
+- [✔] **W-3.1.14** Mobile bottom nav — Home, Order, Loyalty, Profile (active state by URL)
 
-### W-3.2 Home Page
-- [ ] **W-3.2.1** Banner carousel (swiper)
-- [ ] **W-3.2.2** Featured products grid
-- [ ] **W-3.2.3** Category quick access tiles
-- [ ] **W-3.2.4** Order Again section (last 5 orders)
-- [ ] **W-3.2.5** Loyalty preview card (points + tier)
-- [ ] **W-3.2.6** Active vouchers shortcut
+### W-3.2 Home Page [deferred to W-6/W-7]
+- [ ] **W-3.2.1-6** Banner carousel, featured grid, order-again, loyalty preview, vouchers shortcut — deferred. Splash currently routes straight to storefront.
 
-### W-3.3 Menu Browse (Branch-Filtered)
-- [ ] **W-3.3.1** Category page with product grid — **filtered by selected branch only**
-- [ ] **W-3.3.2** Product detail page with image gallery
-- [ ] **W-3.3.3** Modifier selection UI (radio + checkbox + counter)
-- [ ] **W-3.3.4** Add to cart with toast feedback
-- [ ] **W-3.3.5** Search with filters — **scoped to selected branch's available items**
-- [ ] **W-3.3.6** Out-of-stock indicator (per branch, real-time updates via Reverb)
-- [ ] **W-3.3.7** Favorites (heart icon)
-- [ ] **W-3.3.8** Branch-specific pricing display (uses `branch_product.price_override` if set, else base price)
-- [ ] **W-3.3.9** Empty state when branch has no items (e.g., "Branch closed" or "Menu loading")
-- [ ] **W-3.3.10** Branch switcher clears cart with confirmation modal (cart is branch-bound)
+### W-3.3 Menu Browse (Branch-Filtered) [✔]
+- [✔] **W-3.3.1** Storefront menu page (`storefront/menu.tsx`) — category pills + product list, branch-scoped
+- [✔] **W-3.3.2** Product detail surfaced via bottom-sheet (no separate page; modifier sheet shows all info)
+- [✔] **W-3.3.3** ModifierSheet component — single (pick one) + multiple (min/max) with default selection + price preview
+- [✔] **W-3.3.4** Add-to-cart writes to Zustand `cartStore` (persisted, branch-bound)
+- [ ] **W-3.3.5** Search with filters — deferred (small menu fits in scroll for MVP)
+- [✔] **W-3.3.6** Out-of-stock indicator — `useStockSubscription` hook listens to Reverb `branch.{id}.stock` channel for `stock.changed`
+- [ ] **W-3.3.7** Favorites — deferred to W-6
+- [✔] **W-3.3.8** Branch-specific pricing — `MenuPayload.products[].price` already comes from `priceForBranch()`
+- [✔] **W-3.3.9** Empty states — closed branch, loading skeleton, error state
+- [✔] **W-3.3.10** Branch switcher clears cart — `cartStore.rebindBranch()` returns true if cart was wiped, UI alerts user
 
-### W-3.4 Branch Selection
-- [ ] **W-3.4.1** Branch list with map view
-- [ ] **W-3.4.2** Geolocation auto-detect (browser API)
-- [ ] **W-3.4.3** Distance + ETA display
-- [ ] **W-3.4.4** Operating hours validation (block if closed)
-- [ ] **W-3.4.5** Branch switcher in header
+### W-3.4 Branch Selection [✔ MVP]
+- [✔] **W-3.4.1** Branch list page (`storefront/branch-select.tsx`) — list-only (map deferred, needs Google Maps API key — W-DEC pending)
+- [ ] **W-3.4.2** Geolocation auto-detect — deferred
+- [ ] **W-3.4.3** Distance + ETA — deferred (needs map API)
+- [✔] **W-3.4.4** Operating hours validation — `is_open_now` computed from `Branch::isOpenNow()`, badge in UI
+- [✔] **W-3.4.5** Branch switcher in storefront header — active branch chip linking back to selection
+
+**Sprint W-3 Verified:** 44 tests passing (4 new StorefrontTest), TypeScript strict clean, ESLint clean, Prettier clean, Vite build OK, PHPStan level 5 clean.
+
+**Frontend infra delivered:** Echo + Pusher (Reverb), TanStack Query provider, Zustand `branchStore` + `cartStore` (persisted), shadcn `Sheet` + `Badge` primitives, `StorefrontLayout` (sticky header + bottom nav + cart badge), `ProductCard`, `ModifierSheet`, `useBranchMenu` + `useStockSubscription` hooks.
 
 ---
 

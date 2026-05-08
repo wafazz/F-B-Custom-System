@@ -2,7 +2,9 @@ import './bootstrap';
 import '../css/app.css';
 
 import { createInertiaApp, type ResolvedComponent } from '@inertiajs/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { createRoot } from 'react-dom/client';
+import { queryClient } from '@/lib/query-client';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Star Coffee';
 
@@ -16,7 +18,11 @@ createInertiaApp({
         return await importer();
     },
     setup({ el, App, props }) {
-        createRoot(el).render(<App {...props} />);
+        createRoot(el).render(
+            <QueryClientProvider client={queryClient}>
+                <App {...props} />
+            </QueryClientProvider>,
+        );
     },
     progress: {
         color: '#7c4a1e',

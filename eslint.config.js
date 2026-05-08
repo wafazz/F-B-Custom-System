@@ -23,7 +23,13 @@ export default tseslint.config(
         settings: { react: { version: 'detect' } },
         rules: {
             ...reactHooks.configs.recommended.rules,
-            'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+            'react-refresh/only-export-components': [
+                'warn',
+                {
+                    allowConstantExport: true,
+                    allowExportNames: ['buttonVariants', 'badgeVariants'],
+                },
+            ],
             'react/react-in-jsx-scope': 'off',
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
         },

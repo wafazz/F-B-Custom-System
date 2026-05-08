@@ -9,7 +9,7 @@ declare global {
 }
 
 declare module '@inertiajs/core' {
-    interface PageProps extends AppPageProps {}
+    type PageProps = AppPageProps;
 }
 
 declare module '@inertiajs/react' {

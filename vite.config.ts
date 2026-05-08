@@ -16,6 +16,10 @@ export default defineConfig({
         tailwindcss(),
         VitePWA({
             registerType: 'autoUpdate',
+            strategies: 'injectManifest',
+            srcDir: 'resources/js',
+            filename: 'sw.ts',
+            injectRegister: 'auto',
             devOptions: { enabled: true, type: 'module' },
             includeAssets: ['favicon.png', 'apple-touch-icon.png'],
             manifest: {
@@ -42,7 +46,7 @@ export default defineConfig({
                     },
                 ],
             },
-            workbox: {
+            injectManifest: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
             },
         }),

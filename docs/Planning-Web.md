@@ -31,7 +31,7 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 | Cart, Checkout, Orders | W-4 | 5 | Cart, Billplz, order tracking | [✔] |
 | Branch POS + TV Display | W-5 | 6 | POS, order queue, walk-in, TV dine-in display | [✔] |
 | Loyalty/Voucher/Dashboard | W-6 | 7 | Loyalty, vouchers, tiers, analytics | [✔] |
-| PWA & Polish | W-7 | 8 | PWA, web push, referral | [ ] |
+| PWA & Polish | W-7 | 8 | PWA, web push, referral | [✔] |
 | Pilot & Launch | W-8 | 9-10 | QA, pilot branch, production launch | [ ] |
 
 ---
@@ -461,29 +461,32 @@ Example commit: `feat(W-1.1.3): add branch operating hours JSON column`
 
 ---
 
-## Sprint W-7 — PWA, Notifications, Referral, Polish (Week 8)
+## Sprint W-7 — PWA, Notifications, Referral, Polish (Week 8) [✔]
 
-### W-7.1 PWA Configuration
-- [ ] **W-7.1.1** Manifest.json (icons all sizes, splash, theme color, name)
-- [ ] **W-7.1.2** Service worker (Workbox runtime caching)
-- [ ] **W-7.1.3** Offline menu cache (IndexedDB)
-- [ ] **W-7.1.4** Install prompt UI (custom)
-- [ ] **W-7.1.5** Add to Home Screen flow (iOS Safari + Android Chrome)
-- [ ] **W-7.1.6** Update notification (new version available)
-- [ ] **W-7.1.7** Splash screens for iOS
+### W-7.1 PWA Configuration [✔]
+- [✔] **W-7.1.1** Manifest with maskable icons (192/512), apple-touch-icon, favicon, theme/background `#000000` to match logo
+- [✔] **W-7.1.2** Custom service worker via `vite-plugin-pwa` injectManifest strategy at `resources/js/sw.ts`; precaching + push event + notification click → focus or open-window
+- [ ] **W-7.1.3** Offline menu cache (IndexedDB) — deferred (basic precaching covers app shell; menu offline is W-8 polish)
+- [✔] **W-7.1.4** `InstallPrompt` component — captures `beforeinstallprompt`, dismissable with localStorage memory
+- [✔] **W-7.1.5** A2HS supported via standard manifest + install prompt
+- [ ] **W-7.1.6** "New version available" toast — vite-plugin-pwa handles auto-update on revisit (visible toast deferred)
+- [ ] **W-7.1.7** iOS-specific splash screens — deferred (post-pilot polish)
 
-### W-7.2 Web Push Notifications
-- [ ] **W-7.2.1** VAPID keys generation
-- [ ] **W-7.2.2** Subscription endpoint (store push subscriptions per device)
-- [ ] **W-7.2.3** Push send service (Laravel WebPush package: `minishlink/web-push`)
-- [ ] **W-7.2.4** Order status push automation (received → accepted → preparing → ready → completed)
-- [ ] **W-7.2.5** Promo broadcast composer (Filament)
-- [ ] **W-7.2.6** Voucher expiry reminder push
-- [ ] **W-7.2.7** Birthday greeting push
-- [ ] **W-7.2.8** Notification permission UX — request after 1st order (not on first visit)
-- [ ] **W-7.2.9** Tap-to-open deep link (notification opens order detail page)
-- [ ] **W-7.2.10** Notification action buttons (e.g., "View Order", "Rate")
-- [ ] **W-7.2.11** Subscription cleanup (remove dead subscriptions on 410 Gone response)
+### W-7.2 Web Push Notifications [✔]
+- [✔] **W-7.2.1** VAPID keypair generated; stored in `.env` (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`); public key exposed via `GET /api/push/vapid-key`
+- [✔] **W-7.2.2** `push_subscriptions` table (user_id, endpoint unique, public_key, auth_token, content_encoding, last_used_at); `POST/DELETE /api/push/subscribe` (auth required, idempotent updateOrCreate)
+- [✔] **W-7.2.3** `PushService` using `minishlink/web-push` v10 — `sendToUser(userId, payload)` queues + flushes; subscriptions returning 410/404 are auto-pruned
+- [✔] **W-7.2.4** Order status push wired in `OrderService::transition` — pickup-Ready and any Cancelled fire push
+- [ ] **W-7.2.5** Promo broadcast composer (Filament) — deferred
+- [ ] **W-7.2.6** Voucher expiry reminder push — deferred (cron + scheduling)
+- [ ] **W-7.2.7** Birthday greeting push — deferred
+- [✔] **W-7.2.8** Permission UX — `PushToggle` button on `/loyalty` page (user opts in after they've made an account, not on first visit)
+- [✔] **W-7.2.9** Tap-to-open deep link — SW `notificationclick` opens `payload.url`, focuses existing tab if URL matches
+- [ ] **W-7.2.10** Action buttons — deferred
+- [✔] **W-7.2.11** Dead-subscription cleanup — `PushService` checks `isSubscriptionExpired()` and deletes the row
+
+### W-7.3 OnSend WhatsApp Multi-Channel Fallback [deferred]
+- [ ] **W-7.3.1-43** Entire OnSend integration deferred until W-DEC-9 (numbers ready), W-DEC-10 (subscription tier), W-DEC-11 (warmup window) are decided. Architecture documented; Web Push (Layer 1) is functional standalone.
 
 ### W-7.3 Multi-Channel Fallback (Web Push + OnSend WhatsApp)
 
@@ -622,30 +625,27 @@ OnSend uses free-form text (no Meta template approval needed). Templates stored 
 - [ ] **W-7.3.42** Email fallback chain — if WhatsApp disabled/banned, critical events route to email
 - [ ] **W-7.3.43** Documented SOP: "What to do if WhatsApp number gets banned"
 
-### W-7.4 Referral Program
-- [ ] **W-7.4.1** Unique code per user (auto on signup)
-- [ ] **W-7.4.2** Share intents (WhatsApp, copy link, social)
-- [ ] **W-7.4.3** Referrer reward on referee's first purchase
-- [ ] **W-7.4.4** Referee welcome bonus (voucher)
-- [ ] **W-7.4.5** Referral history & earnings page
-- [ ] **W-7.4.6** Anti-abuse (device fingerprint, IP check, single-use)
+### W-7.4 Referral Program [✔]
+- [✔] **W-7.4.1** Unique code per user — `User::referral_code` auto-generated on creation (8-char alphanumeric); duplicate-check loop guarantees uniqueness (W-0.6)
+- [✔] **W-7.4.2** Share intents — `/referral` page has copy-link + Web Share API (falls back to `wa.me/?text=…`)
+- [✔] **W-7.4.3** Referrer + referee bonus on first completed order — `ReferralService::maybeAwardForCompletedOrder` runs in the Completed transition; `referral_rewards` table has `unique(referee_user_id)` for idempotency
+- [✔] **W-7.4.4** Referee welcome bonus — credits both users with configurable point amounts via `services.referral.referrer_bonus_points` + `referee_bonus_points` (default 100/100)
+- [✔] **W-7.4.5** Referral history page — `/referral` shows code, share URL, total earned, list of friends who joined
+- [ ] **W-7.4.6** Device fingerprint / IP anti-abuse — deferred (basic single-reward-per-referee guard via DB unique works for MVP)
 
-### W-7.5 Performance Polish
-- [ ] **W-7.5.1** Image CDN + auto-optimize (Cloudflare Images)
-- [ ] **W-7.5.2** Lazy load components (React.lazy)
-- [ ] **W-7.5.3** Lighthouse audit (target > 90 on Mobile)
-- [ ] **W-7.5.4** Database query optimization (eager loading)
-- [ ] **W-7.5.5** Redis cache for hot data (menu, branches)
-- [ ] **W-7.5.6** Bundle analysis + code splitting
-- [ ] **W-7.5.7** Compress responses (gzip/brotli)
+### W-7.5 Performance Polish [deferred to W-8]
+- [ ] **W-7.5.1-7** CDN, lazy load, Lighthouse audit, query optimization, Redis cache, bundle analysis, compression — bundle into the W-8 pilot QA pass.
 
-### W-7.6 Content & Settings
-- [ ] **W-7.6.1** Banner CMS (Filament)
-- [ ] **W-7.6.2** FAQ CMS
-- [ ] **W-7.6.3** Terms & Conditions page
-- [ ] **W-7.6.4** Privacy Policy page (PDPA compliant)
-- [ ] **W-7.6.5** Cookie consent banner
-- [ ] **W-7.6.6** Maintenance mode toggle (Filament)
+### W-7.6 Content & Settings [✔ MVP]
+- [ ] **W-7.6.1** Banner CMS — deferred to W-8
+- [ ] **W-7.6.2** FAQ CMS — for now, FAQ is a static React page with hardcoded Q&A (easy to edit in code)
+- [✔] **W-7.6.3** Terms & Conditions page at `/terms`
+- [✔] **W-7.6.4** Privacy Policy page at `/privacy` (PDPA-compliant disclosures)
+- [ ] **W-7.6.5** Cookie consent banner — deferred (we only use essential session/CSRF cookies; explicit consent not legally required under PDPA for those)
+- [ ] **W-7.6.6** Maintenance mode toggle — Laravel's `php artisan down` handles this; Filament toggle deferred
+- [✔] **W-7.6.7** FAQ page at `/faq` (static, 6 entries)
+
+**Sprint W-7 Verified:** 97 tests passing (9 new PushReferralTest), PHPStan level 5 clean, ESLint+TypeScript+Prettier+Vite build clean.
 
 ---
 

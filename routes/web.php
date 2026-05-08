@@ -8,8 +8,10 @@ use App\Http\Controllers\Pos\QueueController as PosQueueController;
 use App\Http\Controllers\Pos\StockController as PosStockController;
 use App\Http\Controllers\Pos\WalkInController;
 use App\Http\Controllers\Web\DisplayController;
+use App\Http\Controllers\Web\InfoPagesController;
 use App\Http\Controllers\Web\LoyaltyController;
 use App\Http\Controllers\Web\OrderPagesController;
+use App\Http\Controllers\Web\ReferralController;
 use App\Http\Controllers\Web\StorefrontController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +26,11 @@ Route::get('/orders/{order}', [OrderPagesController::class, 'show'])->name('orde
 Route::get('/orders/{order}/simulate-paid', [OrderPagesController::class, 'simulatePaid'])->name('orders.simulate-paid');
 
 Route::get('/loyalty', [LoyaltyController::class, 'show'])->middleware('auth')->name('loyalty');
+Route::get('/referral', [ReferralController::class, 'show'])->middleware('auth')->name('referral');
+
+Route::get('/terms', [InfoPagesController::class, 'terms'])->name('info.terms');
+Route::get('/privacy', [InfoPagesController::class, 'privacy'])->name('info.privacy');
+Route::get('/faq', [InfoPagesController::class, 'faq'])->name('info.faq');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'create'])->name('login');

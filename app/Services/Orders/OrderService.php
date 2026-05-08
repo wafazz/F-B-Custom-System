@@ -15,6 +15,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\Loyalty\LoyaltyService;
+use App\Services\Push\PushService;
+use App\Services\Referrals\ReferralService;
 use App\Services\Vouchers\VoucherService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -24,6 +26,8 @@ class OrderService
     public function __construct(
         protected VoucherService $vouchers,
         protected LoyaltyService $loyalty,
+        protected PushService $push,
+        protected ReferralService $referrals,
     ) {}
 
     public function place(OrderPayload $payload): Order
@@ -240,9 +244,30 @@ class OrderService
         if ($next === OrderStatus::Completed && $fresh->user_id !== null) {
             $this->loyalty->earnFromOrder($fresh);
             $this->loyalty->applyTierUpgrade($fresh->user_id, (float) $fresh->subtotal);
+            $this->referrals->maybeAwardForCompletedOrder($fresh);
         }
         if ($next === OrderStatus::Refunded && $fresh->user_id !== null) {
             $this->loyalty->refundFromOrder($fresh);
+        }
+
+        // Customer push: pickup-path order ready, or any cancellation.
+        if ($fresh->user_id !== null) {
+            if ($next === OrderStatus::Ready && $order->order_type === OrderType::Pickup) {
+                $this->push->sendToUser($fresh->user_id, [
+                    'title' => 'Your order is ready!',
+                    'body' => "Order {$fresh->number} is ready for pickup.",
+                    'url' => route('orders.show', ['order' => $fresh->id]),
+                    'tag' => "order-{$fresh->id}",
+                ]);
+            }
+            if ($next === OrderStatus::Cancelled) {
+                $this->push->sendToUser($fresh->user_id, [
+                    'title' => 'Order cancelled',
+                    'body' => "Order {$fresh->number} was cancelled.".($fresh->cancellation_reason ? " {$fresh->cancellation_reason}" : ''),
+                    'url' => route('orders.show', ['order' => $fresh->id]),
+                    'tag' => "order-{$fresh->id}",
+                ]);
+            }
         }
 
         return $order;

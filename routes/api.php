@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\BranchMenuController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PushSubscriptionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -14,3 +15,11 @@ Route::get('/branches/{branch}/menu', BranchMenuController::class)
 
 Route::post('/orders', [OrderController::class, 'store'])->name('api.orders.store');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('api.orders.show');
+
+Route::get('/push/vapid-key', [PushSubscriptionController::class, 'vapidKey'])->name('api.push.vapid');
+Route::post('/push/subscribe', [PushSubscriptionController::class, 'subscribe'])
+    ->middleware('web')
+    ->name('api.push.subscribe');
+Route::delete('/push/subscribe', [PushSubscriptionController::class, 'unsubscribe'])
+    ->middleware('web')
+    ->name('api.push.unsubscribe');

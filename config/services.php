@@ -46,4 +46,15 @@ return [
         'sandbox' => env('BILLPLZ_SANDBOX', true),
     ],
 
+    'webpush' => [
+        'subject' => env('VAPID_SUBJECT', 'mailto:admin@example.com'),
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+    ],
+
+    'referral' => [
+        'referrer_bonus_points' => (int) env('REFERRAL_REFERRER_BONUS', 100),
+        'referee_bonus_points' => (int) env('REFERRAL_REFEREE_BONUS', 100),
+    ],
+
 ];

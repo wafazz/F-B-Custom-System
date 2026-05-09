@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-09 (W-8 closed — Phase 1 code-complete)
+**Last Updated:** 2026-05-09 (Customer Wallet feature shipped)
 
 ---
 
@@ -53,6 +53,7 @@
 - [✔] **W-6** Loyalty + Vouchers + Tiers + Admin dashboard. `point_transactions` table is the single source of truth (each row stores `balance_after` so balance = latest row). `LoyaltyService::earnFromOrder` runs on Order→Completed (1pt per RM × tier multiplier); `redeem` consumes points at checkout; `refundFromOrder` reverses on Refunded transition; `applyTierUpgrade` bumps customer_tier on lifetime spend crossings. Tiers seeded: Bronze 0 / Silver 200 (1.25×) / Gold 500 (1.5×) / Platinum 1500 (2×). Vouchers: percentage or fixed, min subtotal, max discount cap, branch scope JSON, per-user + global use caps. `OrderService::place` accepts `voucherCode` + `loyaltyRedeemPoints` and recomputes SST proportionally on the discounted subtotal. Filament: `VoucherResource` + `MembershipTierResource` + `SalesOverviewWidget` (today/week/month) + `TopProductsWidget` (last 30d top 10). Customer `/loyalty` page shows balance + tier + progress + history.
 - [✔] **W-7** PWA + Web Push + Referral + Legal pages. PWA: switched vite-plugin-pwa to `injectManifest` strategy with custom `resources/js/sw.ts` (precache + push handler + notificationclick deep link); icons + apple-touch-icon + favicon generated from logo via `sips`; `InstallPrompt` component captures `beforeinstallprompt`. Web Push: `minishlink/web-push` v10, `push_subscriptions` table, `PushService::sendToUser` (queue+flush, prunes 410 endpoints), wired into `OrderService::transition` for pickup-Ready and Cancelled events. `PushToggle` button on `/loyalty` for permission opt-in. Referral: `referral_rewards` table with `unique(referee_user_id)` for idempotency, `ReferralService::maybeAwardForCompletedOrder` runs on Completed transition crediting referrer + referee bonus points (default 100/100, configurable). `/referral` page with copy + Web Share API (wa.me fallback). Legal: static `/terms`, `/privacy` (PDPA), `/faq` Inertia pages. Note: `User::referred_by` is a foreign user ID not a code (caught during integration). OnSend WhatsApp deferred entirely until W-DEC-9/10/11.
 - [✔] **W-8** Pilot prep code-side. Security: `SecurityHeaders` middleware (X-Frame, X-Content-Type, Referrer-Policy, Permissions-Policy, HSTS); rate limits on login (6/min), register (6/min), POS PIN (5/min), order create (30/min), account delete (3/hour); IDOR guard via `OrderPolicy::view` allowing owner OR `view_order` permission, enforced via `can:view,order` middleware on web + api routes. PDPA: `GET /account/data-export` (JSON dump), `DELETE /account` (anonymise + soft delete user + drop push subscriptions + scrub `customer_snapshot` on past orders, transaction-wrapped). API docs: Knuckles/Scribe v5.9 generated and served at `/docs` with Postman + OpenAPI collections. Internal runbook at `docs/Runbook.md` covering deploy, rollback, hotfix, monitoring, on-call playbook.
+- [✔] **Wallet** Customer wallet with Billplz top-up + checkout payment selector. Schema: `wallets` (PK user_id, balance, lifetime_topup, lifetime_spent), `wallet_transactions` (signed amount + balance_after + morph reference), `wallet_topups` (pending/paid/failed + billplz_reference). `WalletService` does all mutations under `lockForUpdate()` inside `DB::transaction`; `applyTopupPaid` is idempotent. `BillplzGateway::createTopupBill` reuses the same Billplz API and the existing webhook controller now dispatches by `billplz_reference` lookup → either WalletTopup (credit + mark paid) or Order (existing flow). `OrderPayload->paymentMethod` is `'gateway'` or `'wallet'`. Wallet-paid orders skip the gateway entirely, atomically debit + mark paid in `OrderService::place`; cancellation refunds back to wallet via `transition()`. Routes: `GET /wallet`, `POST /wallet/topup` (throttle 10/min). Storefront layout grew a Wallet tab (now 5 cols). Checkout shows Wallet (with balance hint, disabled when insufficient or not authenticated) vs Billplz. 11 Pest tests, all green; 130 total passing; PHPStan level 5 clean.
 
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
@@ -63,7 +64,7 @@
 - **W-2.3.4** Low stock notifications — needs email provider (W-DEC-6)
 - **W-2.3.8/9** Stock decrement on order events — deferred to W-4 (orders sprint)
 
-## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] · W-5 [✔] · W-6 [✔] · W-7 [✔] · W-8 [✔ code] — 105 tests passing, PHPStan level 5 clean.
+## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] · W-5 [✔] · W-6 [✔] · W-7 [✔] · W-8 [✔ code] · Wallet [✔] — 130 tests passing, PHPStan level 5 clean.
 
 **Phase 1 Web App is code-complete.** Remaining unchecked items are operational and unblock when W-DEC decisions land:
 - W-DEC-1 hosting + W-DEC-2 domain → unblocks W-0.8 deploy + W-8.2 pilot deployment

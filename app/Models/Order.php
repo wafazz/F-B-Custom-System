@@ -12,8 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
-use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * @property int $id
@@ -43,7 +41,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
-    use HasFactory, LogsActivity;
+    use HasFactory;
 
     protected $fillable = [
         'number',
@@ -88,14 +86,6 @@ class Order extends Model
             'cancelled_at' => 'datetime',
             'customer_snapshot' => 'array',
         ];
-    }
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['status', 'payment_status', 'total', 'cancellation_reason'])
-            ->logOnlyDirty()
-            ->dontLogIfAttributesChangedOnly(['updated_at']);
     }
 
     /** @return BelongsTo<Branch, $this> */

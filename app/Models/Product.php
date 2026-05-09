@@ -11,21 +11,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
-use Spatie\Activitylog\Support\LogOptions;
 
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
-    use HasFactory, LogsActivity, SoftDeletes;
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['name', 'sku', 'base_price', 'status', 'is_featured', 'category_id'])
-            ->logOnlyDirty()
-            ->dontLogIfAttributesChangedOnly(['updated_at']);
-    }
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'category_id',

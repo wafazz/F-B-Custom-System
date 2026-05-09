@@ -10,21 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
-use Spatie\Activitylog\Support\LogOptions;
 
 class BranchStock extends Model
 {
     /** @use HasFactory<BranchStockFactory> */
-    use HasFactory, LogsActivity;
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['quantity', 'is_available', 'track_quantity', 'low_threshold'])
-            ->logOnlyDirty()
-            ->dontLogIfAttributesChangedOnly(['updated_at']);
-    }
+    use HasFactory;
 
     protected $table = 'branch_stock';
 

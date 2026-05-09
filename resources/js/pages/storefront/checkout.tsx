@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Hash, ShoppingBag, Store } from 'lucide-react';
+import { CreditCard, Hash, ShoppingBag, Store, Wallet as WalletIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -9,11 +9,14 @@ import { cn } from '@/lib/utils';
 
 interface Props {
     branch: BranchContext;
+    wallet_balance: number;
+    is_authenticated: boolean;
 }
 
 type OrderType = 'pickup' | 'dine_in';
+type PaymentMethod = 'gateway' | 'wallet';
 
-export default function Checkout({ branch }: Props) {
+export default function Checkout({ branch, wallet_balance, is_authenticated }: Props) {
     const lines = useCartStore((s) => s.lines);
     const notes = useCartStore((s) => s.notes);
     const clear = useCartStore((s) => s.clear);
@@ -21,6 +24,7 @@ export default function Checkout({ branch }: Props) {
 
     const [orderType, setOrderType] = useState<OrderType>('pickup');
     const [tableNumber, setTableNumber] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gateway');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -28,11 +32,14 @@ export default function Checkout({ branch }: Props) {
     const sst = branch.sst_enabled ? subtotal * (branch.sst_rate / 100) : 0;
     const total = subtotal + sst;
 
+    const walletAffordable = is_authenticated && wallet_balance >= total;
+
     const canSubmit =
         lines.length > 0 &&
         (cartBranchId === null || cartBranchId === branch.id) &&
         branch.accepts_orders &&
-        (orderType === 'pickup' || tableNumber.trim().length > 0);
+        (orderType === 'pickup' || tableNumber.trim().length > 0) &&
+        (paymentMethod !== 'wallet' || walletAffordable);
 
     async function handlePlace() {
         if (!canSubmit) return;
@@ -55,6 +62,7 @@ export default function Checkout({ branch }: Props) {
                     order_type: orderType,
                     dine_in_table: orderType === 'dine_in' ? tableNumber : null,
                     notes,
+                    payment_method: paymentMethod,
                     lines: lines.map((line) => ({
                         product_id: line.product_id,
                         quantity: line.quantity,
@@ -142,6 +150,53 @@ export default function Checkout({ branch }: Props) {
                         </li>
                     ))}
                 </ul>
+            </section>
+
+            <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
+                <h2 className="text-sm font-semibold">Payment</h2>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                        type="button"
+                        onClick={() => walletAffordable && setPaymentMethod('wallet')}
+                        disabled={!walletAffordable}
+                        className={cn(
+                            'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
+                            paymentMethod === 'wallet' && walletAffordable
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-border hover:bg-secondary/50',
+                            !walletAffordable && 'cursor-not-allowed opacity-50',
+                        )}
+                    >
+                        <div className="flex items-center gap-2">
+                            <WalletIcon className="size-4" />
+                            <span className="text-sm font-medium">Wallet</span>
+                        </div>
+                        <span className="text-muted-foreground text-[10px]">
+                            {is_authenticated
+                                ? `Balance RM${wallet_balance.toFixed(2)}`
+                                : 'Login required'}
+                        </span>
+                        {is_authenticated && !walletAffordable && (
+                            <span className="text-[10px] text-red-500">Insufficient</span>
+                        )}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setPaymentMethod('gateway')}
+                        className={cn(
+                            'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
+                            paymentMethod === 'gateway'
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-border hover:bg-secondary/50',
+                        )}
+                    >
+                        <div className="flex items-center gap-2">
+                            <CreditCard className="size-4" />
+                            <span className="text-sm font-medium">Billplz</span>
+                        </div>
+                        <span className="text-muted-foreground text-[10px]">FPX / e-wallet</span>
+                    </button>
+                </div>
             </section>
 
             <section className="border-border bg-card mb-4 space-y-2 rounded-xl border p-4 text-sm shadow-sm">

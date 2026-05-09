@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Services\Orders\OrderService;
+use App\Services\Wallet\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,10 +23,14 @@ class OrderPagesController extends Controller
         ]);
     }
 
-    public function checkout(Branch $branch): Response
+    public function checkout(Branch $branch, Request $request, WalletService $wallet): Response
     {
+        $userId = $request->user()?->getKey();
+
         return Inertia::render('storefront/checkout', [
             'branch' => $this->branchSummary($branch),
+            'wallet_balance' => $userId !== null ? $wallet->balance($userId) : 0,
+            'is_authenticated' => $userId !== null,
         ]);
     }
 

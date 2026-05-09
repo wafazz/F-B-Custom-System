@@ -4,6 +4,8 @@ namespace App\Services\Payments;
 
 use App\Enums\PaymentStatus;
 use App\Models\Order;
+use App\Models\User;
+use App\Models\WalletTopup;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -60,6 +62,54 @@ class BillplzGateway implements PaymentGateway
                 'order_id' => $order->id,
             ]);
             throw new RuntimeException('Billplz refused the bill creation.');
+        }
+
+        $body = $response->json();
+        if (! is_array($body) || empty($body['id']) || empty($body['url'])) {
+            throw new RuntimeException('Billplz returned an unexpected response.');
+        }
+
+        return new PaymentBill(
+            reference: (string) $body['id'],
+            url: (string) $body['url'],
+            method: 'billplz',
+        );
+    }
+
+    /** Create a Billplz bill for a wallet top-up (different redirect target). */
+    public function createTopupBill(WalletTopup $topup, User $user): PaymentBill
+    {
+        if (! $this->apiKey || ! $this->collectionId) {
+            throw new RuntimeException('Billplz is not configured: missing API key or collection ID.');
+        }
+        if (! $user->email && ! $user->phone) {
+            throw new RuntimeException('Billplz requires either an email or a mobile number.');
+        }
+
+        $response = Http::withBasicAuth($this->apiKey, '')
+            ->asForm()
+            ->acceptJson()
+            ->timeout(20)
+            ->post($this->baseUrl().'/bills', array_filter([
+                'collection_id' => $this->collectionId,
+                'email' => $user->email ?: null,
+                'mobile' => $user->email ? null : $user->phone,
+                'name' => $user->name ?: 'Star Coffee Customer',
+                'amount' => (int) round((float) $topup->amount * 100),
+                'description' => "Star Coffee wallet top-up #{$topup->id}",
+                'callback_url' => route('billplz.webhook'),
+                'redirect_url' => route('wallet'),
+                'reference_1_label' => 'Topup',
+                'reference_1' => 'WT-'.$topup->id,
+            ], fn ($v) => $v !== null && $v !== ''));
+
+        if (! $response->successful()) {
+            Log::warning('Billplz createTopupBill failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'topup_id' => $topup->id,
+            ]);
+            throw new RuntimeException('Billplz refused the top-up bill creation.');
         }
 
         $body = $response->json();

@@ -14,10 +14,12 @@ use App\Models\ModifierOption;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Enums\PaymentStatus;
 use App\Services\Loyalty\LoyaltyService;
 use App\Services\Push\PushService;
 use App\Services\Referrals\ReferralService;
 use App\Services\Vouchers\VoucherService;
+use App\Services\Wallet\WalletService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -28,6 +30,7 @@ class OrderService
         protected LoyaltyService $loyalty,
         protected PushService $push,
         protected ReferralService $referrals,
+        protected WalletService $wallet,
     ) {}
 
     public function place(OrderPayload $payload): Order
@@ -150,6 +153,19 @@ class OrderService
             }
             $total = round(($subtotal - $discountTotal) + $sstAmount, 2);
 
+            // Wallet payment validates upfront so we don't create a half-paid order.
+            if ($payload->paymentMethod === 'wallet') {
+                if ($payload->userId === null) {
+                    throw new RuntimeException('Wallet payment requires an authenticated user.');
+                }
+                if ($this->wallet->balance($payload->userId) < $total) {
+                    throw new RuntimeException(sprintf(
+                        'Wallet balance is insufficient — RM%.2f required.',
+                        $total,
+                    ));
+                }
+            }
+
             $order = Order::create([
                 'number' => Order::generateNumber($branch->code),
                 'branch_id' => $branch->id,
@@ -164,6 +180,7 @@ class OrderService
                 'total' => $total,
                 'notes' => $payload->notes,
                 'customer_snapshot' => $payload->customerSnapshot,
+                'payment_method' => $payload->paymentMethod === 'wallet' ? 'wallet' : null,
             ]);
 
             if ($voucher !== null) {
@@ -171,6 +188,20 @@ class OrderService
             }
             if ($loyaltyDiscount > 0 && $payload->userId !== null) {
                 $this->loyalty->redeem($payload->userId, $payload->loyaltyRedeemPoints, $order);
+            }
+
+            if ($payload->paymentMethod === 'wallet' && $payload->userId !== null && $total > 0) {
+                $this->wallet->debit(
+                    $payload->userId,
+                    (float) $total,
+                    type: 'spend',
+                    reference: $order,
+                    description: "Order {$order->number}",
+                );
+                $order->forceFill([
+                    'payment_status' => PaymentStatus::Paid,
+                    'paid_at' => now(),
+                ])->save();
             }
 
             foreach ($itemsToInsert as $row) {
@@ -228,6 +259,17 @@ class OrderService
 
         if ($next === OrderStatus::Cancelled) {
             $this->restoreStock($order);
+            // Wallet-paid orders get refunded to wallet on cancellation.
+            if ($order->payment_method === 'wallet' && $order->user_id !== null && (float) $order->total > 0) {
+                $this->wallet->credit(
+                    $order->user_id,
+                    (float) $order->total,
+                    type: 'refund',
+                    reference: $order,
+                    description: "Refund for cancelled {$order->number}",
+                );
+                $order->forceFill(['payment_status' => PaymentStatus::Refunded])->save();
+            }
         }
 
         $fresh = $order->fresh() ?? $order;

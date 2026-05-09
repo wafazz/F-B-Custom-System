@@ -21,5 +21,6 @@ class OrderPayload
         public ?array $customerSnapshot = null,
         public ?string $voucherCode = null,
         public int $loyaltyRedeemPoints = 0,
+        public string $paymentMethod = 'gateway', // 'gateway' (Billplz/Stub) or 'wallet'
     ) {}
 }

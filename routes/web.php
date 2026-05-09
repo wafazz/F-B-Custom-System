@@ -16,6 +16,7 @@ use App\Http\Controllers\Web\OrderPagesController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReferralController;
 use App\Http\Controllers\Web\StorefrontController;
+use App\Http\Controllers\Web\WalletController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'splash'])->name('home');
@@ -58,6 +59,11 @@ Route::middleware('auth')->group(function () {
         ->name('profile.password');
     Route::get('account/data-export', [AccountController::class, 'dataExport'])->name('account.data-export');
     Route::delete('account', [AccountController::class, 'destroy'])->middleware('throttle:3,60')->name('account.destroy');
+
+    Route::get('wallet', [WalletController::class, 'show'])->name('wallet');
+    Route::post('wallet/topup', [WalletController::class, 'topup'])
+        ->middleware('throttle:10,1')
+        ->name('wallet.topup');
 });
 
 // POS (Branch staff)

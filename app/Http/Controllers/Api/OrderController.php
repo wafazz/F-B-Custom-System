@@ -42,12 +42,24 @@ class OrderController extends Controller
             ] : null,
             voucherCode: $request->input('voucher_code'),
             loyaltyRedeemPoints: (int) $request->input('loyalty_redeem_points', 0),
+            paymentMethod: $request->input('payment_method') === 'wallet' ? 'wallet' : 'gateway',
         );
 
         try {
             $order = $this->orders->place($payload);
         } catch (Throwable $e) {
             return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        // Wallet-paid orders skip the gateway entirely — they're already paid.
+        if ($payload->paymentMethod === 'wallet') {
+            return response()->json([
+                'order' => $this->present($order->fresh(['items.modifiers'])),
+                'payment' => [
+                    'method' => 'wallet',
+                    'url' => route('orders.show', ['order' => $order]),
+                ],
+            ], 201);
         }
 
         $bill = $this->payments->createBill($order);

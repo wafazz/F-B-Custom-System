@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Heart, Home, ShoppingBag, User } from 'lucide-react';
+import { Heart, Home, ShoppingBag, User, Wallet } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useBranchStore } from '@/stores/branch-store';
@@ -82,7 +82,7 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
             <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4">{children}</main>
 
             <nav className="border-border bg-card fixed inset-x-0 bottom-0 z-30 border-t">
-                <div className="mx-auto grid max-w-3xl grid-cols-4 text-xs">
+                <div className="mx-auto grid max-w-3xl grid-cols-5 text-xs">
                     <NavItem
                         href="/"
                         icon={<Home className="size-5" />}
@@ -94,6 +94,12 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
                         icon={<ShoppingBag className="size-5" />}
                         label="Order"
                         active={path.startsWith('/branches/') && path.includes('/menu')}
+                    />
+                    <NavItem
+                        href={auth.user ? '/wallet' : '/login'}
+                        icon={<Wallet className="size-5" />}
+                        label="Wallet"
+                        active={path === '/wallet'}
                     />
                     <NavItem
                         href="/loyalty"

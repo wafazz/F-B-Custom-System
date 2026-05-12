@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { Check, Clock, Package, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { getEcho } from '@/lib/echo';
@@ -43,12 +43,18 @@ const STAGES: OrderProp['status'][] = ['pending', 'preparing', 'ready', 'complet
 export default function Order({ order, reverb }: Props) {
     const [status, setStatus] = useState<OrderProp['status']>(order.status);
     const [statusLabel, setStatusLabel] = useState(order.status_label);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         const echo = getEcho();
         const channel = echo.channel(reverb.channel);
         const handler = (event: { status: OrderProp['status'] }) => {
-            setStatus(event.status);
+            setStatus((prev) => {
+                if (event.status === 'ready' && prev !== 'ready') {
+                    audioRef.current?.play().catch(() => {});
+                }
+                return event.status;
+            });
             setStatusLabel(prettify(event.status));
         };
         channel.listen(`.${reverb.event}`, handler);
@@ -64,6 +70,7 @@ export default function Order({ order, reverb }: Props) {
     return (
         <StorefrontLayout>
             <Head title={`Order ${order.number}`} />
+            <audio ref={audioRef} preload="auto" src="/sounds/sc7.mp3" />
 
             <div className="mb-4">
                 <h1 className="text-2xl font-bold">{order.number}</h1>

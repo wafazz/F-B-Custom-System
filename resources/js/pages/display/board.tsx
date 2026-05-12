@@ -181,11 +181,7 @@ export default function DisplayBoard({
                     </section>
                 </main>
             </div>
-            <audio
-                ref={audioRef}
-                preload="auto"
-                src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
-            />
+            <audio ref={audioRef} preload="auto" src="/sounds/sc7.mp3" />
         </>
     );
 }

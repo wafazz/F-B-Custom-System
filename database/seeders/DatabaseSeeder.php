@@ -10,6 +10,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
+            UserSeeder::class,
             BranchSeeder::class,
             MenuSeeder::class,
             LoyaltySeeder::class,

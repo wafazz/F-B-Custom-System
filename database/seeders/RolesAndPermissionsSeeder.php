@@ -2,9 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Artisan;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -38,13 +36,6 @@ class RolesAndPermissionsSeeder extends Seeder
 
         foreach (self::rolePermissionMatrix() as $role => $perms) {
             Role::findByName($role, 'web')->syncPermissions($perms);
-        }
-
-        if (User::find(1) && app()->runningInConsole() && ! app()->runningUnitTests()) {
-            Artisan::call('shield:super-admin', [
-                '--user' => 1,
-                '--panel' => 'admin',
-            ], $this->command->getOutput());
         }
     }
 

@@ -36,6 +36,9 @@ class QueueController extends Controller
                 'id' => $branch->id,
                 'code' => $branch->code,
                 'name' => $branch->name,
+                'auto_print_labels' => (bool) $branch->auto_print_labels,
+                'label_copies' => (int) ($branch->label_copies ?? 1),
+                'label_size' => (string) ($branch->label_size ?? '58mm'),
             ],
             'staff' => [
                 'name' => $request->session()->get('pos.user_name'),

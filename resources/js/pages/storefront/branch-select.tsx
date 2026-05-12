@@ -20,7 +20,7 @@ export default function BranchSelect({ branches }: Props) {
             window.alert('Switching branch cleared your existing cart.');
         }
         setBranch(branch);
-        router.visit(`/branches/${branch.id}/menu`);
+        router.visit(`/branches/${branch.id}`);
     }
 
     return (

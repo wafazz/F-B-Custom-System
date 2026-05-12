@@ -1,8 +1,9 @@
 import { Head, router } from '@inertiajs/react';
-import { Bell, Clock, ChefHat, Check, MapPin, ShoppingBag } from 'lucide-react';
+import { Bell, Clock, ChefHat, Check, MapPin, Printer, ShoppingBag } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import PosLayout from '@/layouts/pos-layout';
 import { getEcho } from '@/lib/echo';
+import { printOrderLabels } from '@/lib/print-labels';
 
 interface QueueOrder {
     id: number;
@@ -24,7 +25,14 @@ interface QueueOrder {
 }
 
 interface Props {
-    branch: { id: number; code: string; name: string };
+    branch: {
+        id: number;
+        code: string;
+        name: string;
+        auto_print_labels: boolean;
+        label_copies: number;
+        label_size: '58mm' | '80mm';
+    };
     staff: { name: string };
     orders: QueueOrder[];
     reverb: { channel: string; event: string };
@@ -81,11 +89,31 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
     function advance(orderId: number, current: QueueOrder['status']) {
         const next =
             current === 'pending' ? 'preparing' : current === 'preparing' ? 'ready' : 'completed';
+
+        if (next === 'preparing' && branch.auto_print_labels) {
+            const order = orders.find((o) => o.id === orderId);
+            if (order) {
+                printOrderLabels(order, {
+                    copies: branch.label_copies,
+                    size: branch.label_size,
+                    branchName: branch.name,
+                });
+            }
+        }
+
         router.post(
             `/pos/orders/${orderId}/transition`,
             { status: next },
             { preserveScroll: true },
         );
+    }
+
+    function reprintLabels(order: QueueOrder) {
+        printOrderLabels(order, {
+            copies: branch.label_copies,
+            size: branch.label_size,
+            branchName: branch.name,
+        });
     }
 
     function cancel(orderId: number) {
@@ -196,6 +224,14 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
                                             {order.status === 'pending' && 'Accept → Preparing'}
                                             {order.status === 'preparing' && 'Mark Ready'}
                                             {order.status === 'ready' && 'Complete'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => reprintLabels(order)}
+                                            title="Reprint labels"
+                                            className="rounded-md bg-slate-800 px-2 py-1.5 text-slate-300 hover:bg-slate-700"
+                                        >
+                                            <Printer className="size-3.5" />
                                         </button>
                                         <button
                                             type="button"

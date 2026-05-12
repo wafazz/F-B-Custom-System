@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Bell, Download, Key, LogOut, Mail, Phone, Trash2, Trophy, User } from 'lucide-react';
+import { Bell, Download, Home, Key, LogOut, Mail, Phone, Trash2, Trophy, User } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -11,6 +11,10 @@ interface ProfileData {
     phone: string | null;
     date_of_birth: string | null;
     gender: string | null;
+    address_line: string | null;
+    city: string | null;
+    postcode: string | null;
+    state: string | null;
     preferred_branch_id: number | null;
     locale: string | null;
     marketing_consent: boolean;
@@ -19,6 +23,25 @@ interface ProfileData {
     referral_code: string;
     created_at: string | null;
 }
+
+const MY_STATES = [
+    'Johor',
+    'Kedah',
+    'Kelantan',
+    'Kuala Lumpur',
+    'Labuan',
+    'Melaka',
+    'Negeri Sembilan',
+    'Pahang',
+    'Perak',
+    'Perlis',
+    'Pulau Pinang',
+    'Putrajaya',
+    'Sabah',
+    'Sarawak',
+    'Selangor',
+    'Terengganu',
+];
 
 interface Loyalty {
     balance: number;
@@ -50,6 +73,10 @@ export default function Profile({ profile, loyalty, branches }: Props) {
         phone: profile.phone ?? '',
         date_of_birth: profile.date_of_birth ?? '',
         gender: profile.gender ?? '',
+        address_line: profile.address_line ?? '',
+        city: profile.city ?? '',
+        postcode: profile.postcode ?? '',
+        state: profile.state ?? '',
         preferred_branch_id: profile.preferred_branch_id ?? '',
         locale: profile.locale ?? 'en',
         marketing_consent: profile.marketing_consent,
@@ -198,6 +225,65 @@ export default function Profile({ profile, loyalty, branches }: Props) {
                             </select>
                         </Field>
                     </div>
+
+                    <fieldset className="border-border bg-card space-y-3 rounded-xl border p-4">
+                        <legend className="flex items-center gap-1 text-xs font-semibold">
+                            <Home className="size-3" /> Address
+                        </legend>
+                        <Field>
+                            <label className={LABEL}>Street address</label>
+                            <input
+                                type="text"
+                                value={form.data.address_line}
+                                onChange={(e) => form.setData('address_line', e.target.value)}
+                                className={FIELD}
+                                placeholder="e.g. No. 12, Jalan Mawar"
+                            />
+                            {form.errors.address_line && <Err>{form.errors.address_line}</Err>}
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field>
+                                <label className={LABEL}>City</label>
+                                <input
+                                    type="text"
+                                    value={form.data.city}
+                                    onChange={(e) => form.setData('city', e.target.value)}
+                                    className={FIELD}
+                                    placeholder="e.g. Petaling Jaya"
+                                />
+                                {form.errors.city && <Err>{form.errors.city}</Err>}
+                            </Field>
+                            <Field>
+                                <label className={LABEL}>Postcode</label>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={form.data.postcode}
+                                    onChange={(e) => form.setData('postcode', e.target.value)}
+                                    className={FIELD}
+                                    placeholder="e.g. 47301"
+                                    maxLength={6}
+                                />
+                                {form.errors.postcode && <Err>{form.errors.postcode}</Err>}
+                            </Field>
+                        </div>
+                        <Field>
+                            <label className={LABEL}>State</label>
+                            <select
+                                value={form.data.state}
+                                onChange={(e) => form.setData('state', e.target.value)}
+                                className={FIELD}
+                            >
+                                <option value="">Select state</option>
+                                {MY_STATES.map((s) => (
+                                    <option key={s} value={s}>
+                                        {s}
+                                    </option>
+                                ))}
+                            </select>
+                            {form.errors.state && <Err>{form.errors.state}</Err>}
+                        </Field>
+                    </fieldset>
 
                     <Field>
                         <label className={LABEL}>Preferred branch</label>

@@ -153,6 +153,27 @@ class BranchResource extends Resource
                 ->columns(2)
                 ->collapsed(),
 
+            Forms\Components\Section::make('Barista Sticker Labels')
+                ->description('Auto-print thermal sticker labels for each item when an order moves to "Preparing" on the POS. Labels are sent to whatever printer is set as default in the POS device\'s OS.')
+                ->schema([
+                    Forms\Components\Toggle::make('auto_print_labels')
+                        ->label('Auto-print on "Start preparing"')
+                        ->default(false),
+                    Forms\Components\TextInput::make('label_copies')
+                        ->label('Copies per item')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(5)
+                        ->default(1)
+                        ->helperText('1 = one sticker per drink. 2 = duplicate (cup + bag).'),
+                    Forms\Components\Select::make('label_size')
+                        ->label('Label size')
+                        ->options(['58mm' => '58mm (small)', '80mm' => '80mm (large)'])
+                        ->default('58mm'),
+                ])
+                ->columns(3)
+                ->collapsed(),
+
             Forms\Components\Section::make('Branding')
                 ->schema([
                     Forms\Components\FileUpload::make('cover_image')

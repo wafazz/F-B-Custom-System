@@ -53,10 +53,25 @@ export default function Menu({ branch }: Props) {
 
     useStockSubscription(branch.id, onStockChange);
 
-    const [activeCategory, setActiveCategory] = useState<number | null>(null);
+    const [initialSlug] = useState<string | null>(() =>
+        typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get('category')
+            : null,
+    );
+    const [userPicked, setUserPicked] = useState<number | 'all' | null>(null);
     const [selectedProduct, setSelectedProduct] = useState<MenuProduct | null>(null);
 
     const allCategories = data?.categories ?? [];
+
+    const activeCategory: number | null =
+        userPicked === 'all'
+            ? null
+            : typeof userPicked === 'number'
+              ? userPicked
+              : initialSlug && allCategories.length > 0
+                ? (allCategories.find((c) => c.slug === initialSlug)?.id ?? null)
+                : null;
+
     const visibleCategories =
         activeCategory === null
             ? allCategories
@@ -106,14 +121,14 @@ export default function Menu({ branch }: Props) {
                             <CategoryPill
                                 label="All"
                                 active={activeCategory === null}
-                                onClick={() => setActiveCategory(null)}
+                                onClick={() => setUserPicked('all')}
                             />
                             {data.categories.map((cat) => (
                                 <CategoryPill
                                     key={cat.id}
                                     label={cat.name}
                                     active={activeCategory === cat.id}
-                                    onClick={() => setActiveCategory(cat.id)}
+                                    onClick={() => setUserPicked(cat.id)}
                                 />
                             ))}
                         </div>

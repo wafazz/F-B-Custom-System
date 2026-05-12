@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Heart, Home, ShoppingBag, User, Wallet } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { InstallPrompt } from '@/components/storefront/install-prompt';
 import { useBranchStore } from '@/stores/branch-store';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
 import { cn } from '@/lib/utils';
@@ -81,6 +82,8 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
 
             <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4">{children}</main>
 
+            <InstallPrompt />
+
             <nav className="border-border bg-card fixed inset-x-0 bottom-0 z-30 border-t">
                 <div className="mx-auto grid max-w-3xl grid-cols-5 text-xs">
                     <NavItem
@@ -90,10 +93,10 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
                         active={path === '/'}
                     />
                     <NavItem
-                        href={branch ? `/branches/${branch.id}/menu` : '/branches'}
+                        href={branch ? `/branches/${branch.id}` : '/branches'}
                         icon={<ShoppingBag className="size-5" />}
                         label="Order"
-                        active={path.startsWith('/branches/') && path.includes('/menu')}
+                        active={path.startsWith('/branches/') && path !== '/branches'}
                     />
                     <NavItem
                         href={auth.user ? '/wallet' : '/login'}

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Category;
+use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,6 +41,75 @@ class StorefrontController extends Controller
 
         return Inertia::render('storefront/branch-select', [
             'branches' => $branches,
+        ]);
+    }
+
+    public function branchHome(Branch $branch): Response
+    {
+        $categories = Category::active()
+            ->root()
+            ->orderBy('sort_order')
+            ->get(['id', 'slug', 'name', 'image', 'icon'])
+            ->map(fn (Category $c) => [
+                'id' => $c->id,
+                'slug' => $c->slug,
+                'name' => $c->name,
+                'image' => $c->image,
+                'icon' => $c->icon,
+            ])
+            ->values();
+
+        $featured = Product::active()
+            ->featured()
+            ->availableAtBranch($branch->id)
+            ->limit(3)
+            ->get(['id', 'name', 'slug', 'image', 'base_price', 'description'])
+            ->map(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'image' => $p->image,
+                'price' => (float) $p->priceForBranch($branch->id),
+                'description' => $p->description,
+            ])
+            ->values();
+
+        $slides = [];
+        if ($branch->cover_image) {
+            $slides[] = [
+                'type' => 'cover',
+                'image' => $branch->cover_image,
+                'title' => "Welcome to {$branch->name}",
+                'subtitle' => 'Freshly brewed, made just for you.',
+            ];
+        }
+        foreach ($featured as $p) {
+            $slides[] = [
+                'type' => 'product',
+                'image' => $p['image'],
+                'title' => $p['name'],
+                'subtitle' => 'RM '.number_format($p['price'], 2),
+            ];
+        }
+        if (count($slides) === 0) {
+            $slides[] = [
+                'type' => 'cover',
+                'image' => null,
+                'title' => $branch->name,
+                'subtitle' => 'Order ahead, skip the queue.',
+            ];
+        }
+
+        return Inertia::render('storefront/branch-home', [
+            'branch' => [
+                'id' => $branch->id,
+                'code' => $branch->code,
+                'name' => $branch->name,
+                'logo' => $branch->logo,
+                'is_open_now' => $branch->isOpenNow(),
+                'accepts_orders' => $branch->accepts_orders,
+            ],
+            'slides' => $slides,
+            'categories' => $categories,
         ]);
     }
 

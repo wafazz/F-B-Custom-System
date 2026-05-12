@@ -38,6 +38,9 @@ class Branch extends Model
         'status',
         'accepts_orders',
         'sort_order',
+        'auto_print_labels',
+        'label_copies',
+        'label_size',
     ];
 
     protected function casts(): array
@@ -49,6 +52,8 @@ class Branch extends Model
             'sst_rate' => 'decimal:2',
             'sst_enabled' => 'boolean',
             'accepts_orders' => 'boolean',
+            'auto_print_labels' => 'boolean',
+            'label_copies' => 'integer',
         ];
     }
 
@@ -58,6 +63,12 @@ class Branch extends Model
             ->using(BranchStaff::class)
             ->withPivot(['pin', 'employment_type', 'hired_at', 'ended_at', 'is_active'])
             ->withTimestamps();
+    }
+
+    /** Alias used by Filament's AttachAction inverse-relation auto-discovery. */
+    public function users(): BelongsToMany
+    {
+        return $this->staff();
     }
 
     public function products(): BelongsToMany

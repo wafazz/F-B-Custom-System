@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'splash'])->name('home');
 Route::get('/branches', [StorefrontController::class, 'selectBranch'])->name('branches.select');
+Route::get('/branches/{branch}', [StorefrontController::class, 'branchHome'])->name('branches.home');
 Route::get('/branches/{branch}/menu', [StorefrontController::class, 'menu'])->name('branches.menu');
 Route::get('/branches/{branch}/cart', [OrderPagesController::class, 'cart'])->name('branches.cart');
 Route::get('/branches/{branch}/checkout', [OrderPagesController::class, 'checkout'])

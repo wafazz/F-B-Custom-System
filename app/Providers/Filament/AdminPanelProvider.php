@@ -2,6 +2,11 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\LiveOrdersWidget;
+use App\Filament\Widgets\LowStockWidget;
+use App\Filament\Widgets\RecentOrdersWidget;
+use App\Filament\Widgets\RevenueByBranchWidget;
+use App\Filament\Widgets\RevenueChartWidget;
 use App\Filament\Widgets\SalesOverviewWidget;
 use App\Filament\Widgets\TopProductsWidget;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -52,8 +57,13 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
+                LiveOrdersWidget::class,
                 SalesOverviewWidget::class,
+                RevenueChartWidget::class,
+                RevenueByBranchWidget::class,
                 TopProductsWidget::class,
+                LowStockWidget::class,
+                RecentOrdersWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

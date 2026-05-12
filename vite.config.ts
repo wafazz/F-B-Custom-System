@@ -31,6 +31,7 @@ export default defineConfig({
                 display: 'standalone',
                 orientation: 'portrait',
                 start_url: '/',
+                scope: '/',
                 icons: [
                     {
                         src: '/icons/icon-192.png',
@@ -48,8 +49,23 @@ export default defineConfig({
             },
             injectManifest: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp3}'],
+                globIgnores: ['**/registerSW.js'],
                 additionalManifestEntries: [
                     { url: '/sounds/sc7.mp3', revision: '1' },
+                ],
+                // SW is served from origin root (/sw.js), but the actual
+                // assets live under /build/. Prefix relative manifest
+                // URLs so they resolve correctly. Skip entries that are
+                // already absolute (start with /).
+                manifestTransforms: [
+                    async (entries) => ({
+                        manifest: entries.map((entry) =>
+                            entry.url.startsWith('/')
+                                ? entry
+                                : { ...entry, url: `/build/${entry.url}` },
+                        ),
+                        warnings: [],
+                    }),
                 ],
             },
         }),

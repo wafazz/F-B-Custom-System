@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\HomeSlide;
 use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -73,30 +74,56 @@ class StorefrontController extends Controller
             ])
             ->values();
 
+        $managed = HomeSlide::query()
+            ->active()
+            ->forBranch($branch->id)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
         $slides = [];
-        if ($branch->cover_image) {
+        foreach ($managed as $row) {
             $slides[] = [
-                'type' => 'cover',
-                'image' => $branch->cover_image,
-                'title' => "Welcome to {$branch->name}",
-                'subtitle' => 'Freshly brewed, made just for you.',
+                'type' => 'managed',
+                'image' => $row->image,
+                'title' => $row->title,
+                'subtitle' => $row->subtitle,
+                'cta_label' => $row->cta_label,
+                'cta_url' => $row->cta_url,
             ];
         }
-        foreach ($featured as $p) {
-            $slides[] = [
-                'type' => 'product',
-                'image' => $p['image'],
-                'title' => $p['name'],
-                'subtitle' => 'RM '.number_format($p['price'], 2),
-            ];
-        }
+
         if (count($slides) === 0) {
-            $slides[] = [
-                'type' => 'cover',
-                'image' => null,
-                'title' => $branch->name,
-                'subtitle' => 'Order ahead, skip the queue.',
-            ];
+            if ($branch->cover_image) {
+                $slides[] = [
+                    'type' => 'cover',
+                    'image' => $branch->cover_image,
+                    'title' => "Welcome to {$branch->name}",
+                    'subtitle' => 'Freshly brewed, made just for you.',
+                    'cta_label' => null,
+                    'cta_url' => null,
+                ];
+            }
+            foreach ($featured as $p) {
+                $slides[] = [
+                    'type' => 'product',
+                    'image' => $p['image'],
+                    'title' => $p['name'],
+                    'subtitle' => 'RM '.number_format($p['price'], 2),
+                    'cta_label' => null,
+                    'cta_url' => null,
+                ];
+            }
+            if (count($slides) === 0) {
+                $slides[] = [
+                    'type' => 'cover',
+                    'image' => null,
+                    'title' => $branch->name,
+                    'subtitle' => 'Order ahead, skip the queue.',
+                    'cta_label' => null,
+                    'cta_url' => null,
+                ];
+            }
         }
 
         return Inertia::render('storefront/branch-home', [

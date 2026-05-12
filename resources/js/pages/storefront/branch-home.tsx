@@ -7,10 +7,12 @@ import { useBranchStore } from '@/stores/branch-store';
 import { cn } from '@/lib/utils';
 
 interface Slide {
-    type: 'cover' | 'product';
+    type: 'cover' | 'product' | 'managed';
     image: string | null;
     title: string;
-    subtitle: string;
+    subtitle: string | null;
+    cta_label: string | null;
+    cta_url: string | null;
 }
 
 interface CategoryCard {
@@ -34,6 +36,12 @@ interface Props {
     branch: BranchInfo;
     slides: Slide[];
     categories: CategoryCard[];
+}
+
+function resolveCtaUrl(url: string, branchId: number): string {
+    if (/^(https?:)?\/\//i.test(url)) return url;
+    if (url.startsWith('/')) return url;
+    return `/branches/${branchId}/${url}`;
 }
 
 export default function BranchHome({ branch, slides, categories }: Props) {
@@ -92,7 +100,19 @@ export default function BranchHome({ branch, slides, categories }: Props) {
                                 <p className="text-lg font-bold drop-shadow-md sm:text-xl">
                                     {slide.title}
                                 </p>
-                                <p className="text-xs opacity-90 sm:text-sm">{slide.subtitle}</p>
+                                {slide.subtitle && (
+                                    <p className="text-xs opacity-90 sm:text-sm">
+                                        {slide.subtitle}
+                                    </p>
+                                )}
+                                {slide.cta_label && slide.cta_url && (
+                                    <a
+                                        href={resolveCtaUrl(slide.cta_url, branch.id)}
+                                        className="bg-primary text-primary-foreground mt-3 inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-semibold"
+                                    >
+                                        {slide.cta_label}
+                                    </a>
+                                )}
                             </div>
                         </div>
                     ))}

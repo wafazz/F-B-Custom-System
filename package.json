@@ -5,6 +5,10 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "dev:server": "php artisan serve",
+        "dev:reverb": "php artisan reverb:start",
+        "dev:queue": "php artisan queue:listen --tries=1 --timeout=0",
+        "dev:all": "concurrently -c \"#93c5fd,#fde047,#c4b5fd,#fb7185\" -n server,reverb,queue,vite -k \"npm:dev:server\" \"npm:dev:reverb\" \"npm:dev:queue\" \"npm:dev\"",
         "lint": "eslint resources/js --max-warnings=0",
         "lint:fix": "eslint resources/js --fix",
         "format": "prettier --write \"resources/js/**/*.{ts,tsx}\"",

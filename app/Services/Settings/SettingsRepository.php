@@ -23,7 +23,7 @@ class SettingsRepository
     {
         Setting::query()->updateOrCreate(
             ['key' => $key],
-            ['value' => $value, 'is_encrypted' => $encrypted],
+            ['is_encrypted' => $encrypted, 'value' => $value],
         );
         $this->forget();
     }

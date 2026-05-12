@@ -42,31 +42,31 @@
 }
 
 :root {
-    /* Palette: White · Cream · Dark Cocoa */
-    --background: #FFFFFF;
-    --foreground: #2A1A0E;
-    --card: #FBF6EE;
-    --card-foreground: #2A1A0E;
-    --popover: #FFFFFF;
-    --popover-foreground: #2A1A0E;
-    --primary: #4A2C18;
-    --primary-foreground: #FBF6EE;
-    --secondary: #F5EAD7;
-    --secondary-foreground: #4A2C18;
-    --muted: #F5EAD7;
-    --muted-foreground: #6B4423;
-    --accent: #EFE2C9;
-    --accent-foreground: #4A2C18;
+    /* Palette per brand spec: brown body · cream cards · dark cocoa CTAs · pink-beige secondary */
+    --background: #775542;
+    --foreground: #F7F3F0;
+    --card: #F7F3F0;
+    --card-foreground: #1F1716;
+    --popover: #F7F3F0;
+    --popover-foreground: #1F1716;
+    --primary: #402724;
+    --primary-foreground: #F7F3F0;
+    --secondary: #EADCDC;
+    --secondary-foreground: #402724;
+    --muted: #EADCDC;
+    --muted-foreground: #6B5048;
+    --accent: #402724;
+    --accent-foreground: #F7F3F0;
     --destructive: oklch(0.6 0.22 25);
-    --destructive-foreground: #FBF6EE;
-    --border: #E5D6B8;
-    --input: #E5D6B8;
-    --ring: #4A2C18;
-    --chart-1: #4A2C18;
-    --chart-2: #6B4423;
-    --chart-3: #8E5C2E;
-    --chart-4: #C8AA7C;
-    --chart-5: #F5EAD7;
+    --destructive-foreground: #FFFFFF;
+    --border: #D9CBC1;
+    --input: #F7F3F0;
+    --ring: #402724;
+    --chart-1: #402724;
+    --chart-2: #775542;
+    --chart-3: #EADCDC;
+    --chart-4: #6B5048;
+    --chart-5: #1F1716;
     --radius: 0.625rem;
 }
 

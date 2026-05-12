@@ -1,13 +1,7 @@
-import { Minus, Plus } from 'lucide-react';
+import { Coffee, Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import type { MenuProduct, SelectedModifier } from '@/types/menu';
 import { cn } from '@/lib/utils';
 
@@ -34,7 +28,10 @@ function defaultsFor(product: MenuProduct): Selection {
 export function ModifierSheet({ product, open, onOpenChange, onAdd }: Props) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="bottom">
+            <SheetContent
+                side="bottom"
+                className="sm:mx-auto sm:max-w-3xl sm:rounded-xl"
+            >
                 {product && (
                     <SheetBody
                         key={product.id}
@@ -123,92 +120,125 @@ function SheetBody({
         onClose();
     }
 
+    const imageSrc =
+        product.image ?? product.gallery?.[0] ?? null;
+
     return (
         <>
-            <SheetHeader>
-                <SheetTitle>{product.name}</SheetTitle>
-                {product.description && <SheetDescription>{product.description}</SheetDescription>}
-            </SheetHeader>
+            <SheetTitle className="sr-only">{product.name}</SheetTitle>
 
-            <div className="flex-1 space-y-5 overflow-y-auto pr-1">
-                {product.modifier_groups.map((group) => (
-                    <div key={group.id}>
-                        <div className="mb-2 flex items-center justify-between">
-                            <h4 className="text-sm font-semibold">
-                                {group.name}
-                                {group.is_required && <span className="ml-1 text-red-500">*</span>}
-                            </h4>
-                            <span className="text-muted-foreground text-[10px]">
-                                {group.selection_type === 'single'
-                                    ? 'Pick one'
-                                    : `${group.min_select}–${group.max_select} options`}
-                            </span>
-                        </div>
-                        <div className="grid gap-1.5">
-                            {group.options.map((option) => {
-                                const checked = (selection[group.id] ?? []).includes(option.id);
-                                return (
-                                    <button
-                                        key={option.id}
-                                        type="button"
-                                        onClick={() =>
-                                            toggle(
-                                                group.id,
-                                                option.id,
-                                                group.selection_type,
-                                                group.max_select,
-                                            )
-                                        }
-                                        className={cn(
-                                            'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors',
-                                            checked
-                                                ? 'border-primary bg-primary/5 text-primary'
-                                                : 'border-border hover:bg-secondary/50',
-                                        )}
-                                    >
-                                        <span>{option.name}</span>
-                                        <span className="text-muted-foreground text-xs">
-                                            {Number(option.price_delta) > 0
-                                                ? `+RM${Number(option.price_delta).toFixed(2)}`
-                                                : '—'}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+            <div className="flex min-h-0 flex-1 flex-col gap-4 sm:flex-row sm:gap-6">
+                <aside className="flex-shrink-0 sm:w-2/5">
+                    <div className="bg-secondary/50 flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl">
+                        {imageSrc ? (
+                            <img
+                                src={imageSrc.startsWith('http') ? imageSrc : `/storage/${imageSrc}`}
+                                alt={product.name}
+                                className="size-full object-cover"
+                            />
+                        ) : (
+                            <Coffee className="text-muted-foreground size-16" />
+                        )}
                     </div>
-                ))}
-            </div>
+                    <h3 className="mt-3 text-lg leading-tight font-bold">{product.name}</h3>
+                    {product.description && (
+                        <p className="text-muted-foreground mt-1 text-xs leading-snug">
+                            {product.description}
+                        </p>
+                    )}
+                    <p className="text-primary mt-2 text-xl font-bold">
+                        RM{Number(product.price).toFixed(2)}
+                    </p>
+                </aside>
 
-            <div className="border-t pt-3">
-                <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm font-medium">Quantity</span>
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                            className="bg-secondary hover:bg-secondary/80 flex size-8 items-center justify-center rounded-full"
-                            aria-label="Decrease"
-                        >
-                            <Minus className="size-3.5" />
-                        </button>
-                        <span className="w-6 text-center text-sm font-semibold">{quantity}</span>
-                        <button
-                            type="button"
-                            onClick={() => setQuantity((q) => q + 1)}
-                            className="bg-secondary hover:bg-secondary/80 flex size-8 items-center justify-center rounded-full"
-                            aria-label="Increase"
-                        >
-                            <Plus className="size-3.5" />
-                        </button>
+                <div className="flex min-h-0 flex-1 flex-col">
+                    <div className="flex-1 space-y-5 overflow-y-auto pr-1">
+                        {product.modifier_groups.map((group) => (
+                            <div key={group.id}>
+                                <div className="mb-2 flex items-center justify-between">
+                                    <h4 className="text-sm font-semibold">
+                                        {group.name}
+                                        {group.is_required && (
+                                            <span className="ml-1 text-red-500">*</span>
+                                        )}
+                                    </h4>
+                                    <span className="text-muted-foreground text-[10px]">
+                                        {group.selection_type === 'single'
+                                            ? 'Pick one'
+                                            : `${group.min_select}–${group.max_select} options`}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    {group.options.map((option) => {
+                                        const checked = (selection[group.id] ?? []).includes(
+                                            option.id,
+                                        );
+                                        return (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() =>
+                                                    toggle(
+                                                        group.id,
+                                                        option.id,
+                                                        group.selection_type,
+                                                        group.max_select,
+                                                    )
+                                                }
+                                                className={cn(
+                                                    'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors',
+                                                    checked
+                                                        ? 'border-primary bg-primary/5 text-primary'
+                                                        : 'border-border hover:bg-secondary/50',
+                                                )}
+                                            >
+                                                <span>{option.name}</span>
+                                                <span className="text-muted-foreground text-xs">
+                                                    {Number(option.price_delta) > 0
+                                                        ? `+RM${Number(option.price_delta).toFixed(2)}`
+                                                        : '—'}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-3 border-t pt-3">
+                        <div className="mb-3 flex items-center justify-between">
+                            <span className="text-sm font-medium">Quantity</span>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                                    className="flex size-8 items-center justify-center rounded-full bg-black text-white hover:bg-black/80"
+                                    aria-label="Decrease"
+                                >
+                                    <Minus className="size-3.5" />
+                                </button>
+                                <span className="w-6 text-center text-sm font-semibold">
+                                    {quantity}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setQuantity((q) => q + 1)}
+                                    className="flex size-8 items-center justify-center rounded-full bg-black text-white hover:bg-black/80"
+                                    aria-label="Increase"
+                                >
+                                    <Plus className="size-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                        {!valid && validationMessage && (
+                            <p className="mb-2 text-xs text-red-600">{validationMessage}</p>
+                        )}
+                        <Button onClick={handleAdd} disabled={!valid} className="w-full">
+                            Add to cart — RM{totalPrice.toFixed(2)}
+                        </Button>
                     </div>
                 </div>
-                {!valid && validationMessage && (
-                    <p className="mb-2 text-xs text-red-600">{validationMessage}</p>
-                )}
-                <Button onClick={handleAdd} disabled={!valid} className="w-full">
-                    Add to cart — RM{totalPrice.toFixed(2)}
-                </Button>
             </div>
         </>
     );

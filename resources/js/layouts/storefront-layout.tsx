@@ -23,10 +23,13 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
     const path = typeof window !== 'undefined' ? window.location.pathname : url;
 
     return (
-        <div className="bg-background flex min-h-screen flex-col pb-16">
+        <div className="bg-background text-card-foreground flex min-h-screen flex-col pb-16">
             <header className="border-border bg-card/95 sticky top-0 z-30 border-b backdrop-blur">
                 <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
-                    <Link href="/" className="flex items-center gap-2 font-semibold">
+                    <Link
+                        href={branch ? `/branches/${branch.id}` : '/'}
+                        className="flex items-center gap-2 font-semibold"
+                    >
                         <img
                             src="/images/logo.jpg"
                             alt="Star Coffee"
@@ -55,48 +58,39 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
                         </Link>
                     )}
                     <div className="flex items-center gap-2 text-sm">
-                        {auth.user ? (
+                        {auth.user && (
                             <span className="text-muted-foreground hidden text-xs sm:inline">
                                 {auth.user.name}
                             </span>
-                        ) : (
-                            <Link href="/login" className="hover:text-primary text-xs">
-                                Login
-                            </Link>
                         )}
                         <Link
-                            href={branch ? `/branches/${branch.id}/cart` : '/branches'}
-                            className="bg-primary/10 text-primary relative flex size-9 items-center justify-center rounded-full"
-                            aria-label="Cart"
+                            href={auth.user ? '/profile' : '/login'}
+                            className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-full"
+                            aria-label={auth.user ? 'Profile' : 'Login'}
                         >
-                            <ShoppingBag className="size-4" />
-                            {itemCount > 0 && (
-                                <span className="bg-primary text-primary-foreground absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full text-[10px] font-semibold">
-                                    {itemCount}
-                                </span>
-                            )}
+                            <User className="size-4" />
                         </Link>
                     </div>
                 </div>
             </header>
 
-            <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-4">{children}</main>
+            <main className="bg-card mx-auto w-full max-w-3xl flex-1 px-4 py-4">{children}</main>
 
             <InstallPrompt />
 
             <nav className="border-border bg-card fixed inset-x-0 bottom-0 z-30 border-t">
                 <div className="mx-auto grid max-w-3xl grid-cols-5 text-xs">
                     <NavItem
-                        href="/"
+                        href={branch ? `/branches/${branch.id}` : '/'}
                         icon={<Home className="size-5" />}
                         label="Home"
-                        active={path === '/'}
+                        active={path === '/' || (branch ? path === `/branches/${branch.id}` : false)}
                     />
                     <NavItem
-                        href={branch ? `/branches/${branch.id}` : '/branches'}
+                        href={branch ? `/branches/${branch.id}/menu` : '/branches'}
                         icon={<ShoppingBag className="size-5" />}
                         label="Order"
-                        active={path.startsWith('/branches/') && path !== '/branches'}
+                        active={path.includes('/menu')}
                     />
                     <NavItem
                         href={auth.user ? '/wallet' : '/login'}
@@ -110,12 +104,25 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
                         label="Loyalty"
                         active={path === '/loyalty'}
                     />
-                    <NavItem
-                        href={auth.user ? '/profile' : '/login'}
-                        icon={<User className="size-5" />}
-                        label={auth.user ? 'Profile' : 'Login'}
-                        active={path === '/profile' || path === '/login'}
-                    />
+                    <Link
+                        href={branch ? `/branches/${branch.id}/cart` : '/branches'}
+                        className={cn(
+                            'relative flex flex-col items-center gap-1 py-2.5 transition-colors',
+                            path.endsWith('/cart')
+                                ? 'text-primary'
+                                : 'text-muted-foreground hover:text-foreground',
+                        )}
+                    >
+                        <span className="relative">
+                            <ShoppingBag className="size-5" />
+                            {itemCount > 0 && (
+                                <span className="bg-primary text-primary-foreground absolute -top-1.5 -right-2 flex size-4 items-center justify-center rounded-full text-[9px] font-semibold">
+                                    {itemCount}
+                                </span>
+                            )}
+                        </span>
+                        <span>Cart</span>
+                    </Link>
                 </div>
             </nav>
         </div>

@@ -40,6 +40,9 @@ class PaymentServiceProvider extends ServiceProvider
                 'services.billplz.collection_id' => $repo->get('billplz.collection_id', config('services.billplz.collection_id')),
                 'services.billplz.x_signature' => $repo->get('billplz.x_signature', config('services.billplz.x_signature')),
                 'services.billplz.sandbox' => ($repo->get('billplz.sandbox') ?? (config('services.billplz.sandbox') ? '1' : '0')) === '1',
+                'services.webpush.subject' => $repo->get('webpush.subject', config('services.webpush.subject')),
+                'services.webpush.public_key' => $repo->get('webpush.public_key', config('services.webpush.public_key')),
+                'services.webpush.private_key' => $repo->get('webpush.private_key', config('services.webpush.private_key')),
             ]);
         } catch (Throwable) {
             // Settings table may not exist yet (during initial migrate); fall back to env.

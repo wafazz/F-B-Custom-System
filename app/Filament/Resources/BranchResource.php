@@ -100,18 +100,10 @@ class BranchResource extends Resource
                     Forms\Components\Repeater::make('operating_hours')
                         ->label('')
                         ->schema([
-                            Forms\Components\Select::make('day')
-                                ->options([
-                                    'monday' => 'Monday',
-                                    'tuesday' => 'Tuesday',
-                                    'wednesday' => 'Wednesday',
-                                    'thursday' => 'Thursday',
-                                    'friday' => 'Friday',
-                                    'saturday' => 'Saturday',
-                                    'sunday' => 'Sunday',
-                                ])
-                                ->disabled()
-                                ->dehydrated(),
+                            Forms\Components\Hidden::make('day'),
+                            Forms\Components\Placeholder::make('day_label')
+                                ->label('Day')
+                                ->content(fn (callable $get) => ucfirst((string) $get('day'))),
                             Forms\Components\Toggle::make('enabled')->inline(false)->default(true),
                             Forms\Components\TimePicker::make('open')->seconds(false)->default('08:00'),
                             Forms\Components\TimePicker::make('close')->seconds(false)->default('22:00'),

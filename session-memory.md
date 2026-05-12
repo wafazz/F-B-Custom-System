@@ -66,7 +66,12 @@
 - [✔] **2026-05-12 dashboard + chime**:
   - **Interactive Filament dashboard** at `/admin`: 5 new widgets + 1 enhanced (`SalesOverviewWidget`). LiveOrdersWidget polls 10s for Pending/Preparing/Ready counts; SalesOverviewWidget now has 7-day sparklines + % change vs previous period; RevenueChartWidget is a dual-axis (revenue + order count) line chart with 7/14/30-day filter, polls 60s; RevenueByBranchWidget is a doughnut over last 30 days, gated to super_admin/hq_admin/ops_manager; LowStockWidget surfaces `BranchStock::lowStock()` rows, polls 60s; RecentOrdersWidget shows last 8 orders with status-colored badges, click-to-view, polls 15s. All registered in `AdminPanelProvider` with `$sort` for deterministic layout.
   - **Bug fix**: `RecentOrdersWidget` badge closure type-hinted `string $state` but Order casts `status` to `OrderStatus` enum — Filament passed the enum, TypeError on row render. Changed to `OrderStatus $state` matching enum cases directly. Strengthened the widget mount test to seed an Order in every `OrderStatus` case so the closure executes for each (would have caught this in CI).
-  - **POS chime**: replaced the silent 44-byte base64 WAV placeholder in `pos/queue.tsx` with a real `sc7.mp3` at `public/sounds/sc7.mp3`. Added to PWA precache via `includeAssets` + `additionalManifestEntries` in vite.config.ts; precache went 50 → 51 entries. Caveat: actual OS-level push notifications can't use custom sounds (Web Notifications spec dropped `sound` ~2018); custom mp3 only plays when a tab is open and Echo delivers the event.
+  - **Chime everywhere a page is open** (`sc7.mp3` at `public/sounds/sc7.mp3`):
+    - POS queue tablet on new `pending` order (was silent base64 placeholder).
+    - TV display board on order moving to Ready panel (was silent base64 placeholder).
+    - Customer `/order/{id}` page when Echo flips status to `ready` and prior wasn't ready (idempotent against duplicate broadcasts). New behaviour — page had no audio before.
+    - Added to PWA precache via `includeAssets` + `additionalManifestEntries` in vite.config.ts; 50 → 51 entries.
+    - **Caveat**: OS-level push notifications can't use custom sounds (Web Notifications spec dropped the `sound` property ~2018); custom mp3 only plays when a tab is open and Echo delivers the event. Customer page may hit browser autoplay-block on cold load with no interaction; `.catch(() => {})` swallows it.
   - 142 tests passing (137 + 5 new DashboardWidgetsTest). PHPStan + ESLint + tsc + Vite build clean.
 
 ## Tasks Next (Pending Decisions)

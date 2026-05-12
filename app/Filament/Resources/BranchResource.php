@@ -114,17 +114,34 @@ class BranchResource extends Resource
                             ->values()
                             ->all())
                         ->afterStateHydrated(function ($state, callable $set) {
-                            if (is_array($state) && ! array_is_list($state)) {
-                                $set('operating_hours', collect($state)
-                                    ->map(fn ($v, $k) => array_merge((array) $v, ['day' => $k]))
-                                    ->values()
-                                    ->all());
+                            $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                            $rows = is_array($state) ? array_values($state) : [];
+                            $normalized = [];
+                            foreach ($days as $i => $day) {
+                                $row = is_array($rows[$i] ?? null) ? $rows[$i] : [];
+                                $normalized[] = [
+                                    'day' => $day,
+                                    'enabled' => $row['enabled'] ?? true,
+                                    'open' => $row['open'] ?? '08:00',
+                                    'close' => $row['close'] ?? '22:00',
+                                ];
                             }
+                            $set('operating_hours', $normalized);
                         })
-                        ->dehydrateStateUsing(fn ($state) => collect($state)
-                            ->keyBy('day')
-                            ->map(fn ($v) => collect($v)->except('day')->all())
-                            ->all())
+                        ->dehydrateStateUsing(function ($state) {
+                            $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                            $rows = array_values((array) $state);
+                            $out = [];
+                            foreach ($days as $i => $day) {
+                                $row = is_array($rows[$i] ?? null) ? $rows[$i] : [];
+                                $out[$day] = [
+                                    'enabled' => $row['enabled'] ?? true,
+                                    'open' => $row['open'] ?? '08:00',
+                                    'close' => $row['close'] ?? '22:00',
+                                ];
+                            }
+                            return $out;
+                        })
                         ->addable(false)
                         ->deletable(false)
                         ->reorderable(false),

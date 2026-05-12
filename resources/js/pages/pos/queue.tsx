@@ -133,11 +133,7 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
     return (
         <PosLayout>
             <Head title={`POS · ${branch.name}`} />
-            <audio
-                ref={audioRef}
-                preload="auto"
-                src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
-            />
+            <audio ref={audioRef} preload="auto" src="/sounds/sc7.mp3" />
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {grouped.map((col) => (

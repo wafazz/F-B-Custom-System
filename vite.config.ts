@@ -21,7 +21,7 @@ export default defineConfig({
             filename: 'sw.ts',
             injectRegister: 'auto',
             devOptions: { enabled: true, type: 'module' },
-            includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+            includeAssets: ['favicon.png', 'apple-touch-icon.png', 'sounds/sc7.mp3'],
             manifest: {
                 name: 'Star Coffee House',
                 short_name: 'Star Coffee',
@@ -47,7 +47,10 @@ export default defineConfig({
                 ],
             },
             injectManifest: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp3}'],
+                additionalManifestEntries: [
+                    { url: '/sounds/sc7.mp3', revision: '1' },
+                ],
             },
         }),
     ],

@@ -25,7 +25,19 @@ export function PushToggle() {
                 return;
             }
             const sub = await subscribe(public_key);
-            setActive(sub !== null);
+            if (sub === null) {
+                if (Notification.permission === 'denied') {
+                    window.alert(
+                        "Notifications are blocked. Click the 🔒 padlock in the URL bar → Site settings → Notifications → Allow, then try again.",
+                    );
+                } else {
+                    window.alert(
+                        "Notification permission wasn't granted. Look for a small bell icon near the URL bar and click 'Allow', then try again.",
+                    );
+                }
+                return;
+            }
+            setActive(true);
         } finally {
             setBusy(false);
         }

@@ -303,16 +303,27 @@ export default function PosWalkIn({ branch, categories }: Props) {
                                 <div className="flex min-w-0 items-center gap-2">
                                     <UserRound className="size-3.5 flex-shrink-0 text-amber-400" />
                                     <div className="min-w-0">
-                                        <p className="truncate font-semibold text-amber-100">
-                                            {customer.name}
-                                        </p>
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="truncate font-semibold text-amber-100">
+                                                {customer.name}
+                                            </p>
+                                            {customer.tier && (
+                                                <span
+                                                    className={cn(
+                                                        'rounded-sm border px-1 py-px text-[9px] font-bold tracking-wide uppercase',
+                                                        tierClasses(customer.tier),
+                                                    )}
+                                                >
+                                                    {customer.tier}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="flex items-center gap-1.5 text-[10px] text-amber-300/80">
                                             <Sparkles className="size-2.5" />
                                             <span className="tabular-nums">
                                                 {pointsRevealed ? customer.points : '••••'}
                                             </span>
                                             pts
-                                            {customer.tier && ` · ${customer.tier}`}
                                         </p>
                                     </div>
                                 </div>
@@ -721,4 +732,19 @@ function PayBtn({
             <span>{label}</span>
         </button>
     );
+}
+
+function tierClasses(tier: string | null): string {
+    switch (tier?.toLowerCase()) {
+        case 'platinum':
+            return 'border-indigo-400/60 bg-indigo-500/20 text-indigo-200';
+        case 'gold':
+            return 'border-yellow-400/60 bg-yellow-500/20 text-yellow-200';
+        case 'silver':
+            return 'border-slate-400/60 bg-slate-500/20 text-slate-100';
+        case 'bronze':
+            return 'border-orange-400/60 bg-orange-500/20 text-orange-200';
+        default:
+            return 'border-amber-400/60 bg-amber-500/20 text-amber-200';
+    }
 }

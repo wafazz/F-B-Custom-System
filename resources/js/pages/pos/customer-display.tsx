@@ -122,9 +122,18 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                                 <p className="text-xs font-semibold tracking-wide text-amber-800 uppercase">
                                     Member
                                 </p>
-                                <p className="text-lg font-bold text-amber-950">
-                                    {cart.customer.name}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-lg font-bold text-amber-950">
+                                        {cart.customer.name}
+                                    </p>
+                                    {cart.customer.tier && (
+                                        <span
+                                            className={`rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${tierBadgeClasses(cart.customer.tier)}`}
+                                        >
+                                            {cart.customer.tier}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="text-right">
@@ -133,9 +142,7 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                                     ? cart.customer.points.toLocaleString()
                                     : '••••'}
                             </p>
-                            <p className="text-xs font-semibold text-amber-700">
-                                pts{cart.customer.tier && ` · ${cart.customer.tier}`}
-                            </p>
+                            <p className="text-xs font-semibold text-amber-700">pts</p>
                         </div>
                     </div>
                 )}
@@ -218,4 +225,19 @@ export default function CustomerDisplay({ branch, staff }: Props) {
             </div>
         </div>
     );
+}
+
+function tierBadgeClasses(tier: string): string {
+    switch (tier.toLowerCase()) {
+        case 'platinum':
+            return 'border-indigo-500 bg-indigo-100 text-indigo-800';
+        case 'gold':
+            return 'border-yellow-500 bg-yellow-200 text-yellow-900';
+        case 'silver':
+            return 'border-slate-400 bg-slate-200 text-slate-800';
+        case 'bronze':
+            return 'border-orange-500 bg-orange-200 text-orange-900';
+        default:
+            return 'border-amber-500 bg-amber-200 text-amber-900';
+    }
 }

@@ -261,8 +261,8 @@ export default function PosWalkIn({ branch, parents }: Props) {
         <PosLayout>
             <Head title="POS · Walk-in" />
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-                <section>
+            <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
+                <section className="flex min-h-0 flex-col">
                     <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
                         {parents.map((p) => (
                             <button
@@ -300,7 +300,7 @@ export default function PosWalkIn({ branch, parents }: Props) {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                    <div className="-mr-1 grid grid-cols-2 gap-2 overflow-y-auto pr-1 md:grid-cols-3">
                         {visibleProducts.map((p) => (
                             <button
                                 key={p.id}
@@ -321,7 +321,7 @@ export default function PosWalkIn({ branch, parents }: Props) {
                     </div>
                 </section>
 
-                <aside className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                <aside className="flex min-h-0 flex-col overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4">
                     <div className="mb-3 flex items-center justify-between">
                         <h2 className="text-sm font-bold">Cart</h2>
                         <button

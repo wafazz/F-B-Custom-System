@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { Banknote, CreditCard, Hash, Plus, ShoppingBag, Store, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import PosLayout from '@/layouts/pos-layout';
 import { cn } from '@/lib/utils';
 
@@ -57,27 +58,22 @@ export default function PosWalkIn({ branch, categories }: Props) {
     const [tableNumber, setTableNumber] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'duitnow'>('cash');
     const [activeCategory, setActiveCategory] = useState(categories[0]?.name ?? null);
+    const [picker, setPicker] = useState<PosProduct | null>(null);
 
-    function addProduct(product: PosProduct) {
-        // Auto-pick required defaults; for required-without-defaults open a quick prompt fallback.
-        const optionIds: number[] = [];
-        const labels: string[] = [];
-        let extra = 0;
-        for (const group of product.modifier_groups) {
-            const defaults = group.options.filter((o) => o.is_default);
-            const pick =
-                defaults.length > 0
-                    ? defaults
-                    : group.is_required
-                      ? group.options.slice(0, group.min_select)
-                      : [];
-            for (const opt of pick.slice(0, group.max_select)) {
-                optionIds.push(opt.id);
-                labels.push(opt.name);
-                extra += Number(opt.price_delta);
-            }
+    function tap(product: PosProduct) {
+        if (product.modifier_groups.length === 0) {
+            commitLine(product, [], []);
+            return;
         }
-        const key = `${product.id}#${optionIds.sort().join('|')}`;
+        setPicker(product);
+    }
+
+    function commitLine(product: PosProduct, optionIds: number[], labels: string[]) {
+        const extra = product.modifier_groups
+            .flatMap((g) => g.options)
+            .filter((o) => optionIds.includes(o.id))
+            .reduce((sum, o) => sum + Number(o.price_delta), 0);
+        const key = `${product.id}#${[...optionIds].sort((a, b) => a - b).join('|')}`;
         setLines((prev) => {
             const existing = prev.find((l) => l.key === key);
             if (existing) {
@@ -160,7 +156,7 @@ export default function PosWalkIn({ branch, categories }: Props) {
                             <button
                                 key={p.id}
                                 type="button"
-                                onClick={() => addProduct(p)}
+                                onClick={() => tap(p)}
                                 className="flex flex-col gap-1 rounded-lg border border-slate-700 bg-slate-900 p-3 text-left hover:border-amber-500"
                             >
                                 <span className="text-sm font-semibold">{p.name}</span>
@@ -317,7 +313,173 @@ export default function PosWalkIn({ branch, categories }: Props) {
                     </Button>
                 </aside>
             </div>
+
+            <Sheet open={picker !== null} onOpenChange={(o) => !o && setPicker(null)}>
+                <SheetContent
+                    side="bottom"
+                    className="border-slate-700 bg-slate-900 text-slate-100 sm:mx-auto sm:max-w-2xl sm:rounded-xl"
+                >
+                    {picker && (
+                        <ModifierPicker
+                            key={picker.id}
+                            product={picker}
+                            onAdd={(ids, labels) => {
+                                commitLine(picker, ids, labels);
+                                setPicker(null);
+                            }}
+                            onClose={() => setPicker(null)}
+                        />
+                    )}
+                </SheetContent>
+            </Sheet>
         </PosLayout>
+    );
+}
+
+function ModifierPicker({
+    product,
+    onAdd,
+    onClose,
+}: {
+    product: PosProduct;
+    onAdd: (optionIds: number[], labels: string[]) => void;
+    onClose: () => void;
+}) {
+    const [selection, setSelection] = useState<Record<number, number[]>>(() => {
+        const init: Record<number, number[]> = {};
+        for (const group of product.modifier_groups) {
+            const defaults = group.options.filter((o) => o.is_default).map((o) => o.id);
+            if (defaults.length > 0 || group.is_required) {
+                init[group.id] = defaults.slice(0, group.max_select);
+            }
+        }
+        return init;
+    });
+
+    let validationMessage = '';
+    let valid = true;
+    for (const group of product.modifier_groups) {
+        const picked = selection[group.id] ?? [];
+        if (group.is_required && picked.length < group.min_select) {
+            validationMessage = `${group.name}: pick at least ${group.min_select}`;
+            valid = false;
+            break;
+        }
+        if (picked.length > group.max_select) {
+            validationMessage = `${group.name}: max ${group.max_select}`;
+            valid = false;
+            break;
+        }
+    }
+
+    const extra = product.modifier_groups.reduce((sum, group) => {
+        const picked = selection[group.id] ?? [];
+        return (
+            sum +
+            group.options
+                .filter((o) => picked.includes(o.id))
+                .reduce((acc, o) => acc + Number(o.price_delta), 0)
+        );
+    }, 0);
+    const lineTotal = Number(product.price) + extra;
+
+    function toggle(group: ModGroup, optionId: number) {
+        setSelection((prev) => {
+            const current = prev[group.id] ?? [];
+            if (group.selection_type === 'single') {
+                return { ...prev, [group.id]: [optionId] };
+            }
+            if (current.includes(optionId)) {
+                return { ...prev, [group.id]: current.filter((id) => id !== optionId) };
+            }
+            if (current.length >= group.max_select) return prev;
+            return { ...prev, [group.id]: [...current, optionId] };
+        });
+    }
+
+    function submit() {
+        if (!valid) return;
+        const ids: number[] = [];
+        const labels: string[] = [];
+        for (const group of product.modifier_groups) {
+            const picked = selection[group.id] ?? [];
+            for (const opt of group.options.filter((o) => picked.includes(o.id))) {
+                ids.push(opt.id);
+                labels.push(opt.name);
+            }
+        }
+        onAdd(ids, labels);
+    }
+
+    return (
+        <>
+            <SheetTitle className="text-slate-100">{product.name}</SheetTitle>
+            <p className="text-xs text-slate-400">RM{Number(product.price).toFixed(2)}</p>
+
+            <div className="mt-3 max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+                {product.modifier_groups.map((group) => (
+                    <div key={group.id}>
+                        <div className="mb-1.5 flex items-center justify-between">
+                            <h4 className="text-sm font-semibold">
+                                {group.name}
+                                {group.is_required && <span className="ml-1 text-red-400">*</span>}
+                            </h4>
+                            <span className="text-[10px] text-slate-500">
+                                {group.selection_type === 'single'
+                                    ? 'Pick one'
+                                    : `${group.min_select}–${group.max_select}`}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3">
+                            {group.options.map((option) => {
+                                const checked = (selection[group.id] ?? []).includes(option.id);
+                                return (
+                                    <button
+                                        key={option.id}
+                                        type="button"
+                                        onClick={() => toggle(group, option.id)}
+                                        className={cn(
+                                            'flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors',
+                                            checked
+                                                ? 'border-amber-500 bg-amber-900/30 text-amber-200'
+                                                : 'border-slate-700 hover:bg-slate-800',
+                                        )}
+                                    >
+                                        <span>{option.name}</span>
+                                        <span className="text-[10px] text-slate-400">
+                                            {Number(option.price_delta) > 0
+                                                ? `+RM${Number(option.price_delta).toFixed(2)}`
+                                                : '—'}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {!valid && validationMessage && (
+                <p className="mt-3 text-xs text-red-400">{validationMessage}</p>
+            )}
+
+            <div className="mt-3 flex gap-2 border-t border-slate-700 pt-3">
+                <Button
+                    onClick={onClose}
+                    variant="outline"
+                    className="flex-1 border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800"
+                >
+                    Cancel
+                </Button>
+                <Button
+                    onClick={submit}
+                    disabled={!valid}
+                    className="flex-1 bg-amber-600 hover:bg-amber-500"
+                >
+                    Add — RM{lineTotal.toFixed(2)}
+                </Button>
+            </div>
+        </>
     );
 }
 

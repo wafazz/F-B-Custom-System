@@ -109,17 +109,28 @@ class Branch extends Model
             return false;
         }
 
-        $current = $time->format('H:i');
-        $open = $hours['open'] ?? '00:00';
-        $close = $hours['close'] ?? '23:59';
+        $currentMinutes = $time->hour * 60 + $time->minute;
+        $openMinutes = $this->parseTimeToMinutes($hours['open'] ?? '00:00');
+        $closeMinutes = $this->parseTimeToMinutes($hours['close'] ?? '23:59');
 
-        // Close time at or before open means the branch closes after midnight
+        // Close <= open means the branch closes after midnight
         // (e.g. open 08:00, close 00:00 or 02:00). Wrap around to next day.
-        if ($close <= $open) {
-            return $current >= $open || $current < $close;
+        if ($closeMinutes <= $openMinutes) {
+            return $currentMinutes >= $openMinutes || $currentMinutes < $closeMinutes;
         }
 
-        return $current >= $open && $current <= $close;
+        return $currentMinutes >= $openMinutes && $currentMinutes <= $closeMinutes;
+    }
+
+    protected function parseTimeToMinutes(string $time): int
+    {
+        // Robust against "HH:MM", "HH:MM:SS", or ISO datetime — we only want
+        // the wall-clock H + M.
+        if (preg_match('/(\d{1,2}):(\d{2})/', $time, $m)) {
+            return ((int) $m[1]) * 60 + (int) $m[2];
+        }
+
+        return 0;
     }
 
     public static function defaultOperatingHours(): array

@@ -73,6 +73,28 @@ test('branch isOpenNow handles close-after-midnight wraparound', function () {
     expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 08:00:00')))->toBeTrue();
 });
 
+test('branch isOpenNow handles open 00:00 to close 23:59 as 24h open', function () {
+    $branch = Branch::factory()->create([
+        'operating_hours' => collect(Branch::defaultOperatingHours())
+            ->map(fn ($h) => array_merge($h, ['open' => '00:00', 'close' => '23:59']))
+            ->all(),
+    ]);
+
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 23:43:00')))->toBeTrue();
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 11:43:00')))->toBeTrue();
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 00:01:00')))->toBeTrue();
+});
+
+test('isOpenNow tolerates HH:MM:SS time strings from Filament TimePicker', function () {
+    $branch = Branch::factory()->create([
+        'operating_hours' => collect(Branch::defaultOperatingHours())
+            ->map(fn ($h) => array_merge($h, ['open' => '00:00:00', 'close' => '23:59:00']))
+            ->all(),
+    ]);
+
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 23:43:00')))->toBeTrue();
+});
+
 test('branch isOpenNow handles close 2am wraparound', function () {
     $branch = Branch::factory()->create([
         'operating_hours' => collect(Branch::defaultOperatingHours())

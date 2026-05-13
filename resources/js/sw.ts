@@ -38,7 +38,13 @@ self.addEventListener('push', (event) => {
         data: { url: data.url ?? '/' },
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(
+        self.registration.showNotification(title, options).catch((err: unknown) => {
+            // Permission can revoke between subscribe + push delivery.
+            // Swallow rather than crash the SW.
+            console.warn('push showNotification failed', err);
+        }),
+    );
 });
 
 self.addEventListener('notificationclick', (event) => {

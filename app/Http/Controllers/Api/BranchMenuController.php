@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\RequestChannel;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class BranchMenuController extends Controller
 {
     /** Public read-only menu — branch-scoped, only available + in-stock items. */
-    public function __invoke(Branch $branch): JsonResponse
+    public function __invoke(Request $request, Branch $branch): JsonResponse
     {
         if ($branch->status !== 'active' || ! $branch->accepts_orders) {
             return response()->json([
@@ -21,7 +23,10 @@ class BranchMenuController extends Controller
             ]);
         }
 
+        $channelColumn = RequestChannel::availableColumn(RequestChannel::detect($request));
+
         $products = Product::availableAtBranch($branch->id)
+            ->where($channelColumn, true)
             ->with([
                 'category',
                 'modifierGroups.options' => fn ($q) => $q->where('is_available', true),

@@ -30,6 +30,9 @@ class Product extends Model
         'calories',
         'prep_time_minutes',
         'status',
+        'available_web',
+        'available_pwa',
+        'available_mobile',
         'is_featured',
         'sort_order',
     ];
@@ -41,6 +44,9 @@ class Product extends Model
             'base_price' => 'decimal:2',
             'sst_applicable' => 'boolean',
             'is_featured' => 'boolean',
+            'available_web' => 'boolean',
+            'available_pwa' => 'boolean',
+            'available_mobile' => 'boolean',
         ];
     }
 

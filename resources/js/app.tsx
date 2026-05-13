@@ -1,7 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 
-import { createInertiaApp, type ResolvedComponent } from '@inertiajs/react';
+import { createInertiaApp, router, type ResolvedComponent } from '@inertiajs/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -11,6 +11,15 @@ import { queryClient } from '@/lib/query-client';
 if ('serviceWorker' in navigator) {
     registerSW({ immediate: true });
 }
+
+const isPwa =
+    typeof window !== 'undefined' &&
+    (window.matchMedia?.('(display-mode: standalone)').matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+
+router.on('before', (event) => {
+    event.detail.visit.headers['X-Channel'] = isPwa ? 'pwa' : 'web';
+});
 
 const appName = import.meta.env.VITE_APP_NAME || 'Star Coffee';
 

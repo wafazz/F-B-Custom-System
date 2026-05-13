@@ -89,6 +89,27 @@ class ProductResource extends Resource
                 ])
                 ->columns(3),
 
+            Forms\Components\Section::make('Channel availability')
+                ->description('Toggle which online channels this product appears on. POS walk-in always shows every product regardless of these flags.')
+                ->schema([
+                    Forms\Components\Toggle::make('available_web')
+                        ->label('Web')
+                        ->helperText('Browser ordering')
+                        ->default(true)
+                        ->inline(false),
+                    Forms\Components\Toggle::make('available_pwa')
+                        ->label('PWA')
+                        ->helperText('Installed PWA')
+                        ->default(true)
+                        ->inline(false),
+                    Forms\Components\Toggle::make('available_mobile')
+                        ->label('Mobile app')
+                        ->helperText('Native app (Phase 2)')
+                        ->default(true)
+                        ->inline(false),
+                ])
+                ->columns(3),
+
             Forms\Components\Section::make('Media')
                 ->schema([
                     Forms\Components\FileUpload::make('image')

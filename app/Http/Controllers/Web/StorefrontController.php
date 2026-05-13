@@ -60,8 +60,12 @@ class StorefrontController extends Controller
         ]);
     }
 
-    public function branchHome(Branch $branch): Response
+    public function branchHome(\Illuminate\Http\Request $request, Branch $branch): Response
     {
+        $channelColumn = \App\Support\RequestChannel::availableColumn(
+            \App\Support\RequestChannel::detect($request)
+        );
+
         $categories = Category::active()
             ->root()
             ->orderBy('sort_order')
@@ -78,6 +82,7 @@ class StorefrontController extends Controller
         $featured = Product::active()
             ->featured()
             ->availableAtBranch($branch->id)
+            ->where($channelColumn, true)
             ->limit(3)
             ->get(['id', 'name', 'slug', 'image', 'base_price', 'description'])
             ->map(fn (Product $p) => [

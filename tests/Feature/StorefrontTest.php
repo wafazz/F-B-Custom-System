@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Branch;
+use App\Models\Category;
+use App\Models\Product;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -52,4 +54,30 @@ test('storefront menu page exposes branch context and reverb channel', function 
             ->where('branch.id', $branch->id)
             ->where('reverb.channel', "branch.{$branch->id}.stock")
             ->where('reverb.event', 'stock.changed'));
+});
+
+test('branch menu API filters products by X-Channel header (web)', function () {
+    $branch = Branch::factory()->create();
+    $cat = Category::factory()->create();
+    $webOnly = Product::factory()->create(['category_id' => $cat->id, 'available_web' => true, 'available_pwa' => false, 'available_mobile' => false]);
+    $pwaOnly = Product::factory()->create(['category_id' => $cat->id, 'available_web' => false, 'available_pwa' => true, 'available_mobile' => false]);
+    $branch->products()->attach([$webOnly->id, $pwaOnly->id], ['is_available' => true]);
+
+    $response = $this->getJson("/api/branches/{$branch->id}/menu", ['X-Channel' => 'web']);
+    $response->assertOk();
+    $ids = collect($response->json('categories.0.products', []))->pluck('id')->all();
+    expect($ids)->toContain($webOnly->id)->and($ids)->not->toContain($pwaOnly->id);
+});
+
+test('branch menu API filters products by X-Channel header (pwa)', function () {
+    $branch = Branch::factory()->create();
+    $cat = Category::factory()->create();
+    $webOnly = Product::factory()->create(['category_id' => $cat->id, 'available_web' => true, 'available_pwa' => false]);
+    $pwaOnly = Product::factory()->create(['category_id' => $cat->id, 'available_web' => false, 'available_pwa' => true]);
+    $branch->products()->attach([$webOnly->id, $pwaOnly->id], ['is_available' => true]);
+
+    $response = $this->getJson("/api/branches/{$branch->id}/menu", ['X-Channel' => 'pwa']);
+    $response->assertOk();
+    $ids = collect($response->json('categories.0.products', []))->pluck('id')->all();
+    expect($ids)->toContain($pwaOnly->id)->and($ids)->not->toContain($webOnly->id);
 });

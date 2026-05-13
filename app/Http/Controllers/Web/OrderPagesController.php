@@ -92,7 +92,9 @@ class OrderPagesController extends Controller
             'code' => $branch->code,
             'name' => $branch->name,
             'sst_rate' => (float) $branch->sst_rate,
-            'sst_enabled' => $branch->sst_enabled,
+            'sst_enabled' => (bool) $branch->sst_enabled,
+            'service_charge_rate' => (float) $branch->service_charge_rate,
+            'service_charge_enabled' => (bool) $branch->service_charge_enabled,
             'accepts_orders' => $branch->accepts_orders,
             'is_open_now' => $branch->isOpenNow(),
         ];

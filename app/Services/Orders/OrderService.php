@@ -67,6 +67,7 @@ class OrderService
                 : ModifierOption::query()->whereIn('id', $optionIds)->with('group')->get()->keyBy('id');
 
             $sstRate = $branch->sst_enabled ? (float) $branch->sst_rate / 100 : 0;
+            $serviceRate = $branch->service_charge_enabled ? (float) $branch->service_charge_rate / 100 : 0;
             $subtotal = 0;
             $sstAmount = 0;
 
@@ -148,10 +149,14 @@ class OrderService
             $discountTotal = round(min($subtotal, $voucherDiscount + $loyaltyDiscount), 2);
 
             // Recompute SST on discounted subtotal proportionally.
+            $discountedSubtotal = max(0, $subtotal - $discountTotal);
             if ($discountTotal > 0 && $subtotal > 0) {
-                $sstAmount = round($sstAmount * (($subtotal - $discountTotal) / $subtotal), 2);
+                $sstAmount = round($sstAmount * ($discountedSubtotal / $subtotal), 2);
             }
-            $total = round(($subtotal - $discountTotal) + $sstAmount, 2);
+            $serviceChargeAmount = $serviceRate > 0
+                ? round($discountedSubtotal * $serviceRate, 2)
+                : 0.0;
+            $total = round($discountedSubtotal + $sstAmount + $serviceChargeAmount, 2);
 
             // Wallet payment validates upfront so we don't create a half-paid order.
             if ($payload->paymentMethod === 'wallet') {
@@ -176,6 +181,7 @@ class OrderService
                 'status' => OrderStatus::Pending,
                 'subtotal' => $subtotal,
                 'sst_amount' => $sstAmount,
+                'service_charge_amount' => $serviceChargeAmount,
                 'discount_amount' => $discountTotal,
                 'total' => $total,
                 'notes' => $payload->notes,

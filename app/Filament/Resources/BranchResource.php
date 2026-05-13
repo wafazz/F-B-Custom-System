@@ -148,14 +148,35 @@ class BranchResource extends Resource
                 ])
                 ->collapsible(),
 
-            Forms\Components\Section::make('Tax & Receipt')
+            Forms\Components\Section::make('Tax & Service Charge')
+                ->description('Both rates apply to this branch only. SST + service charge are added on top of the (post-discount) subtotal.')
                 ->schema([
                     Forms\Components\TextInput::make('sst_rate')
                         ->label('SST rate (%)')
                         ->numeric()
                         ->default(6.00)
-                        ->step(0.01),
-                    Forms\Components\Toggle::make('sst_enabled')->default(true),
+                        ->step(0.01)
+                        ->suffix('%'),
+                    Forms\Components\Toggle::make('sst_enabled')
+                        ->label('SST enabled')
+                        ->default(true)
+                        ->inline(false),
+                    Forms\Components\TextInput::make('service_charge_rate')
+                        ->label('Service charge (%)')
+                        ->numeric()
+                        ->default(0)
+                        ->step(0.01)
+                        ->suffix('%'),
+                    Forms\Components\Toggle::make('service_charge_enabled')
+                        ->label('Service charge enabled')
+                        ->default(false)
+                        ->inline(false),
+                ])
+                ->columns(2)
+                ->collapsed(),
+
+            Forms\Components\Section::make('Receipt')
+                ->schema([
                     Forms\Components\Textarea::make('receipt_header')->rows(2),
                     Forms\Components\Textarea::make('receipt_footer')->rows(2),
                 ])

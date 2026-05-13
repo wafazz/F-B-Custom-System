@@ -30,7 +30,10 @@ export default function Checkout({ branch, wallet_balance, is_authenticated }: P
 
     const { subtotal } = cartTotals(lines);
     const sst = branch.sst_enabled ? subtotal * (branch.sst_rate / 100) : 0;
-    const total = subtotal + sst;
+    const serviceCharge = branch.service_charge_enabled
+        ? subtotal * (branch.service_charge_rate / 100)
+        : 0;
+    const total = subtotal + sst + serviceCharge;
 
     const walletAffordable = is_authenticated && wallet_balance >= total;
 
@@ -204,6 +207,12 @@ export default function Checkout({ branch, wallet_balance, is_authenticated }: P
                     <span>Subtotal</span>
                     <span>RM{subtotal.toFixed(2)}</span>
                 </div>
+                {branch.service_charge_enabled && (
+                    <div className="text-muted-foreground flex justify-between">
+                        <span>Service charge ({branch.service_charge_rate.toFixed(0)}%)</span>
+                        <span>RM{serviceCharge.toFixed(2)}</span>
+                    </div>
+                )}
                 {branch.sst_enabled && (
                     <div className="text-muted-foreground flex justify-between">
                         <span>SST ({branch.sst_rate.toFixed(0)}%)</span>

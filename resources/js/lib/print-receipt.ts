@@ -8,6 +8,7 @@ export interface ReceiptOrder {
     payment_reference: string | null;
     subtotal: number;
     sst_amount: number;
+    service_charge_amount: number;
     discount_amount: number;
     total: number;
     customer_name: string | null;
@@ -27,6 +28,7 @@ interface ReceiptBranch {
     receipt_header?: string | null;
     receipt_footer?: string | null;
     sst_rate?: number;
+    service_charge_rate?: number;
 }
 
 interface PrintOptions {
@@ -105,6 +107,9 @@ function renderReceiptHtml(order: ReceiptOrder, branch: ReceiptBranch, size: str
     const sstRow = order.sst_amount > 0
         ? `<tr><td>SST${branch.sst_rate ? ` ${branch.sst_rate.toFixed(0)}%` : ''}</td><td class="r">${money(order.sst_amount)}</td></tr>`
         : '';
+    const serviceRow = order.service_charge_amount > 0
+        ? `<tr><td>Service charge${branch.service_charge_rate ? ` ${branch.service_charge_rate.toFixed(0)}%` : ''}</td><td class="r">${money(order.service_charge_amount)}</td></tr>`
+        : '';
     const discountRow = order.discount_amount > 0
         ? `<tr><td>Discount</td><td class="r">−${money(order.discount_amount)}</td></tr>`
         : '';
@@ -166,6 +171,7 @@ function renderReceiptHtml(order: ReceiptOrder, branch: ReceiptBranch, size: str
   <table class="totals">
     <tr><td>Subtotal</td><td class="r">${money(order.subtotal)}</td></tr>
     ${discountRow}
+    ${serviceRow}
     ${sstRow}
     <tr class="grand"><td>TOTAL</td><td class="r">${money(order.total)}</td></tr>
   </table>

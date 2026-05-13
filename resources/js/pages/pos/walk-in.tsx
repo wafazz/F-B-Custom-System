@@ -67,7 +67,15 @@ interface Line {
 }
 
 interface Props {
-    branch: { id: number; code: string; name: string; sst_rate: number; sst_enabled: boolean };
+    branch: {
+        id: number;
+        code: string;
+        name: string;
+        sst_rate: number;
+        sst_enabled: boolean;
+        service_charge_rate: number;
+        service_charge_enabled: boolean;
+    };
     staff: { name: string };
     parents: ParentCategory[];
 }
@@ -166,7 +174,10 @@ export default function PosWalkIn({ branch, parents }: Props) {
 
     const subtotal = lines.reduce((sum, l) => sum + l.unit_price * l.quantity, 0);
     const sst = branch.sst_enabled ? subtotal * (branch.sst_rate / 100) : 0;
-    const total = subtotal + sst;
+    const serviceCharge = branch.service_charge_enabled
+        ? subtotal * (branch.service_charge_rate / 100)
+        : 0;
+    const total = subtotal + sst + serviceCharge;
     const activeParentObj = parents.find((p) => p.name === activeParent) ?? parents[0] ?? null;
     const childCats = activeParentObj?.children ?? [];
     const showChildBar = childCats.length > 1 || childCats[0]?.name !== activeParentObj?.name;
@@ -563,9 +574,15 @@ export default function PosWalkIn({ branch, parents }: Props) {
                             <span>Subtotal</span>
                             <span>RM{subtotal.toFixed(2)}</span>
                         </div>
+                        {branch.service_charge_enabled && (
+                            <div className="flex justify-between text-slate-400">
+                                <span>Service charge {branch.service_charge_rate.toFixed(0)}%</span>
+                                <span>RM{serviceCharge.toFixed(2)}</span>
+                            </div>
+                        )}
                         {branch.sst_enabled && (
                             <div className="flex justify-between text-slate-400">
-                                <span>SST</span>
+                                <span>SST {branch.sst_rate.toFixed(0)}%</span>
                                 <span>RM{sst.toFixed(2)}</span>
                             </div>
                         )}

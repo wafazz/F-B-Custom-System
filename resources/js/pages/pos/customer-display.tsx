@@ -25,7 +25,15 @@ interface CartState {
 }
 
 interface Props {
-    branch: { id: number; code: string; name: string; sst_rate: number; sst_enabled: boolean };
+    branch: {
+        id: number;
+        code: string;
+        name: string;
+        sst_rate: number;
+        sst_enabled: boolean;
+        service_charge_rate: number;
+        service_charge_enabled: boolean;
+    };
     staff: { name: string };
 }
 
@@ -59,7 +67,10 @@ export default function CustomerDisplay({ branch, staff }: Props) {
 
     const subtotal = cart.lines.reduce((sum, l) => sum + l.unit_price * l.quantity, 0);
     const sst = branch.sst_enabled ? subtotal * (branch.sst_rate / 100) : 0;
-    const total = subtotal + sst;
+    const serviceCharge = branch.service_charge_enabled
+        ? subtotal * (branch.service_charge_rate / 100)
+        : 0;
+    const total = subtotal + sst + serviceCharge;
     const itemCount = cart.lines.reduce((sum, l) => sum + l.quantity, 0);
 
     return (
@@ -202,6 +213,14 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                                     <span>Subtotal</span>
                                     <span>RM{subtotal.toFixed(2)}</span>
                                 </div>
+                                {branch.service_charge_enabled && (
+                                    <div className="flex justify-between text-sm text-amber-700">
+                                        <span>
+                                            Service charge {branch.service_charge_rate.toFixed(0)}%
+                                        </span>
+                                        <span>RM{serviceCharge.toFixed(2)}</span>
+                                    </div>
+                                )}
                                 {branch.sst_enabled && (
                                     <div className="flex justify-between text-sm text-amber-700">
                                         <span>SST {branch.sst_rate.toFixed(0)}%</span>

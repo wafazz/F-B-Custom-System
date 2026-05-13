@@ -77,6 +77,8 @@ export interface BranchContext {
     cover_image: string | null;
     sst_rate: number;
     sst_enabled: boolean;
+    service_charge_rate: number;
+    service_charge_enabled: boolean;
     status: string;
     accepts_orders: boolean;
     is_open_now: boolean;

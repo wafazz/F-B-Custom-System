@@ -37,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->profile(isSimple: false)
             ->brandName('Star Coffee House')
             ->brandLogo(asset('images/logo.jpg'))
             ->brandLogoHeight('2.5rem')

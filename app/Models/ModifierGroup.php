@@ -21,6 +21,7 @@ class ModifierGroup extends Model
         'is_required',
         'min_select',
         'max_select',
+        'allow_quantity',
         'sort_order',
     ];
 
@@ -28,6 +29,7 @@ class ModifierGroup extends Model
     {
         return [
             'is_required' => 'boolean',
+            'allow_quantity' => 'boolean',
         ];
     }
 

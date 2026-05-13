@@ -35,6 +35,7 @@ interface ModGroup {
     is_required: boolean;
     min_select: number;
     max_select: number;
+    allow_quantity: boolean;
     options: ModOption[];
 }
 
@@ -741,53 +742,83 @@ function ModifierPicker({
                                     : 'Optional'}
                             </span>
                         </div>
-                        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                            {group.options.map((option) => {
-                                const count = countOf(group.id, option.id);
-                                return (
-                                    <div
-                                        key={option.id}
-                                        className={cn(
-                                            'flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors',
-                                            count > 0
-                                                ? 'border-amber-500 bg-amber-900/30 text-amber-200'
-                                                : 'border-slate-700',
-                                        )}
-                                    >
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm">{option.name}</p>
-                                            <p className="text-[10px] text-slate-400">
+                        {group.allow_quantity ? (
+                            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                                {group.options.map((option) => {
+                                    const count = countOf(group.id, option.id);
+                                    return (
+                                        <div
+                                            key={option.id}
+                                            className={cn(
+                                                'flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors',
+                                                count > 0
+                                                    ? 'border-amber-500 bg-amber-900/30 text-amber-200'
+                                                    : 'border-slate-700',
+                                            )}
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm">{option.name}</p>
+                                                <p className="text-[10px] text-slate-400">
+                                                    {Number(option.price_delta) > 0
+                                                        ? `+RM${Number(option.price_delta).toFixed(2)} each`
+                                                        : 'No extra charge'}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-shrink-0 items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => bump(group, option.id, -1)}
+                                                    disabled={count === 0}
+                                                    className="flex size-7 items-center justify-center rounded-md bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-30"
+                                                    aria-label={`Decrease ${option.name}`}
+                                                >
+                                                    −
+                                                </button>
+                                                <span className="w-6 text-center text-sm font-bold tabular-nums">
+                                                    {count}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => bump(group, option.id, 1)}
+                                                    className="flex size-7 items-center justify-center rounded-md bg-amber-600 font-bold text-white hover:bg-amber-500"
+                                                    aria-label={`Increase ${option.name}`}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3">
+                                {group.options.map((option) => {
+                                    const active = countOf(group.id, option.id) > 0;
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            onClick={() =>
+                                                bump(group, option.id, active ? -1 : 1)
+                                            }
+                                            className={cn(
+                                                'flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors',
+                                                active
+                                                    ? 'border-amber-500 bg-amber-900/30 text-amber-200'
+                                                    : 'border-slate-700 hover:bg-slate-800',
+                                            )}
+                                        >
+                                            <span>{option.name}</span>
+                                            <span className="text-[10px] text-slate-400">
                                                 {Number(option.price_delta) > 0
-                                                    ? `+RM${Number(option.price_delta).toFixed(2)} each`
-                                                    : 'No extra charge'}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-shrink-0 items-center gap-1.5">
-                                            <button
-                                                type="button"
-                                                onClick={() => bump(group, option.id, -1)}
-                                                disabled={count === 0}
-                                                className="flex size-7 items-center justify-center rounded-md bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-30"
-                                                aria-label={`Decrease ${option.name}`}
-                                            >
-                                                −
-                                            </button>
-                                            <span className="w-6 text-center text-sm font-bold tabular-nums">
-                                                {count}
+                                                    ? `+RM${Number(option.price_delta).toFixed(2)}`
+                                                    : '—'}
                                             </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => bump(group, option.id, 1)}
-                                                className="flex size-7 items-center justify-center rounded-md bg-amber-600 font-bold text-white hover:bg-amber-500"
-                                                aria-label={`Increase ${option.name}`}
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

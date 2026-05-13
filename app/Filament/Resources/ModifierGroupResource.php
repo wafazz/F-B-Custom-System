@@ -39,6 +39,12 @@ class ModifierGroupResource extends Resource
             Forms\Components\Toggle::make('is_required'),
             Forms\Components\TextInput::make('min_select')->numeric()->default(0),
             Forms\Components\TextInput::make('max_select')->numeric()->default(1),
+            Forms\Components\Toggle::make('allow_quantity')
+                ->label('Allow quantity per option')
+                ->helperText('When on, the POS picker shows a +/− stepper so the cashier can add the same option multiple times (e.g. 3× Prawn). When off, each option is a single tap-to-select.')
+                ->default(false)
+                ->inline(false)
+                ->columnSpanFull(),
             Forms\Components\TextInput::make('sort_order')->numeric()->default(0),
         ])->columns(2);
     }

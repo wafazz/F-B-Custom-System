@@ -72,6 +72,7 @@ class WalkInController extends Controller
                         'is_required' => $g->is_required,
                         'min_select' => $g->min_select,
                         'max_select' => $g->max_select,
+                        'allow_quantity' => (bool) $g->allow_quantity,
                         'options' => $options,
                     ];
                 })->values()->all(),

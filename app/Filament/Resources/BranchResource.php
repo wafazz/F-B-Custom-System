@@ -95,57 +95,29 @@ class BranchResource extends Resource
                 ->columns(3),
 
             Forms\Components\Section::make('Operating Hours')
-                ->description('Set per-day hours. Disable a day to mark closed.')
-                ->schema([
-                    Forms\Components\Repeater::make('operating_hours')
-                        ->label('')
-                        ->schema([
-                            Forms\Components\Hidden::make('day'),
-                            Forms\Components\Placeholder::make('day_label')
-                                ->label('Day')
-                                ->content(fn (callable $get) => ucfirst((string) $get('day'))),
-                            Forms\Components\Toggle::make('enabled')->inline(false)->default(true),
-                            Forms\Components\TimePicker::make('open')->seconds(false)->default('08:00'),
-                            Forms\Components\TimePicker::make('close')->seconds(false)->default('22:00'),
-                        ])
-                        ->columns(4)
-                        ->default(fn () => collect(Branch::defaultOperatingHours())
-                            ->map(fn ($v, $k) => array_merge($v, ['day' => $k]))
-                            ->values()
-                            ->all())
-                        ->afterStateHydrated(function ($state, callable $set) {
-                            $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                            $rows = is_array($state) ? array_values($state) : [];
-                            $normalized = [];
-                            foreach ($days as $i => $day) {
-                                $row = is_array($rows[$i] ?? null) ? $rows[$i] : [];
-                                $normalized[] = [
-                                    'day' => $day,
-                                    'enabled' => $row['enabled'] ?? true,
-                                    'open' => $row['open'] ?? '08:00',
-                                    'close' => $row['close'] ?? '22:00',
-                                ];
-                            }
-                            $set('operating_hours', $normalized);
-                        })
-                        ->dehydrateStateUsing(function ($state) {
-                            $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                            $rows = array_values((array) $state);
-                            $out = [];
-                            foreach ($days as $i => $day) {
-                                $row = is_array($rows[$i] ?? null) ? $rows[$i] : [];
-                                $out[$day] = [
-                                    'enabled' => $row['enabled'] ?? true,
-                                    'open' => $row['open'] ?? '08:00',
-                                    'close' => $row['close'] ?? '22:00',
-                                ];
-                            }
-                            return $out;
-                        })
-                        ->addable(false)
-                        ->deletable(false)
-                        ->reorderable(false),
-                ])
+                ->description('Set per-day hours. Disable a day to mark closed. Use 00:00–23:59 for 24h open, or close past midnight (e.g. 18:00 → 02:00).')
+                ->schema(
+                    collect(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
+                        ->map(fn (string $day) => Forms\Components\Grid::make(4)
+                            ->schema([
+                                Forms\Components\Placeholder::make("op_label_{$day}")
+                                    ->label('')
+                                    ->content(ucfirst($day)),
+                                Forms\Components\Toggle::make("operating_hours.{$day}.enabled")
+                                    ->label('Open')
+                                    ->inline(false)
+                                    ->default(true),
+                                Forms\Components\TimePicker::make("operating_hours.{$day}.open")
+                                    ->label('From')
+                                    ->seconds(false)
+                                    ->default('08:00'),
+                                Forms\Components\TimePicker::make("operating_hours.{$day}.close")
+                                    ->label('To')
+                                    ->seconds(false)
+                                    ->default('22:00'),
+                            ]))
+                        ->all()
+                )
                 ->collapsible(),
 
             Forms\Components\Section::make('Tax & Service Charge')

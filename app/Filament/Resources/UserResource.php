@@ -182,7 +182,7 @@ class UserResource extends Resource
         $query = parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
 
         if (! auth()->user()?->hasRole('super_admin')) {
-            $query->whereDoesntHave('roles', fn (Builder $q) => $q->where('name', 'super_admin'));
+            $query->whereDoesntHave('roles', fn (Builder $q) => $q->whereIn('name', ['super_admin', 'hq_admin']));
         }
 
         return $query;

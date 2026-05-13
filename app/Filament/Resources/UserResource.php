@@ -76,7 +76,15 @@ class UserResource extends Resource
                         ->minLength(8)
                         ->dehydrated(false),
                     Forms\Components\Select::make('roles')
-                        ->relationship('roles', 'name')
+                        ->relationship(
+                            'roles',
+                            'name',
+                            modifyQueryUsing: function (Builder $query) {
+                                if (! auth()->user()?->hasRole('super_admin')) {
+                                    $query->whereNotIn('name', ['super_admin', 'hq_admin']);
+                                }
+                            },
+                        )
                         ->multiple()
                         ->preload()
                         ->columnSpanFull(),
@@ -171,6 +179,12 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
+        $query = parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
+
+        if (! auth()->user()?->hasRole('super_admin')) {
+            $query->whereDoesntHave('roles', fn (Builder $q) => $q->where('name', 'super_admin'));
+        }
+
+        return $query;
     }
 }

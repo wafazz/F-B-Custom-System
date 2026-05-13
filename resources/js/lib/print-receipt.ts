@@ -90,7 +90,9 @@ function renderReceiptHtml(order: ReceiptOrder, branch: ReceiptBranch, size: str
 
     const itemRows = order.items
         .map((item) => {
-            const mods = item.modifiers.map((m) => escapeHtml(m.option_name)).join(' · ');
+            const mods = groupCounts(item.modifiers.map((m) => m.option_name))
+                .map(escapeHtml)
+                .join(' · ');
             return `
                 <tr>
                     <td class="qty">${item.quantity}×</td>
@@ -197,6 +199,12 @@ function renderReceiptHtml(order: ReceiptOrder, branch: ReceiptBranch, size: str
 
 function money(n: number): string {
     return `RM${Number(n).toFixed(2)}`;
+}
+
+function groupCounts(labels: string[]): string[] {
+    const counts = new Map<string, number>();
+    for (const l of labels) counts.set(l, (counts.get(l) ?? 0) + 1);
+    return Array.from(counts.entries()).map(([name, n]) => (n > 1 ? `${name} × ${n}` : name));
 }
 
 function escapeHtml(s: string): string {

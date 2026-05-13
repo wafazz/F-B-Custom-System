@@ -196,7 +196,7 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                                                 </p>
                                                 {l.modifier_labels.length > 0 && (
                                                     <p className="mt-0.5 text-xs text-amber-600">
-                                                        {l.modifier_labels.join(' · ')}
+                                                        {groupModifierLabels(l.modifier_labels).join(' · ')}
                                                     </p>
                                                 )}
                                             </div>
@@ -244,6 +244,12 @@ export default function CustomerDisplay({ branch, staff }: Props) {
             </div>
         </div>
     );
+}
+
+function groupModifierLabels(labels: string[]): string[] {
+    const counts = new Map<string, number>();
+    for (const l of labels) counts.set(l, (counts.get(l) ?? 0) + 1);
+    return Array.from(counts.entries()).map(([name, n]) => (n > 1 ? `${name} × ${n}` : name));
 }
 
 function tierBadgeClasses(tier: string): string {

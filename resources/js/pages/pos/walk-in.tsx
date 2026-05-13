@@ -520,7 +520,7 @@ export default function PosWalkIn({ branch, parents }: Props) {
                                 </div>
                                 {l.modifier_labels.length > 0 && (
                                     <p className="text-[10px] text-slate-500">
-                                        {l.modifier_labels.join(' · ')}
+                                        {groupLabels(l.modifier_labels).join(' · ')}
                                     </p>
                                 )}
                                 <div className="mt-1 flex items-center justify-between">
@@ -652,22 +652,30 @@ function ModifierPicker({
     onAdd: (optionIds: number[], labels: string[]) => void;
     onClose: () => void;
 }) {
-    const [selection, setSelection] = useState<Record<number, number[]>>(() => {
-        const init: Record<number, number[]> = {};
+    // selection: groupId → optionId → count
+    const [selection, setSelection] = useState<Record<number, Record<number, number>>>(() => {
+        const init: Record<number, Record<number, number>> = {};
         for (const group of product.modifier_groups) {
-            const defaults = group.options.filter((o) => o.is_default).map((o) => o.id);
+            const defaults = group.options.filter((o) => o.is_default);
             if (defaults.length > 0 || group.is_required) {
-                init[group.id] = defaults.slice(0, group.max_select);
+                init[group.id] = {};
+                for (const d of defaults) {
+                    init[group.id][d.id] = 1;
+                }
             }
         }
         return init;
     });
 
+    const countOf = (groupId: number, optionId: number) =>
+        selection[groupId]?.[optionId] ?? 0;
+    const totalInGroup = (groupId: number) =>
+        Object.values(selection[groupId] ?? {}).reduce((a, b) => a + b, 0);
+
     let validationMessage = '';
     let valid = true;
     for (const group of product.modifier_groups) {
-        const picked = selection[group.id] ?? [];
-        if (group.is_required && picked.length < group.min_select) {
+        if (group.is_required && totalInGroup(group.id) < group.min_select) {
             validationMessage = `${group.name}: pick at least ${group.min_select}`;
             valid = false;
             break;
@@ -675,23 +683,26 @@ function ModifierPicker({
     }
 
     const extra = product.modifier_groups.reduce((sum, group) => {
-        const picked = selection[group.id] ?? [];
         return (
             sum +
-            group.options
-                .filter((o) => picked.includes(o.id))
-                .reduce((acc, o) => acc + Number(o.price_delta), 0)
+            group.options.reduce(
+                (acc, o) => acc + Number(o.price_delta) * countOf(group.id, o.id),
+                0,
+            )
         );
     }, 0);
     const lineTotal = Number(product.price) + extra;
 
-    function toggle(group: ModGroup, optionId: number) {
+    function bump(group: ModGroup, optionId: number, delta: number) {
         setSelection((prev) => {
-            const current = prev[group.id] ?? [];
-            if (current.includes(optionId)) {
-                return { ...prev, [group.id]: current.filter((id) => id !== optionId) };
+            const groupSel = { ...(prev[group.id] ?? {}) };
+            const next = Math.max(0, (groupSel[optionId] ?? 0) + delta);
+            if (next === 0) {
+                delete groupSel[optionId];
+            } else {
+                groupSel[optionId] = next;
             }
-            return { ...prev, [group.id]: [...current, optionId] };
+            return { ...prev, [group.id]: groupSel };
         });
     }
 
@@ -700,10 +711,12 @@ function ModifierPicker({
         const ids: number[] = [];
         const labels: string[] = [];
         for (const group of product.modifier_groups) {
-            const picked = selection[group.id] ?? [];
-            for (const opt of group.options.filter((o) => picked.includes(o.id))) {
-                ids.push(opt.id);
-                labels.push(opt.name);
+            for (const opt of group.options) {
+                const count = countOf(group.id, opt.id);
+                for (let i = 0; i < count; i++) {
+                    ids.push(opt.id);
+                    labels.push(opt.name);
+                }
             }
         }
         onAdd(ids, labels);
@@ -728,28 +741,50 @@ function ModifierPicker({
                                     : 'Optional'}
                             </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                             {group.options.map((option) => {
-                                const checked = (selection[group.id] ?? []).includes(option.id);
+                                const count = countOf(group.id, option.id);
                                 return (
-                                    <button
+                                    <div
                                         key={option.id}
-                                        type="button"
-                                        onClick={() => toggle(group, option.id)}
                                         className={cn(
-                                            'flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors',
-                                            checked
+                                            'flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-sm transition-colors',
+                                            count > 0
                                                 ? 'border-amber-500 bg-amber-900/30 text-amber-200'
-                                                : 'border-slate-700 hover:bg-slate-800',
+                                                : 'border-slate-700',
                                         )}
                                     >
-                                        <span>{option.name}</span>
-                                        <span className="text-[10px] text-slate-400">
-                                            {Number(option.price_delta) > 0
-                                                ? `+RM${Number(option.price_delta).toFixed(2)}`
-                                                : '—'}
-                                        </span>
-                                    </button>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm">{option.name}</p>
+                                            <p className="text-[10px] text-slate-400">
+                                                {Number(option.price_delta) > 0
+                                                    ? `+RM${Number(option.price_delta).toFixed(2)} each`
+                                                    : 'No extra charge'}
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-shrink-0 items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => bump(group, option.id, -1)}
+                                                disabled={count === 0}
+                                                className="flex size-7 items-center justify-center rounded-md bg-slate-800 text-slate-200 hover:bg-slate-700 disabled:opacity-30"
+                                                aria-label={`Decrease ${option.name}`}
+                                            >
+                                                −
+                                            </button>
+                                            <span className="w-6 text-center text-sm font-bold tabular-nums">
+                                                {count}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => bump(group, option.id, 1)}
+                                                className="flex size-7 items-center justify-center rounded-md bg-amber-600 font-bold text-white hover:bg-amber-500"
+                                                aria-label={`Increase ${option.name}`}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>
@@ -933,6 +968,12 @@ function CashTender({
             </div>
         </>
     );
+}
+
+function groupLabels(labels: string[]): string[] {
+    const counts = new Map<string, number>();
+    for (const l of labels) counts.set(l, (counts.get(l) ?? 0) + 1);
+    return Array.from(counts.entries()).map(([name, n]) => (n > 1 ? `${name} × ${n}` : name));
 }
 
 function tierClasses(tier: string | null): string {

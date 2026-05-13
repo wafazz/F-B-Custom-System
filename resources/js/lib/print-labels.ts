@@ -78,7 +78,9 @@ function renderLabelsHtml(order: LabelOrder, copies: number, size: string, branc
         for (let q = 0; q < item.quantity; q++) {
             for (let c = 0; c < copies; c++) {
                 seq++;
-                const mods = item.modifiers.map((m) => escapeHtml(m.option_name)).join(' · ');
+                const mods = groupCounts(item.modifiers.map((m) => m.option_name))
+                    .map(escapeHtml)
+                    .join(' · ');
                 labels.push(`
                     <article class="label">
                         <div class="num">${escapeHtml(order.number)}</div>
@@ -118,6 +120,12 @@ function renderLabelsHtml(order: LabelOrder, copies: number, size: string, branc
 ${labels.join('')}
 </body>
 </html>`;
+}
+
+function groupCounts(labels: string[]): string[] {
+    const counts = new Map<string, number>();
+    for (const l of labels) counts.set(l, (counts.get(l) ?? 0) + 1);
+    return Array.from(counts.entries()).map(([name, n]) => (n > 1 ? `${name} × ${n}` : name));
 }
 
 function escapeHtml(s: string): string {

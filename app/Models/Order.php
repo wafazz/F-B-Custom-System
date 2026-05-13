@@ -46,6 +46,7 @@ class Order extends Model
     protected $fillable = [
         'number',
         'branch_id',
+        'shift_id',
         'user_id',
         'order_type',
         'dine_in_table',

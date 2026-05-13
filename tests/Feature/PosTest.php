@@ -133,6 +133,8 @@ test('POS walk-in places order, marks paid, and advances to Preparing', function
     $product = Product::factory()->create(['category_id' => $cat->id, 'base_price' => 10.00]);
     $branch->products()->attach($product->id, ['is_available' => true]);
 
+    $shift = app(\App\Services\Pos\PosShiftService::class)->open($branch->id, $user->id, 100.00);
+
     $this->withSession([
         'pos.user_id' => $user->id,
         'pos.branch_id' => $branch->id,
@@ -146,7 +148,85 @@ test('POS walk-in places order, marks paid, and advances to Preparing', function
     $order = Order::firstWhere('branch_id', $branch->id);
     expect($order->payment_method)->toBe('cash')
         ->and($order->payment_status->value)->toBe('paid')
-        ->and($order->status)->toBe(OrderStatus::Preparing);
+        ->and($order->status)->toBe(OrderStatus::Preparing)
+        ->and($order->shift_id)->toBe($shift->id);
+});
+
+test('POS walk-in is blocked when no shift is open', function () {
+    [$branch, $user] = makeStaff();
+    $cat = Category::factory()->create();
+    $product = Product::factory()->create(['category_id' => $cat->id, 'base_price' => 10.00]);
+    $branch->products()->attach($product->id, ['is_available' => true]);
+
+    $this->withSession([
+        'pos.user_id' => $user->id,
+        'pos.branch_id' => $branch->id,
+        'pos.user_name' => $user->name,
+    ])->post('/pos/walk-in', [
+        'order_type' => 'pickup',
+        'payment_method' => 'cash',
+        'lines' => [['product_id' => $product->id, 'quantity' => 1]],
+    ])->assertSessionHasErrors('order');
+
+    expect(Order::where('branch_id', $branch->id)->count())->toBe(0);
+});
+
+test('shift summary computes expected cash from float + cash sales + movements', function () {
+    $branch = Branch::factory()->create(['sst_enabled' => false]);
+    $user = User::factory()->create();
+    $user->assignRole('cashier');
+    $branch->staff()->attach($user->id, [
+        'pin' => Hash::make('1234'),
+        'employment_type' => 'full_time',
+        'is_active' => true,
+    ]);
+
+    $service = app(\App\Services\Pos\PosShiftService::class);
+    $shift = $service->open($branch->id, $user->id, 100.00);
+    $service->recordCashIn($shift->id, $user->id, 50.00, 'extra float');
+    $service->recordCashOut($shift->id, $user->id, 20.00, 'milk supplier');
+
+    $cat = Category::factory()->create();
+    $product = Product::factory()->create(['category_id' => $cat->id, 'base_price' => 10.00]);
+    $branch->products()->attach($product->id, ['is_available' => true]);
+
+    $this->withSession([
+        'pos.user_id' => $user->id,
+        'pos.branch_id' => $branch->id,
+        'pos.user_name' => $user->name,
+    ])->post('/pos/walk-in', [
+        'order_type' => 'pickup',
+        'payment_method' => 'cash',
+        'lines' => [['product_id' => $product->id, 'quantity' => 3]],
+    ])->assertRedirect();
+
+    $summary = $service->summary($shift->fresh());
+    expect($summary['opening_float'])->toBe(100.00)
+        ->and($summary['cash_sales'])->toBe(30.00)
+        ->and($summary['cash_in_total'])->toBe(50.00)
+        ->and($summary['cash_out_total'])->toBe(20.00)
+        ->and($summary['expected_cash'])->toBe(160.00);
+});
+
+test('cannot open a second shift while one is already open', function () {
+    [$branch, $user] = makeStaff();
+    $service = app(\App\Services\Pos\PosShiftService::class);
+    $service->open($branch->id, $user->id, 100.00);
+    expect(fn () => $service->open($branch->id, $user->id, 50.00))
+        ->toThrow(RuntimeException::class);
+});
+
+test('closing a shift records counted, expected, and variance', function () {
+    [$branch, $user] = makeStaff();
+    $service = app(\App\Services\Pos\PosShiftService::class);
+    $shift = $service->open($branch->id, $user->id, 100.00);
+
+    $closed = $service->close($shift->id, $user->id, 95.50, 'short by RM 4.50');
+    expect((float) $closed->opening_float)->toBe(100.00)
+        ->and((float) $closed->expected_cash)->toBe(100.00)
+        ->and((float) $closed->counted_cash)->toBe(95.50)
+        ->and((float) $closed->variance)->toBe(-4.50)
+        ->and($closed->closed_at)->not->toBeNull();
 });
 
 test('dine-in order broadcasts OrderQueuedForDineIn on Preparing transition', function () {

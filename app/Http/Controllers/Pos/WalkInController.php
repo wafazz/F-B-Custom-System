@@ -12,6 +12,7 @@ use App\Models\CustomerTier;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Loyalty\LoyaltyService;
+use App\Services\Pos\PosShiftService;
 use App\Services\Orders\OrderLinePayload;
 use App\Services\Orders\OrderPayload;
 use App\Services\Orders\OrderService;
@@ -161,9 +162,15 @@ class WalkInController extends Controller
         ]);
     }
 
-    public function store(Request $request, OrderService $service, LoyaltyService $loyalty): RedirectResponse
+    public function store(Request $request, OrderService $service, LoyaltyService $loyalty, PosShiftService $shifts): RedirectResponse
     {
         $branchId = (int) $request->session()->get('pos.branch_id');
+        $shift = $shifts->currentForBranch($branchId);
+        if (! $shift) {
+            return back()->withErrors([
+                'order' => 'No open shift. Open a shift before taking orders.',
+            ]);
+        }
 
         $data = $request->validate([
             'order_type' => ['required', 'in:pickup,dine_in'],
@@ -196,6 +203,7 @@ class WalkInController extends Controller
                     'staff_id' => $cashierId,
                     'customer_user_id' => $customerId,
                 ]),
+                shiftId: $shift->id,
             ));
 
             // Walk-in is paid in person, mark immediately + advance to Preparing.

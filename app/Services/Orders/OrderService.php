@@ -174,6 +174,7 @@ class OrderService
             $order = Order::create([
                 'number' => Order::generateNumber($branch->code),
                 'branch_id' => $branch->id,
+                'shift_id' => $payload->shiftId,
                 'user_id' => $payload->userId,
                 'order_type' => $payload->orderType,
                 'dine_in_table' => $payload->dineInTable,

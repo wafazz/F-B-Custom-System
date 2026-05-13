@@ -1,17 +1,19 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { LogOut, ShoppingBag, Store, Tv } from 'lucide-react';
+import { Banknote, LogOut, ShoppingBag, Store, Tv } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface PosShared {
     branch?: { id: number; code: string; name: string };
     staff?: { name: string };
+    pos_shift?: { id: number; opened_at: string } | null;
 }
 
 export default function PosLayout({ children }: { children: ReactNode }) {
     const props = usePage().props as unknown as PosShared & { url?: string };
     const branch = props.branch;
     const staff = props.staff;
+    const posShift = props.pos_shift ?? null;
     const path = typeof window !== 'undefined' ? window.location.pathname : (props.url ?? '');
 
     function logout() {
@@ -55,8 +57,27 @@ export default function PosLayout({ children }: { children: ReactNode }) {
                         icon={<Tv className="size-4" />}
                         active={path.startsWith('/pos/stock')}
                     />
+                    <NavLink
+                        href="/pos/shift"
+                        label="Cash"
+                        icon={<Banknote className="size-4" />}
+                        active={path.startsWith('/pos/shift')}
+                    />
                 </nav>
                 <div className="flex items-center gap-3">
+                    {posShift ? (
+                        <span className="hidden items-center gap-1.5 rounded-full border border-emerald-700/60 bg-emerald-950/40 px-2.5 py-1 text-[10px] font-semibold text-emerald-300 sm:inline-flex">
+                            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+                            Shift open
+                        </span>
+                    ) : (
+                        <Link
+                            href="/pos/shift"
+                            className="hidden items-center gap-1.5 rounded-full border border-amber-700/60 bg-amber-950/40 px-2.5 py-1 text-[10px] font-semibold text-amber-300 hover:bg-amber-900/40 sm:inline-flex"
+                        >
+                            No shift
+                        </Link>
+                    )}
                     {staff && <span className="text-xs text-slate-400">{staff.name}</span>}
                     <button
                         type="button"

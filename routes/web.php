@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Pos\PinLoginController;
 use App\Http\Controllers\Pos\QueueController as PosQueueController;
+use App\Http\Controllers\Pos\ShiftController as PosShiftController;
 use App\Http\Controllers\Pos\StockController as PosStockController;
 use App\Http\Controllers\Pos\WalkInController;
 use App\Http\Controllers\Web\AccountController;
@@ -82,6 +83,12 @@ Route::prefix('pos')->name('pos.')->group(function () {
         Route::post('walk-in', [WalkInController::class, 'store'])->name('walk-in.store');
         Route::get('customers/search', [WalkInController::class, 'searchCustomers'])->name('customers.search');
         Route::get('customer-display', [WalkInController::class, 'customerDisplay'])->name('customer-display');
+
+        Route::get('shift', [PosShiftController::class, 'index'])->name('shift');
+        Route::post('shift/open', [PosShiftController::class, 'open'])->name('shift.open');
+        Route::post('shift/{shift}/close', [PosShiftController::class, 'close'])->name('shift.close');
+        Route::post('shift/{shift}/movements', [PosShiftController::class, 'recordMovement'])->name('shift.movements');
+        Route::get('shift/{shift}/report', [PosShiftController::class, 'report'])->name('shift.report');
     });
 });
 

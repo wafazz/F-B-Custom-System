@@ -2,6 +2,8 @@ import { Head, router } from '@inertiajs/react';
 import {
     Banknote,
     CreditCard,
+    Eye,
+    EyeOff,
     Hash,
     Monitor,
     Plus,
@@ -86,6 +88,7 @@ export default function PosWalkIn({ branch, categories }: Props) {
     const [search, setSearch] = useState('');
     const [hits, setHits] = useState<CustomerHit[]>([]);
     const [searching, setSearching] = useState(false);
+    const [pointsRevealed, setPointsRevealed] = useState(false);
 
     useEffect(() => {
         if (customer || search.trim().length < 2) return;
@@ -163,6 +166,7 @@ export default function PosWalkIn({ branch, categories }: Props) {
     const canSubmit = lines.length > 0 && (orderType === 'pickup' || tableNumber.trim().length > 0);
 
     const channelRef = useRef<BroadcastChannel | null>(null);
+    const effectivePointsRevealed = !!customer && pointsRevealed;
     const cartSnapshot = useMemo(
         () => ({
             order_type: orderType,
@@ -174,6 +178,7 @@ export default function PosWalkIn({ branch, categories }: Props) {
                       tier: customer.tier,
                   }
                 : null,
+            points_revealed: effectivePointsRevealed,
             lines: lines.map((l) => ({
                 key: l.key,
                 name: l.name,
@@ -182,7 +187,7 @@ export default function PosWalkIn({ branch, categories }: Props) {
                 modifier_labels: l.modifier_labels,
             })),
         }),
-        [lines, orderType, tableNumber, customer],
+        [lines, orderType, tableNumber, customer, effectivePointsRevealed],
     );
 
     useEffect(() => {
@@ -228,6 +233,7 @@ export default function PosWalkIn({ branch, categories }: Props) {
                     channelRef.current?.postMessage({ type: 'cart:clear' });
                     setCustomer(null);
                     setSearch('');
+                    setPointsRevealed(false);
                 },
             },
         );
@@ -302,22 +308,52 @@ export default function PosWalkIn({ branch, categories }: Props) {
                                         </p>
                                         <p className="flex items-center gap-1.5 text-[10px] text-amber-300/80">
                                             <Sparkles className="size-2.5" />
-                                            {customer.points} pts
+                                            <span className="tabular-nums">
+                                                {pointsRevealed ? customer.points : '••••'}
+                                            </span>
+                                            pts
                                             {customer.tier && ` · ${customer.tier}`}
                                         </p>
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setCustomer(null);
-                                        setSearch('');
-                                    }}
-                                    className="ml-2 rounded-md p-1 text-amber-300 hover:bg-amber-800/40 hover:text-amber-100"
-                                    aria-label="Detach"
-                                >
-                                    <X className="size-3.5" />
-                                </button>
+                                <div className="ml-2 flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPointsRevealed((v) => !v)}
+                                        title={
+                                            pointsRevealed
+                                                ? 'Hide points on customer view'
+                                                : 'Reveal points on customer view'
+                                        }
+                                        aria-label={
+                                            pointsRevealed ? 'Hide points' : 'Reveal points'
+                                        }
+                                        className={cn(
+                                            'rounded-md p-1 transition-colors',
+                                            pointsRevealed
+                                                ? 'bg-amber-700/40 text-amber-100'
+                                                : 'text-amber-300 hover:bg-amber-800/40 hover:text-amber-100',
+                                        )}
+                                    >
+                                        {pointsRevealed ? (
+                                            <EyeOff className="size-3.5" />
+                                        ) : (
+                                            <Eye className="size-3.5" />
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCustomer(null);
+                                            setSearch('');
+                                            setPointsRevealed(false);
+                                        }}
+                                        className="rounded-md p-1 text-amber-300 hover:bg-amber-800/40 hover:text-amber-100"
+                                        aria-label="Detach"
+                                    >
+                                        <X className="size-3.5" />
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="relative">

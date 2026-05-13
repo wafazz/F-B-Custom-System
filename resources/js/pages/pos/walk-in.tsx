@@ -103,6 +103,7 @@ export default function PosWalkIn({ branch, parents }: Props) {
     const [hits, setHits] = useState<CustomerHit[]>([]);
     const [searching, setSearching] = useState(false);
     const [pointsRevealed, setPointsRevealed] = useState(false);
+    const [cashOpen, setCashOpen] = useState(false);
 
     useEffect(() => {
         if (customer || search.trim().length < 2) return;
@@ -593,14 +594,32 @@ export default function PosWalkIn({ branch, parents }: Props) {
                     </div>
 
                     <Button
-                        onClick={submit}
+                        onClick={() => (paymentMethod === 'cash' ? setCashOpen(true) : submit())}
                         disabled={!canSubmit}
                         className="mt-3 w-full bg-amber-600 hover:bg-amber-500"
                     >
-                        Charge & place order
+                        {paymentMethod === 'cash' ? 'Tender cash' : 'Charge & place order'}
                     </Button>
                 </aside>
             </div>
+
+            <Sheet open={cashOpen} onOpenChange={setCashOpen}>
+                <SheetContent
+                    side="bottom"
+                    className="border-slate-700 bg-slate-900 text-slate-100 sm:mx-auto sm:max-w-md sm:rounded-xl"
+                >
+                    {cashOpen && (
+                        <CashTender
+                            total={total}
+                            onCancel={() => setCashOpen(false)}
+                            onConfirm={() => {
+                                setCashOpen(false);
+                                submit();
+                            }}
+                        />
+                    )}
+                </SheetContent>
+            </Sheet>
 
             <Sheet open={picker !== null} onOpenChange={(o) => !o && setPicker(null)}>
                 <SheetContent
@@ -785,6 +804,134 @@ function PayBtn({
             {icon}
             <span>{label}</span>
         </button>
+    );
+}
+
+function CashTender({
+    total,
+    onCancel,
+    onConfirm,
+}: {
+    total: number;
+    onCancel: () => void;
+    onConfirm: () => void;
+}) {
+    const [tendered, setTendered] = useState('');
+    const received = Number(tendered) || 0;
+    const change = received - total;
+    const enough = received >= total && total > 0;
+
+    const denominations = [1, 5, 10, 20, 50, 100];
+    const quickAmounts = denominations.filter((d) => d >= Math.ceil(total));
+    const padded = [Math.ceil(total), ...quickAmounts.filter((q) => q !== Math.ceil(total))].slice(
+        0,
+        4,
+    );
+
+    function press(key: string) {
+        if (key === 'C') {
+            setTendered('');
+            return;
+        }
+        if (key === '⌫') {
+            setTendered((v) => v.slice(0, -1));
+            return;
+        }
+        if (key === '.') {
+            if (tendered.includes('.')) return;
+            setTendered((v) => (v === '' ? '0.' : v + '.'));
+            return;
+        }
+        setTendered((v) => {
+            const next = v + key;
+            // disallow leading zero like "007"
+            if (next.length > 1 && next[0] === '0' && next[1] !== '.') return next.replace(/^0+/, '');
+            // limit to 2 decimal places
+            if (next.includes('.') && next.split('.')[1].length > 2) return v;
+            return next;
+        });
+    }
+
+    return (
+        <>
+            <SheetTitle className="text-slate-100">Cash payment</SheetTitle>
+
+            <div className="mt-3 rounded-xl border border-slate-700 bg-slate-950 p-4">
+                <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-slate-400">Total due</span>
+                    <span className="text-2xl font-bold text-amber-400 tabular-nums">
+                        RM{total.toFixed(2)}
+                    </span>
+                </div>
+                <div className="mt-2 flex items-baseline justify-between">
+                    <span className="text-xs text-slate-400">Cash received</span>
+                    <span className="text-xl font-semibold tabular-nums">
+                        {received > 0 ? `RM${received.toFixed(2)}` : '—'}
+                    </span>
+                </div>
+                <div
+                    className={cn(
+                        'mt-3 flex items-baseline justify-between border-t border-slate-800 pt-3',
+                        enough ? 'text-emerald-400' : 'text-slate-500',
+                    )}
+                >
+                    <span className="text-xs font-semibold uppercase">Change</span>
+                    <span className="text-3xl font-bold tabular-nums">
+                        RM{change > 0 ? change.toFixed(2) : '0.00'}
+                    </span>
+                </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-4 gap-1.5">
+                {padded.map((amt) => (
+                    <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setTendered(amt.toFixed(2))}
+                        className="rounded-md border border-slate-700 bg-slate-800 px-2 py-2 text-xs font-semibold text-slate-200 hover:border-amber-500 hover:bg-slate-700"
+                    >
+                        RM{amt}
+                    </button>
+                ))}
+            </div>
+
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
+                {['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '⌫'].map((k) => (
+                    <button
+                        key={k}
+                        type="button"
+                        onClick={() => press(k)}
+                        className="rounded-md border border-slate-700 bg-slate-800 px-3 py-3 text-base font-bold text-slate-100 hover:bg-slate-700 active:bg-slate-600"
+                    >
+                        {k}
+                    </button>
+                ))}
+            </div>
+
+            <div className="mt-3 flex gap-2">
+                <Button
+                    variant="outline"
+                    onClick={onCancel}
+                    className="flex-1 border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800"
+                >
+                    Cancel
+                </Button>
+                <button
+                    type="button"
+                    onClick={() => press('C')}
+                    className="rounded-md border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:bg-slate-800"
+                >
+                    Clear
+                </button>
+                <Button
+                    onClick={onConfirm}
+                    disabled={!enough}
+                    className="flex-1 bg-amber-600 hover:bg-amber-500"
+                >
+                    Confirm & place
+                </Button>
+            </div>
+        </>
     );
 }
 

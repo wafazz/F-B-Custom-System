@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     Banknote,
     CreditCard,
@@ -105,6 +105,9 @@ export default function PosWalkIn({ branch, parents }: Props) {
     const [searching, setSearching] = useState(false);
     const [pointsRevealed, setPointsRevealed] = useState(false);
     const [cashOpen, setCashOpen] = useState(false);
+
+    const pageErrors = usePage<{ errors: Record<string, string> }>().props.errors;
+    const submitError = pageErrors?.order ?? null;
 
     useEffect(() => {
         if (customer || search.trim().length < 2) return;
@@ -593,6 +596,20 @@ export default function PosWalkIn({ branch, parents }: Props) {
                             <span className="text-amber-400">RM{total.toFixed(2)}</span>
                         </div>
                     </div>
+
+                    {submitError && (
+                        <div className="mt-3 rounded-md border border-red-500/60 bg-red-900/30 px-3 py-2 text-xs text-red-200">
+                            {submitError}
+                            {submitError.toLowerCase().includes('shift') && (
+                                <a
+                                    href="/pos/shift"
+                                    className="ml-1 font-semibold underline hover:text-red-100"
+                                >
+                                    Open one now →
+                                </a>
+                            )}
+                        </div>
+                    )}
 
                     <Button
                         onClick={() => (paymentMethod === 'cash' ? setCashOpen(true) : submit())}

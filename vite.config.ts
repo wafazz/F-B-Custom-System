@@ -19,7 +19,7 @@ export default defineConfig({
             strategies: 'injectManifest',
             srcDir: 'resources/js',
             filename: 'sw.ts',
-            injectRegister: 'auto',
+            injectRegister: false,
             devOptions: { enabled: true, type: 'module' },
             includeAssets: ['favicon.png', 'apple-touch-icon.png', 'sounds/sc7.mp3'],
             manifest: {

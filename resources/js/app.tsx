@@ -5,7 +5,12 @@ import { createInertiaApp, type ResolvedComponent } from '@inertiajs/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { registerSW } from 'virtual:pwa-register';
 import { queryClient } from '@/lib/query-client';
+
+if ('serviceWorker' in navigator) {
+    registerSW({ immediate: true });
+}
 
 const appName = import.meta.env.VITE_APP_NAME || 'Star Coffee';
 

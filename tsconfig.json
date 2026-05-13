@@ -21,7 +21,7 @@
         "paths": {
             "@/*": ["./resources/js/*"]
         },
-        "types": ["vite/client", "node"]
+        "types": ["vite/client", "node", "vite-plugin-pwa/client"]
     },
     "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx", "resources/js/**/*.d.ts"]
 }

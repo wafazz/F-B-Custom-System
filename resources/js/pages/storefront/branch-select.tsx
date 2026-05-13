@@ -90,6 +90,20 @@ export default function BranchSelect({ branches, server_time }: Props) {
                                             <span>{branch.phone}</span>
                                         </p>
                                     )}
+                                    <div className="mt-2 rounded border border-dashed border-amber-400 bg-amber-50 px-2 py-1 text-[10px] text-amber-900">
+                                        <div>
+                                            status=<strong>{branch.debug_status}</strong> · accepts_orders=
+                                            <strong>{String(branch.debug_accepts_orders)}</strong>
+                                        </div>
+                                        <div>
+                                            today=<strong>{branch.debug_today}</strong> · hours=
+                                            <strong>
+                                                {branch.debug_today_hours
+                                                    ? JSON.stringify(branch.debug_today_hours)
+                                                    : 'null'}
+                                            </strong>
+                                        </div>
+                                    </div>
                                 </div>
                             </button>
                         </li>

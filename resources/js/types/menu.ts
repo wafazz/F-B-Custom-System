@@ -67,6 +67,10 @@ export interface BranchSummary {
     operating_hours: Record<string, { enabled: boolean; open: string; close: string }> | null;
     logo: string | null;
     is_open_now: boolean;
+    debug_status?: string;
+    debug_accepts_orders?: boolean;
+    debug_today?: string;
+    debug_today_hours?: { enabled?: boolean; open?: string; close?: string } | null;
 }
 
 export interface BranchContext {

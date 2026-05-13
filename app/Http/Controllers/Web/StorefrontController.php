@@ -24,20 +24,29 @@ class StorefrontController extends Controller
         $branches = Branch::active()
             ->orderBy('sort_order')
             ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo'])
-            ->map(fn (Branch $b) => [
-                'id' => $b->id,
-                'code' => $b->code,
-                'name' => $b->name,
-                'address' => $b->address,
-                'city' => $b->city,
-                'state' => $b->state,
-                'phone' => $b->phone,
-                'latitude' => $b->latitude !== null ? (float) $b->latitude : null,
-                'longitude' => $b->longitude !== null ? (float) $b->longitude : null,
-                'operating_hours' => $b->operating_hours,
-                'logo' => $b->logo,
-                'is_open_now' => $b->isOpenNow(),
-            ])
+            ->map(function (Branch $b) {
+                $day = strtolower(now()->englishDayOfWeek);
+                $hours = is_array($b->operating_hours) ? ($b->operating_hours[$day] ?? null) : null;
+
+                return [
+                    'id' => $b->id,
+                    'code' => $b->code,
+                    'name' => $b->name,
+                    'address' => $b->address,
+                    'city' => $b->city,
+                    'state' => $b->state,
+                    'phone' => $b->phone,
+                    'latitude' => $b->latitude !== null ? (float) $b->latitude : null,
+                    'longitude' => $b->longitude !== null ? (float) $b->longitude : null,
+                    'operating_hours' => $b->operating_hours,
+                    'logo' => $b->logo,
+                    'is_open_now' => $b->isOpenNow(),
+                    'debug_status' => $b->status,
+                    'debug_accepts_orders' => (bool) $b->accepts_orders,
+                    'debug_today' => $day,
+                    'debug_today_hours' => $hours,
+                ];
+            })
             ->values();
 
         return Inertia::render('storefront/branch-select', [

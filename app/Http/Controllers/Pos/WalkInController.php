@@ -8,10 +8,14 @@ use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\CustomerTier;
 use App\Models\Product;
+use App\Models\User;
+use App\Services\Loyalty\LoyaltyService;
 use App\Services\Orders\OrderLinePayload;
 use App\Services\Orders\OrderPayload;
 use App\Services\Orders\OrderService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -85,6 +89,44 @@ class WalkInController extends Controller
         ]);
     }
 
+    public function searchCustomers(Request $request, LoyaltyService $loyalty): JsonResponse
+    {
+        $term = trim((string) $request->query('q', ''));
+        if (mb_strlen($term) < 2) {
+            return response()->json(['results' => []]);
+        }
+
+        $needle = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
+        $users = User::query()
+            ->role('customer')
+            ->where(function ($q) use ($needle, $term) {
+                $q->where('name', 'like', $needle)
+                    ->orWhere('phone', 'like', $needle)
+                    ->orWhere('email', 'like', $needle)
+                    ->orWhere('referral_code', '=', $term);
+            })
+            ->limit(8)
+            ->get(['id', 'name', 'phone', 'email', 'referral_code']);
+
+        $tiers = CustomerTier::query()
+            ->whereIn('user_id', $users->pluck('id'))
+            ->with('tier:id,name')
+            ->get()
+            ->keyBy('user_id');
+
+        $results = $users->map(fn (User $u) => [
+            'id' => $u->id,
+            'name' => $u->name,
+            'phone' => $u->phone,
+            'email' => $u->email,
+            'referral_code' => $u->referral_code,
+            'points' => $loyalty->balance($u->id),
+            'tier' => $tiers->get($u->id)?->tier?->name,
+        ])->values();
+
+        return response()->json(['results' => $results]);
+    }
+
     public function customerDisplay(Request $request): Response
     {
         $branchId = (int) $request->session()->get('pos.branch_id');
@@ -109,6 +151,7 @@ class WalkInController extends Controller
             'order_type' => ['required', 'in:pickup,dine_in'],
             'dine_in_table' => ['nullable', 'string', 'max:20', 'required_if:order_type,dine_in'],
             'payment_method' => ['required', 'in:cash,card,duitnow'],
+            'customer_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'lines.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
@@ -116,10 +159,13 @@ class WalkInController extends Controller
             'lines.*.modifier_option_ids.*' => ['integer', 'exists:modifier_options,id'],
         ]);
 
+        $cashierId = (int) $request->session()->get('pos.user_id');
+        $customerId = isset($data['customer_user_id']) ? (int) $data['customer_user_id'] : null;
+
         try {
             $order = $service->place(new OrderPayload(
                 branchId: $branchId,
-                userId: (int) $request->session()->get('pos.user_id'),
+                userId: $customerId,
                 orderType: OrderType::from($data['order_type']),
                 lines: collect($data['lines'])->map(fn ($l) => new OrderLinePayload(
                     productId: (int) $l['product_id'],
@@ -127,7 +173,11 @@ class WalkInController extends Controller
                     modifierOptionIds: array_map('intval', $l['modifier_option_ids'] ?? []),
                 ))->all(),
                 dineInTable: $data['dine_in_table'] ?? null,
-                customerSnapshot: ['source' => 'walk-in', 'staff_id' => $request->session()->get('pos.user_id')],
+                customerSnapshot: array_filter([
+                    'source' => 'walk-in',
+                    'staff_id' => $cashierId,
+                    'customer_user_id' => $customerId,
+                ]),
             ));
 
             // Walk-in is paid in person, mark immediately + advance to Preparing.

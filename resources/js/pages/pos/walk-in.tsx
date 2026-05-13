@@ -1,5 +1,18 @@
 import { Head, router } from '@inertiajs/react';
-import { Banknote, CreditCard, Hash, Monitor, Plus, ShoppingBag, Store, Trash2 } from 'lucide-react';
+import {
+    Banknote,
+    CreditCard,
+    Hash,
+    Monitor,
+    Plus,
+    Search,
+    ShoppingBag,
+    Sparkles,
+    Store,
+    Trash2,
+    UserRound,
+    X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
@@ -52,6 +65,16 @@ interface Props {
     categories: Category[];
 }
 
+interface CustomerHit {
+    id: number;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    referral_code: string | null;
+    points: number;
+    tier: string | null;
+}
+
 export default function PosWalkIn({ branch, categories }: Props) {
     const [lines, setLines] = useState<Line[]>([]);
     const [orderType, setOrderType] = useState<'pickup' | 'dine_in'>('pickup');
@@ -59,6 +82,32 @@ export default function PosWalkIn({ branch, categories }: Props) {
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'duitnow'>('cash');
     const [activeCategory, setActiveCategory] = useState(categories[0]?.name ?? null);
     const [picker, setPicker] = useState<PosProduct | null>(null);
+    const [customer, setCustomer] = useState<CustomerHit | null>(null);
+    const [search, setSearch] = useState('');
+    const [hits, setHits] = useState<CustomerHit[]>([]);
+    const [searching, setSearching] = useState(false);
+
+    useEffect(() => {
+        if (customer || search.trim().length < 2) return;
+        const ctrl = new AbortController();
+        const timer = window.setTimeout(() => {
+            setSearching(true);
+            fetch(`/pos/customers/search?q=${encodeURIComponent(search.trim())}`, {
+                signal: ctrl.signal,
+                headers: { Accept: 'application/json' },
+            })
+                .then((r) => r.json())
+                .then((data: { results: CustomerHit[] }) => setHits(data.results ?? []))
+                .catch(() => {})
+                .finally(() => setSearching(false));
+        }, 250);
+        return () => {
+            window.clearTimeout(timer);
+            ctrl.abort();
+        };
+    }, [search, customer]);
+
+    const visibleHits = customer || search.trim().length < 2 ? [] : hits;
 
     function tap(product: PosProduct) {
         if (product.modifier_groups.length === 0) {
@@ -160,6 +209,7 @@ export default function PosWalkIn({ branch, categories }: Props) {
                 order_type: orderType,
                 dine_in_table: orderType === 'dine_in' ? tableNumber : null,
                 payment_method: paymentMethod,
+                customer_user_id: customer?.id ?? null,
                 lines: lines.map((l) => ({
                     product_id: l.product_id,
                     quantity: l.quantity,
@@ -167,7 +217,11 @@ export default function PosWalkIn({ branch, categories }: Props) {
                 })),
             },
             {
-                onSuccess: () => channelRef.current?.postMessage({ type: 'cart:clear' }),
+                onSuccess: () => {
+                    channelRef.current?.postMessage({ type: 'cart:clear' });
+                    setCustomer(null);
+                    setSearch('');
+                },
             },
         );
     }
@@ -228,6 +282,77 @@ export default function PosWalkIn({ branch, categories }: Props) {
                         >
                             <Monitor className="size-3" /> Customer view
                         </button>
+                    </div>
+
+                    <div className="mb-3">
+                        {customer ? (
+                            <div className="flex items-center justify-between rounded-md border border-amber-700/60 bg-amber-900/30 px-2.5 py-2 text-xs">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <UserRound className="size-3.5 flex-shrink-0 text-amber-400" />
+                                    <div className="min-w-0">
+                                        <p className="truncate font-semibold text-amber-100">
+                                            {customer.name}
+                                        </p>
+                                        <p className="flex items-center gap-1.5 text-[10px] text-amber-300/80">
+                                            <Sparkles className="size-2.5" />
+                                            {customer.points} pts
+                                            {customer.tier && ` · ${customer.tier}`}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCustomer(null);
+                                        setSearch('');
+                                    }}
+                                    className="ml-2 rounded-md p-1 text-amber-300 hover:bg-amber-800/40 hover:text-amber-100"
+                                    aria-label="Detach"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="relative">
+                                <Search className="absolute top-1/2 left-2 size-3 -translate-y-1/2 text-slate-500" />
+                                <input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Attach member (phone / email / code)"
+                                    className="w-full rounded-md border border-slate-700 bg-slate-950 py-2 pr-2 pl-7 text-xs text-slate-100 placeholder:text-slate-500 outline-none focus:border-amber-500"
+                                />
+                                {visibleHits.length > 0 && (
+                                    <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-700 bg-slate-900 shadow-xl">
+                                        {visibleHits.map((h) => (
+                                            <li key={h.id}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCustomer(h);
+                                                        setHits([]);
+                                                        setSearch('');
+                                                    }}
+                                                    className="block w-full px-2.5 py-1.5 text-left text-xs hover:bg-slate-800"
+                                                >
+                                                    <p className="font-semibold text-slate-100">
+                                                        {h.name}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400">
+                                                        {h.phone ?? h.email ?? h.referral_code}
+                                                        {' · '}
+                                                        {h.points} pts
+                                                        {h.tier && ` · ${h.tier}`}
+                                                    </p>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {search.trim().length >= 2 && !searching && visibleHits.length === 0 && (
+                                    <p className="mt-1 text-[10px] text-slate-500">No match</p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="mb-3 grid grid-cols-2 gap-1">

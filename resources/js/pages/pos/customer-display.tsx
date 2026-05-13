@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Coffee, ShoppingBag, Store } from 'lucide-react';
+import { Coffee, ShoppingBag, Sparkles, Store, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface CartLine {
@@ -10,19 +10,27 @@ interface CartLine {
     modifier_labels: string[];
 }
 
+interface CartCustomer {
+    name: string;
+    points: number;
+    tier: string | null;
+}
+
 interface CartState {
     lines: CartLine[];
     order_type: 'pickup' | 'dine_in';
     table_number: string;
+    customer: CartCustomer | null;
 }
 
 interface Props {
     branch: { id: number; code: string; name: string; sst_rate: number; sst_enabled: boolean };
+    staff: { name: string };
 }
 
-const EMPTY: CartState = { lines: [], order_type: 'pickup', table_number: '' };
+const EMPTY: CartState = { lines: [], order_type: 'pickup', table_number: '', customer: null };
 
-export default function CustomerDisplay({ branch }: Props) {
+export default function CustomerDisplay({ branch, staff }: Props) {
     const [cart, setCart] = useState<CartState>(EMPTY);
 
     useEffect(() => {
@@ -30,7 +38,7 @@ export default function CustomerDisplay({ branch }: Props) {
         const channel = new BroadcastChannel(`pos-cart-${branch.id}`);
         channel.onmessage = (e: MessageEvent<{ type: string; cart?: CartState }>) => {
             if (e.data?.type === 'cart:update' && e.data.cart) {
-                setCart(e.data.cart);
+                setCart({ ...EMPTY, ...e.data.cart });
             }
             if (e.data?.type === 'cart:clear') {
                 setCart(EMPTY);
@@ -50,7 +58,7 @@ export default function CustomerDisplay({ branch }: Props) {
             <Head title="Customer Display" />
 
             <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-8">
-                <header className="mb-6 flex items-center justify-between">
+                <header className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <img
                             src="/images/logo.jpg"
@@ -82,6 +90,44 @@ export default function CustomerDisplay({ branch }: Props) {
                         </div>
                     )}
                 </header>
+
+                {staff.name && (
+                    <div className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-200 bg-white/60 px-4 py-3 shadow-sm backdrop-blur">
+                        <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
+                            <UserRound className="size-5 text-amber-700" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-amber-700">Hi, I&apos;m your cashier</p>
+                            <p className="text-base font-bold text-amber-900">{staff.name}</p>
+                        </div>
+                    </div>
+                )}
+
+                {cart.customer && (
+                    <div className="mb-4 flex items-center justify-between rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-100 to-orange-100 px-5 py-3 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="flex size-11 flex-shrink-0 items-center justify-center rounded-full bg-amber-700 text-amber-50">
+                                <Sparkles className="size-5" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-semibold tracking-wide text-amber-800 uppercase">
+                                    Member
+                                </p>
+                                <p className="text-lg font-bold text-amber-950">
+                                    {cart.customer.name}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-2xl font-bold text-amber-900">
+                                {cart.customer.points.toLocaleString()}
+                            </p>
+                            <p className="text-xs font-semibold text-amber-700">
+                                pts{cart.customer.tier && ` · ${cart.customer.tier}`}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <main className="flex flex-1 flex-col rounded-3xl border-2 border-amber-200 bg-white/70 p-6 shadow-xl backdrop-blur">
                     {cart.lines.length === 0 ? (

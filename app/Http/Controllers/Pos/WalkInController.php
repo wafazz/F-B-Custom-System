@@ -141,6 +141,9 @@ class WalkInController extends Controller
                 'sst_rate' => (float) $branch->sst_rate,
                 'sst_enabled' => $branch->sst_enabled,
             ],
+            'staff' => [
+                'name' => (string) $request->session()->get('pos.user_name'),
+            ],
         ]);
     }
 

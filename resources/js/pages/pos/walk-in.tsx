@@ -167,6 +167,13 @@ export default function PosWalkIn({ branch, categories }: Props) {
         () => ({
             order_type: orderType,
             table_number: orderType === 'dine_in' ? tableNumber : '',
+            customer: customer
+                ? {
+                      name: customer.name,
+                      points: customer.points,
+                      tier: customer.tier,
+                  }
+                : null,
             lines: lines.map((l) => ({
                 key: l.key,
                 name: l.name,
@@ -175,7 +182,7 @@ export default function PosWalkIn({ branch, categories }: Props) {
                 modifier_labels: l.modifier_labels,
             })),
         }),
-        [lines, orderType, tableNumber],
+        [lines, orderType, tableNumber, customer],
     );
 
     useEffect(() => {

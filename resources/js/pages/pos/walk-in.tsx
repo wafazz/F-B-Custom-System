@@ -356,6 +356,10 @@ function ModifierPicker({
         return init;
     });
 
+    function effectiveMax(group: ModGroup): number {
+        return group.selection_type === 'single' ? group.options.length : group.max_select;
+    }
+
     let validationMessage = '';
     let valid = true;
     for (const group of product.modifier_groups) {
@@ -365,8 +369,9 @@ function ModifierPicker({
             valid = false;
             break;
         }
-        if (picked.length > group.max_select) {
-            validationMessage = `${group.name}: max ${group.max_select}`;
+        const max = effectiveMax(group);
+        if (picked.length > max) {
+            validationMessage = `${group.name}: max ${max}`;
             valid = false;
             break;
         }
@@ -386,13 +391,10 @@ function ModifierPicker({
     function toggle(group: ModGroup, optionId: number) {
         setSelection((prev) => {
             const current = prev[group.id] ?? [];
-            if (group.selection_type === 'single') {
-                return { ...prev, [group.id]: [optionId] };
-            }
             if (current.includes(optionId)) {
                 return { ...prev, [group.id]: current.filter((id) => id !== optionId) };
             }
-            if (current.length >= group.max_select) return prev;
+            if (current.length >= effectiveMax(group)) return prev;
             return { ...prev, [group.id]: [...current, optionId] };
         });
     }
@@ -425,9 +427,9 @@ function ModifierPicker({
                                 {group.is_required && <span className="ml-1 text-red-400">*</span>}
                             </h4>
                             <span className="text-[10px] text-slate-500">
-                                {group.selection_type === 'single'
-                                    ? 'Pick one'
-                                    : `${group.min_select}–${group.max_select}`}
+                                {group.is_required
+                                    ? `Pick ${group.min_select}+`
+                                    : 'Optional'}
                             </span>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3">

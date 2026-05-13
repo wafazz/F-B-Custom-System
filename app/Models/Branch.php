@@ -110,9 +110,16 @@ class Branch extends Model
         }
 
         $current = $time->format('H:i');
+        $open = $hours['open'] ?? '00:00';
+        $close = $hours['close'] ?? '23:59';
 
-        return $current >= ($hours['open'] ?? '00:00')
-            && $current <= ($hours['close'] ?? '23:59');
+        // Close time at or before open means the branch closes after midnight
+        // (e.g. open 08:00, close 00:00 or 02:00). Wrap around to next day.
+        if ($close <= $open) {
+            return $current >= $open || $current < $close;
+        }
+
+        return $current >= $open && $current <= $close;
     }
 
     public static function defaultOperatingHours(): array

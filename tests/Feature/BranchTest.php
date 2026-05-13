@@ -54,6 +54,38 @@ test('branch isOpenNow respects operating hours', function () {
     expect($branch->fresh()->isOpenNow())->toBeFalse();
 });
 
+test('branch isOpenNow handles close-after-midnight wraparound', function () {
+    $branch = Branch::factory()->create([
+        'operating_hours' => collect(Branch::defaultOperatingHours())
+            ->map(fn ($h) => array_merge($h, ['open' => '08:00', 'close' => '00:00']))
+            ->all(),
+    ]);
+
+    // 11:43 PM with close at midnight → still open
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 23:43:00')))->toBeTrue();
+    // 11:59 PM → still open
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 23:59:00')))->toBeTrue();
+    // 12:00 AM sharp → closed (close is exclusive)
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-14 00:00:00')))->toBeFalse();
+    // 07:59 AM → closed (before open)
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 07:59:00')))->toBeFalse();
+    // 08:00 AM → open
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 08:00:00')))->toBeTrue();
+});
+
+test('branch isOpenNow handles close 2am wraparound', function () {
+    $branch = Branch::factory()->create([
+        'operating_hours' => collect(Branch::defaultOperatingHours())
+            ->map(fn ($h) => array_merge($h, ['open' => '18:00', 'close' => '02:00']))
+            ->all(),
+    ]);
+
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 23:00:00')))->toBeTrue();
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-14 01:30:00')))->toBeTrue();
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-14 02:01:00')))->toBeFalse();
+    expect($branch->isOpenNow(\Illuminate\Support\Carbon::parse('2026-05-13 17:59:00')))->toBeFalse();
+});
+
 test('staff can be assigned to multiple branches with pin', function () {
     $user = User::factory()->create();
     [$b1, $b2] = Branch::factory()->count(2)->create();

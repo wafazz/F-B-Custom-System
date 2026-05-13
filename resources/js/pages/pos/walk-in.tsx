@@ -51,6 +51,11 @@ interface Category {
     products: PosProduct[];
 }
 
+interface ParentCategory {
+    name: string;
+    children: Category[];
+}
+
 interface Line {
     key: string;
     product_id: number;
@@ -64,7 +69,7 @@ interface Line {
 interface Props {
     branch: { id: number; code: string; name: string; sst_rate: number; sst_enabled: boolean };
     staff: { name: string };
-    categories: Category[];
+    parents: ParentCategory[];
 }
 
 interface CustomerHit {
@@ -77,12 +82,13 @@ interface CustomerHit {
     tier: string | null;
 }
 
-export default function PosWalkIn({ branch, categories }: Props) {
+export default function PosWalkIn({ branch, parents }: Props) {
     const [lines, setLines] = useState<Line[]>([]);
     const [orderType, setOrderType] = useState<'pickup' | 'dine_in'>('pickup');
     const [tableNumber, setTableNumber] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'duitnow'>('cash');
-    const [activeCategory, setActiveCategory] = useState(categories[0]?.name ?? null);
+    const [activeParent, setActiveParent] = useState<string | null>(parents[0]?.name ?? null);
+    const [activeChild, setActiveChild] = useState<string | null>(parents[0]?.children[0]?.name ?? null);
     const [picker, setPicker] = useState<PosProduct | null>(null);
     const [customer, setCustomer] = useState<CustomerHit | null>(null);
     const [search, setSearch] = useState('');
@@ -161,7 +167,19 @@ export default function PosWalkIn({ branch, categories }: Props) {
     const subtotal = lines.reduce((sum, l) => sum + l.unit_price * l.quantity, 0);
     const sst = branch.sst_enabled ? subtotal * (branch.sst_rate / 100) : 0;
     const total = subtotal + sst;
-    const visibleProducts = categories.find((c) => c.name === activeCategory)?.products ?? [];
+    const activeParentObj = parents.find((p) => p.name === activeParent) ?? parents[0] ?? null;
+    const childCats = activeParentObj?.children ?? [];
+    const showChildBar = childCats.length > 1 || childCats[0]?.name !== activeParentObj?.name;
+    const visibleProducts =
+        childCats.find((c) => c.name === activeChild)?.products ??
+        childCats[0]?.products ??
+        [];
+
+    function selectParent(name: string) {
+        const found = parents.find((p) => p.name === name);
+        setActiveParent(name);
+        setActiveChild(found?.children[0]?.name ?? null);
+    }
 
     const canSubmit = lines.length > 0 && (orderType === 'pickup' || tableNumber.trim().length > 0);
 
@@ -245,23 +263,42 @@ export default function PosWalkIn({ branch, categories }: Props) {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
                 <section>
-                    <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1">
-                        {categories.map((c) => (
+                    <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
+                        {parents.map((p) => (
                             <button
-                                key={c.name}
+                                key={p.name}
                                 type="button"
-                                onClick={() => setActiveCategory(c.name)}
+                                onClick={() => selectParent(p.name)}
                                 className={cn(
-                                    'flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors',
-                                    activeCategory === c.name
-                                        ? 'bg-amber-600 text-white'
-                                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700',
+                                    'flex-shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
+                                    activeParent === p.name
+                                        ? 'bg-amber-600 text-white shadow'
+                                        : 'bg-slate-800 text-slate-200 hover:bg-slate-700',
                                 )}
                             >
-                                {c.name}
+                                {p.name}
                             </button>
                         ))}
                     </div>
+                    {showChildBar && (
+                        <div className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 pb-1">
+                            {childCats.map((c) => (
+                                <button
+                                    key={c.name}
+                                    type="button"
+                                    onClick={() => setActiveChild(c.name)}
+                                    className={cn(
+                                        'flex-shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors',
+                                        activeChild === c.name
+                                            ? 'border-amber-500 bg-amber-900/30 text-amber-200'
+                                            : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200',
+                                    )}
+                                >
+                                    {c.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                         {visibleProducts.map((p) => (

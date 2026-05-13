@@ -31,7 +31,8 @@ class WalkInController extends Controller
 
         $products = Product::availableAtBranch($branchId)
             ->with([
-                'category:id,name',
+                'category:id,name,parent_id',
+                'category.parent:id,name',
                 'modifierGroups.options' => fn ($q) => $q->where('is_available', true),
                 'branches' => fn ($q) => $q->where('branches.id', $branchId),
             ])
@@ -39,12 +40,15 @@ class WalkInController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        $byCategory = [];
+        // parent name -> child name -> products[]
+        /** @var array<string, array<string, array<int, array<string, mixed>>>> $tree */
+        $tree = [];
         foreach ($products as $p) {
             /** @var Category|null $category */
             $category = $p->category;
-            $cat = $category instanceof Category ? $category->name : 'Other';
-            $byCategory[$cat][] = [
+            $child = $category instanceof Category ? $category->name : 'Other';
+            $parent = $category?->parent instanceof Category ? $category->parent->name : $child;
+            $tree[$parent][$child][] = [
                 'id' => $p->id,
                 'name' => $p->name,
                 'sku' => $p->sku,
@@ -73,6 +77,15 @@ class WalkInController extends Controller
             ];
         }
 
+        $parents = [];
+        foreach ($tree as $parentName => $children) {
+            $childList = [];
+            foreach ($children as $childName => $items) {
+                $childList[] = ['name' => $childName, 'products' => $items];
+            }
+            $parents[] = ['name' => $parentName, 'children' => $childList];
+        }
+
         return Inertia::render('pos/walk-in', [
             'branch' => [
                 'id' => $branch->id,
@@ -82,10 +95,7 @@ class WalkInController extends Controller
                 'sst_enabled' => $branch->sst_enabled,
             ],
             'staff' => ['name' => $request->session()->get('pos.user_name')],
-            'categories' => collect($byCategory)->map(fn ($items, $name) => [
-                'name' => $name,
-                'products' => $items,
-            ])->values(),
+            'parents' => $parents,
         ]);
     }
 

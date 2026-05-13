@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-12 (Branch-home + label printing + admin VAPID settings + UserSeeder)
+**Last Updated:** 2026-05-13 (Filament profile/password split + admin role gating)
 
 ---
 
@@ -63,6 +63,14 @@
   - **WebPushSettings** Filament page at `Settings → Web Push` (super_admin + hq_admin only). Form: subject + public_key + private_key (encrypted). "Generate new keypair" button uses `Minishlink\WebPush\VAPID::createVapidKeys()`. `PaymentServiceProvider::boot()` now also hydrates `services.webpush.*` from settings table, falling back to .env. `PushService` + `/api/push/vapid-key` already read from config so no further wiring needed.
   - **fix(settings)**: `SettingsRepository::set()` was writing `['value' => ..., 'is_encrypted' => ...]` — on a fresh row, Eloquent's mutator on `value` ran before `is_encrypted` landed, so plaintext got stored under the encrypted flag → next read threw `DecryptException`. Swapped the array order. Latent bug, also affected first-time Billplz saves.
   - 137 tests passing (130 + 7 new WebPushSettings tests covering guest redirect, customer 403, super/hq admin render, Livewire generateKeys + save with encryption-at-rest assertion, and `/api/push/vapid-key` DB override). PHPStan clean, ESLint + tsc + Vite build all green.
+- [✔] **2026-05-13 admin profile + role-gating**:
+  - **Filament profile page enabled** via `->profile(EditProfile::class, isSimple: false)` so admin/super_admin can edit their own account.
+  - **Custom `App\Filament\Pages\Auth\EditProfile`** overrides the form to show **Basic information** (name, email-disabled, phone, DOB, gender) + **Address** (line, city, postcode, state). Email is `disabled()` AND `dehydrated(false)` — UI lock + payload strip so it can't be tampered.
+  - **Separate `App\Filament\Pages\ChangePassword`** page at `/admin/change-password` with `currentPassword()` rule on Current password, `Password::default()` rule on New password, `same('passwordConfirmation')` on confirmation, and session `password_hash_<guard>` re-sync after save to keep the user logged in.
+  - **User menu** got a second item ("Change password") via `->userMenuItems(['change-password' => MenuItem::make()->url(fn () => ChangePassword::getUrl())])`. Profile entry is still the default Filament one.
+  - **UserResource hardening** — `getEloquentQuery()` filters out `super_admin` AND `hq_admin` users for anyone who isn't a super_admin themselves. Roles `Select` uses `modifyQueryUsing` to strip `super_admin` + `hq_admin` from the dropdown for non-super_admins; Filament's relationship validator rejects tampered submissions with hidden role IDs.
+  - **Access Control opened to hq_admin** — `RolesAndPermissionsSeeder` now grants `hq_admin` the full `role` permission set (was only `view_any_role` + `view_role`), so they see the **Roles & Permissions** nav and can create/edit/delete roles. `RolePolicy::update` and `RolePolicy::delete` defend the two privileged roles: non-super_admins are denied on `super_admin` or `hq_admin` rows, so Filament hides those edit/delete actions automatically while leaving the rows visible (read-only).
+  - 142 tests still green; no regressions in user-admin flows.
 - [✔] **2026-05-12 dashboard + chime**:
   - **Interactive Filament dashboard** at `/admin`: 5 new widgets + 1 enhanced (`SalesOverviewWidget`). LiveOrdersWidget polls 10s for Pending/Preparing/Ready counts; SalesOverviewWidget now has 7-day sparklines + % change vs previous period; RevenueChartWidget is a dual-axis (revenue + order count) line chart with 7/14/30-day filter, polls 60s; RevenueByBranchWidget is a doughnut over last 30 days, gated to super_admin/hq_admin/ops_manager; LowStockWidget surfaces `BranchStock::lowStock()` rows, polls 60s; RecentOrdersWidget shows last 8 orders with status-colored badges, click-to-view, polls 15s. All registered in `AdminPanelProvider` with `$sort` for deterministic layout.
   - **Bug fix**: `RecentOrdersWidget` badge closure type-hinted `string $state` but Order casts `status` to `OrderStatus` enum — Filament passed the enum, TypeError on row render. Changed to `OrderStatus $state` matching enum cases directly. Strengthened the widget mount test to seed an Order in every `OrderStatus` case so the closure executes for each (would have caught this in CI).
@@ -83,7 +91,7 @@
 - **W-2.3.4** Low stock notifications — needs email provider (W-DEC-6)
 - **W-2.3.8/9** Stock decrement on order events — deferred to W-4 (orders sprint)
 
-## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] · W-5 [✔] · W-6 [✔] · W-7 [✔] · W-8 [✔ code] · Wallet [✔] · 2026-05-12 bundle [✔] · 2026-05-12 dashboard + chime [✔] — 142 tests passing, PHPStan level 5 clean, ESLint + tsc + Vite build all green.
+## Sprint Status: W-0 [✔] · W-1 [✔] · W-2 [✔] · W-3 [✔] · W-4 [✔] · W-5 [✔] · W-6 [✔] · W-7 [✔] · W-8 [✔ code] · Wallet [✔] · 2026-05-12 bundle [✔] · 2026-05-12 dashboard + chime [✔] · 2026-05-13 admin profile + role-gating [✔] — 142 tests passing, PHPStan level 5 clean, ESLint + tsc + Vite build all green.
 
 **Phase 1 Web App is code-complete.** Remaining unchecked items are operational and unblock when W-DEC decisions land:
 - W-DEC-1 hosting + W-DEC-2 domain → unblocks W-0.8 deploy + W-8.2 pilot deployment

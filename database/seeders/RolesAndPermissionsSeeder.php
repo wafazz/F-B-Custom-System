@@ -72,6 +72,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $allBranch = self::slugsFor('branch');
         $allBranchStaff = self::slugsFor('branch::staff');
         $allUser = self::slugsFor('user');
+        $allRole = self::slugsFor('role');
         $allCategory = self::slugsFor('category');
         $allProduct = self::slugsFor('product');
         $allModifier = self::slugsFor('modifier::group');
@@ -102,10 +103,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
         return [
             'hq_admin' => array_merge(
-                $allBranch, $allBranchStaff, $allUser,
+                $allBranch, $allBranchStaff, $allUser, $allRole,
                 $allCategory, $allProduct, $allModifier, $allStock,
                 $allOrder,
-                ['view_any_role', 'view_role'],
             ),
             'ops_manager' => array_merge(
                 $allBranch, $allBranchStaff, $allUser,

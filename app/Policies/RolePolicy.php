@@ -27,12 +27,20 @@ class RolePolicy
 
     public function update(User $user, Role $role): bool
     {
-        return $user->can('update_role');
+        if (! $user->can('update_role')) {
+            return false;
+        }
+
+        return $user->hasRole('super_admin') || ! in_array($role->name, ['super_admin', 'hq_admin'], true);
     }
 
     public function delete(User $user, Role $role): bool
     {
-        return $user->can('delete_role');
+        if (! $user->can('delete_role')) {
+            return false;
+        }
+
+        return $user->hasRole('super_admin') || ! in_array($role->name, ['super_admin', 'hq_admin'], true);
     }
 
     public function deleteAny(User $user): bool

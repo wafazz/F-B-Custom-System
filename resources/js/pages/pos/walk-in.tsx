@@ -356,22 +356,12 @@ function ModifierPicker({
         return init;
     });
 
-    function effectiveMax(group: ModGroup): number {
-        return group.selection_type === 'single' ? group.options.length : group.max_select;
-    }
-
     let validationMessage = '';
     let valid = true;
     for (const group of product.modifier_groups) {
         const picked = selection[group.id] ?? [];
         if (group.is_required && picked.length < group.min_select) {
             validationMessage = `${group.name}: pick at least ${group.min_select}`;
-            valid = false;
-            break;
-        }
-        const max = effectiveMax(group);
-        if (picked.length > max) {
-            validationMessage = `${group.name}: max ${max}`;
             valid = false;
             break;
         }
@@ -394,7 +384,6 @@ function ModifierPicker({
             if (current.includes(optionId)) {
                 return { ...prev, [group.id]: current.filter((id) => id !== optionId) };
             }
-            if (current.length >= effectiveMax(group)) return prev;
             return { ...prev, [group.id]: [...current, optionId] };
         });
     }

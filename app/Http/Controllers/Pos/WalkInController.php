@@ -85,6 +85,22 @@ class WalkInController extends Controller
         ]);
     }
 
+    public function customerDisplay(Request $request): Response
+    {
+        $branchId = (int) $request->session()->get('pos.branch_id');
+        $branch = Branch::findOrFail($branchId);
+
+        return Inertia::render('pos/customer-display', [
+            'branch' => [
+                'id' => $branch->id,
+                'code' => $branch->code,
+                'name' => $branch->name,
+                'sst_rate' => (float) $branch->sst_rate,
+                'sst_enabled' => $branch->sst_enabled,
+            ],
+        ]);
+    }
+
     public function store(Request $request, OrderService $service): RedirectResponse
     {
         $branchId = (int) $request->session()->get('pos.branch_id');

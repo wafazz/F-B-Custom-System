@@ -80,6 +80,7 @@ Route::prefix('pos')->name('pos.')->group(function () {
         Route::post('stock/{product}/toggle', [PosStockController::class, 'toggle'])->name('stock.toggle');
         Route::get('walk-in', [WalkInController::class, 'index'])->name('walk-in');
         Route::post('walk-in', [WalkInController::class, 'store'])->name('walk-in.store');
+        Route::get('customer-display', [WalkInController::class, 'customerDisplay'])->name('customer-display');
     });
 });
 

@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
-import { Banknote, CreditCard, Hash, Plus, ShoppingBag, Store, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Banknote, CreditCard, Hash, Monitor, Plus, ShoppingBag, Store, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import PosLayout from '@/layouts/pos-layout';
@@ -113,18 +113,63 @@ export default function PosWalkIn({ branch, categories }: Props) {
 
     const canSubmit = lines.length > 0 && (orderType === 'pickup' || tableNumber.trim().length > 0);
 
+    const channelRef = useRef<BroadcastChannel | null>(null);
+    const cartSnapshot = useMemo(
+        () => ({
+            order_type: orderType,
+            table_number: orderType === 'dine_in' ? tableNumber : '',
+            lines: lines.map((l) => ({
+                key: l.key,
+                name: l.name,
+                quantity: l.quantity,
+                unit_price: l.unit_price,
+                modifier_labels: l.modifier_labels,
+            })),
+        }),
+        [lines, orderType, tableNumber],
+    );
+
+    useEffect(() => {
+        if (typeof BroadcastChannel === 'undefined') return;
+        const channel = new BroadcastChannel(`pos-cart-${branch.id}`);
+        channelRef.current = channel;
+        channel.onmessage = (e: MessageEvent<{ type: string }>) => {
+            if (e.data?.type === 'cart:request') {
+                channel.postMessage({ type: 'cart:update', cart: cartSnapshot });
+            }
+        };
+        return () => {
+            channel.close();
+            channelRef.current = null;
+        };
+    }, [branch.id, cartSnapshot]);
+
+    useEffect(() => {
+        channelRef.current?.postMessage({ type: 'cart:update', cart: cartSnapshot });
+    }, [cartSnapshot]);
+
+    function openCustomerDisplay() {
+        window.open('/pos/customer-display', 'star-coffee-customer-display', 'noopener,noreferrer');
+    }
+
     function submit() {
         if (!canSubmit) return;
-        router.post('/pos/walk-in', {
-            order_type: orderType,
-            dine_in_table: orderType === 'dine_in' ? tableNumber : null,
-            payment_method: paymentMethod,
-            lines: lines.map((l) => ({
-                product_id: l.product_id,
-                quantity: l.quantity,
-                modifier_option_ids: l.modifier_option_ids,
-            })),
-        });
+        router.post(
+            '/pos/walk-in',
+            {
+                order_type: orderType,
+                dine_in_table: orderType === 'dine_in' ? tableNumber : null,
+                payment_method: paymentMethod,
+                lines: lines.map((l) => ({
+                    product_id: l.product_id,
+                    quantity: l.quantity,
+                    modifier_option_ids: l.modifier_option_ids,
+                })),
+            },
+            {
+                onSuccess: () => channelRef.current?.postMessage({ type: 'cart:clear' }),
+            },
+        );
     }
 
     return (
@@ -173,7 +218,17 @@ export default function PosWalkIn({ branch, categories }: Props) {
                 </section>
 
                 <aside className="rounded-xl border border-slate-700 bg-slate-900 p-4">
-                    <h2 className="mb-3 text-sm font-bold">Cart</h2>
+                    <div className="mb-3 flex items-center justify-between">
+                        <h2 className="text-sm font-bold">Cart</h2>
+                        <button
+                            type="button"
+                            onClick={openCustomerDisplay}
+                            title="Open customer display in new window"
+                            className="flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-[10px] text-slate-300 hover:border-amber-500 hover:text-amber-300"
+                        >
+                            <Monitor className="size-3" /> Customer view
+                        </button>
+                    </div>
 
                     <div className="mb-3 grid grid-cols-2 gap-1">
                         <button

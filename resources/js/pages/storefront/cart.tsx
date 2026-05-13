@@ -166,21 +166,34 @@ export default function Cart({ branch }: Props) {
                         </div>
                     )}
 
+                    {!branch.is_open_now && (
+                        <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                            <span className="font-semibold">⏰ This branch is currently closed.</span>
+                            <span>Online ordering will resume during operating hours.</span>
+                        </div>
+                    )}
+
                     <div className="mt-4">
                         {isAuthed ? (
                             <Link href={`/branches/${branch.id}/checkout`}>
                                 <Button
                                     className="w-full"
-                                    disabled={!isMatch || !branch.accepts_orders}
+                                    disabled={
+                                        !isMatch ||
+                                        !branch.accepts_orders ||
+                                        !branch.is_open_now
+                                    }
                                 >
-                                    Continue to checkout
+                                    {branch.is_open_now
+                                        ? 'Continue to checkout'
+                                        : 'Branch closed'}
                                 </Button>
                             </Link>
                         ) : (
                             <Link href={`/login?redirect=/branches/${branch.id}/checkout`}>
-                                <Button className="w-full">
+                                <Button className="w-full" disabled={!branch.is_open_now}>
                                     <LogIn className="mr-1.5 size-4" />
-                                    Sign in to checkout
+                                    {branch.is_open_now ? 'Sign in to checkout' : 'Branch closed'}
                                 </Button>
                             </Link>
                         )}

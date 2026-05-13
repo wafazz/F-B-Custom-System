@@ -26,7 +26,11 @@ class BranchFactory extends Factory
             'postal_code' => $this->faker->numerify('#####'),
             'latitude' => $this->faker->latitude(2.9, 3.3),
             'longitude' => $this->faker->longitude(101.5, 101.8),
-            'operating_hours' => Branch::defaultOperatingHours(),
+            // Factory default = 24h open so tests pass regardless of wall-clock.
+            // Production branches use their own hours via the admin form.
+            'operating_hours' => collect(Branch::defaultOperatingHours())
+                ->map(fn ($h) => array_merge($h, ['open' => '00:00', 'close' => '23:59']))
+                ->all(),
             'pickup_radius_meters' => 1000,
             'sst_rate' => 6.00,
             'sst_enabled' => true,

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\OrderType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
+use App\Models\Branch;
 use App\Models\Order;
 use App\Services\Orders\OrderLinePayload;
 use App\Services\Orders\OrderPayload;
@@ -22,8 +23,16 @@ class OrderController extends Controller
 
     public function store(StoreOrderRequest $request): JsonResponse
     {
+        $branchId = (int) $request->integer('branch_id');
+        $branch = Branch::find($branchId);
+        if (! $branch || ! $branch->accepts_orders || ! $branch->isOpenNow()) {
+            return response()->json([
+                'message' => 'This branch is currently closed. Please try again during operating hours.',
+            ], 422);
+        }
+
         $payload = new OrderPayload(
-            branchId: (int) $request->integer('branch_id'),
+            branchId: $branchId,
             userId: $request->user()?->getKey(),
             orderType: OrderType::from($request->string('order_type')->value()),
             lines: collect($request->input('lines', []))->map(fn (array $line) => new OrderLinePayload(

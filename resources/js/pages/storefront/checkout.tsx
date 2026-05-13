@@ -41,6 +41,7 @@ export default function Checkout({ branch, wallet_balance, is_authenticated }: P
         lines.length > 0 &&
         (cartBranchId === null || cartBranchId === branch.id) &&
         branch.accepts_orders &&
+        branch.is_open_now &&
         (orderType === 'pickup' || tableNumber.trim().length > 0) &&
         (paymentMethod !== 'wallet' || walletAffordable);
 
@@ -225,10 +226,20 @@ export default function Checkout({ branch, wallet_balance, is_authenticated }: P
                 </div>
             </section>
 
+            {!branch.is_open_now && (
+                <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                    ⏰ <strong>This branch is currently closed.</strong> Online ordering will resume
+                    during operating hours.
+                </div>
+            )}
             {error && <p className="mb-3 rounded-md bg-red-50 p-3 text-xs text-red-700">{error}</p>}
 
             <Button onClick={handlePlace} disabled={!canSubmit || submitting} className="w-full">
-                {submitting ? 'Placing order…' : `Place order — RM${total.toFixed(2)}`}
+                {submitting
+                    ? 'Placing order…'
+                    : branch.is_open_now
+                      ? `Place order — RM${total.toFixed(2)}`
+                      : 'Branch closed'}
             </Button>
         </StorefrontLayout>
     );

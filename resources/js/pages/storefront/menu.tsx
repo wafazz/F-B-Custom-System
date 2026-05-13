@@ -146,6 +146,13 @@ export default function Menu({ branch }: Props) {
                 </div>
             </div>
 
+            {!branch.is_open_now && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                    ⏰ <strong>This branch is currently closed.</strong> Feel free to browse the
+                    menu — online ordering will resume during operating hours.
+                </div>
+            )}
+
             {isLoading && <MenuSkeleton />}
             {isError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">

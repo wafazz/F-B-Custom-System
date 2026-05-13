@@ -97,8 +97,9 @@ class WalkInController extends Controller
         }
 
         $needle = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
+        $staffRoles = ['super_admin', 'hq_admin', 'ops_manager', 'mkt_manager', 'branch_manager', 'cashier', 'barista'];
         $users = User::query()
-            ->role('customer')
+            ->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', $staffRoles))
             ->where(function ($q) use ($needle, $term) {
                 $q->where('name', 'like', $needle)
                     ->orWhere('phone', 'like', $needle)

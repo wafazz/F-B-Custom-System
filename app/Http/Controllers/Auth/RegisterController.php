@@ -41,6 +41,8 @@ class RegisterController extends Controller
             'referred_by' => $referrer?->id,
         ]);
 
+        $user->assignRole('customer');
+
         Auth::login($user);
 
         return redirect('/');

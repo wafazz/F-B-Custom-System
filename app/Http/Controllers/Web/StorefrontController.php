@@ -42,6 +42,12 @@ class StorefrontController extends Controller
 
         return Inertia::render('storefront/branch-select', [
             'branches' => $branches,
+            'server_time' => [
+                'now' => now()->toDateTimeString(),
+                'timezone' => config('app.timezone'),
+                'php_tz' => date_default_timezone_get(),
+                'iso' => now()->toIso8601String(),
+            ],
         ]);
     }
 

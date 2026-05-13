@@ -8,9 +8,15 @@ import type { BranchSummary } from '@/types/menu';
 
 interface Props {
     branches: BranchSummary[];
+    server_time?: {
+        now: string;
+        timezone: string;
+        php_tz: string;
+        iso: string;
+    };
 }
 
-export default function BranchSelect({ branches }: Props) {
+export default function BranchSelect({ branches, server_time }: Props) {
     const setBranch = useBranchStore((s) => s.setBranch);
     const rebindBranch = useCartStore((s) => s.rebindBranch);
 
@@ -31,6 +37,17 @@ export default function BranchSelect({ branches }: Props) {
                 <p className="text-muted-foreground text-sm">
                     Pricing and availability depend on the branch you pick.
                 </p>
+                {server_time && (
+                    <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+                        <div>
+                            <strong>Server time:</strong> {server_time.now} ({server_time.timezone})
+                        </div>
+                        <div className="text-amber-700">
+                            PHP TZ: {server_time.php_tz} · Browser:{' '}
+                            <BrowserTime />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {branches.length === 0 ? (
@@ -80,5 +97,18 @@ export default function BranchSelect({ branches }: Props) {
                 </ul>
             )}
         </StorefrontLayout>
+    );
+}
+
+function BrowserTime() {
+    const now = new Date();
+    return (
+        <>
+            {now.toLocaleString('en-MY', {
+                dateStyle: 'short',
+                timeStyle: 'medium',
+            })}{' '}
+            ({Intl.DateTimeFormat().resolvedOptions().timeZone})
+        </>
     );
 }

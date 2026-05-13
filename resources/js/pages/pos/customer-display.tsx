@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Coffee, ShoppingBag, Sparkles, Store, UserRound } from 'lucide-react';
+import { Coffee, Eye, EyeOff, ShoppingBag, Sparkles, Store, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface CartLine {
@@ -32,6 +32,7 @@ const EMPTY: CartState = { lines: [], order_type: 'pickup', table_number: '', cu
 
 export default function CustomerDisplay({ branch, staff }: Props) {
     const [cart, setCart] = useState<CartState>(EMPTY);
+    const [revealedFor, setRevealedFor] = useState<string | null>(null);
 
     useEffect(() => {
         if (typeof BroadcastChannel === 'undefined') return;
@@ -42,11 +43,14 @@ export default function CustomerDisplay({ branch, staff }: Props) {
             }
             if (e.data?.type === 'cart:clear') {
                 setCart(EMPTY);
+                setRevealedFor(null);
             }
         };
         channel.postMessage({ type: 'cart:request' });
         return () => channel.close();
     }, [branch.id]);
+
+    const pointsRevealed = !!cart.customer && revealedFor === cart.customer.name;
 
     const subtotal = cart.lines.reduce((sum, l) => sum + l.unit_price * l.quantity, 0);
     const sst = branch.sst_enabled ? subtotal * (branch.sst_rate / 100) : 0;
@@ -118,13 +122,32 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                                 </p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="text-2xl font-bold text-amber-900">
-                                {cart.customer.points.toLocaleString()}
-                            </p>
-                            <p className="text-xs font-semibold text-amber-700">
-                                pts{cart.customer.tier && ` · ${cart.customer.tier}`}
-                            </p>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <p className="text-2xl font-bold text-amber-900 tabular-nums">
+                                    {pointsRevealed
+                                        ? cart.customer.points.toLocaleString()
+                                        : '••••'}
+                                </p>
+                                <p className="text-xs font-semibold text-amber-700">
+                                    pts{cart.customer.tier && ` · ${cart.customer.tier}`}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setRevealedFor(pointsRevealed ? null : cart.customer!.name)
+                                }
+                                title={pointsRevealed ? 'Hide points' : 'Reveal points'}
+                                aria-label={pointsRevealed ? 'Hide points' : 'Reveal points'}
+                                className="flex size-10 items-center justify-center rounded-full border border-amber-400 bg-white/70 text-amber-800 transition-colors hover:bg-amber-200"
+                            >
+                                {pointsRevealed ? (
+                                    <EyeOff className="size-4" />
+                                ) : (
+                                    <Eye className="size-4" />
+                                )}
+                            </button>
                         </div>
                     </div>
                 )}

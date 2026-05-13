@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
+use App\Filament\Pages\ChangePassword;
 use App\Filament\Widgets\LiveOrdersWidget;
 use App\Filament\Widgets\LowStockWidget;
 use App\Filament\Widgets\RecentOrdersWidget;
@@ -11,6 +13,7 @@ use App\Filament\Widgets\SalesOverviewWidget;
 use App\Filament\Widgets\TopProductsWidget;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
+use Filament\Navigation\MenuItem;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -37,7 +40,13 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->profile(isSimple: false)
+            ->profile(EditProfile::class, isSimple: false)
+            ->userMenuItems([
+                'change-password' => MenuItem::make()
+                    ->label('Change password')
+                    ->icon('heroicon-o-key')
+                    ->url(fn () => ChangePassword::getUrl()),
+            ])
             ->brandName('Star Coffee House')
             ->brandLogo(asset('images/logo.jpg'))
             ->brandLogoHeight('2.5rem')

@@ -1,9 +1,21 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Bell, Clock, ChefHat, Check, MapPin, Printer, ShoppingBag } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import PosLayout from '@/layouts/pos-layout';
 import { getEcho } from '@/lib/echo';
 import { printOrderLabels } from '@/lib/print-labels';
+import { printOrderReceipt, type ReceiptOrder } from '@/lib/print-receipt';
+
+interface FlashReceipt extends ReceiptOrder {
+    branch: {
+        name: string;
+        address: string | null;
+        receipt_header: string | null;
+        receipt_footer: string | null;
+        sst_rate: number;
+        label_size: '58mm' | '80mm';
+    };
+}
 
 interface QueueOrder {
     id: number;
@@ -67,6 +79,16 @@ const COLUMNS: {
 export default function PosQueue({ branch, orders, reverb }: Props) {
     const [bumpKey, setBumpKey] = useState(0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const flash = usePage<{ flash: { receipt: FlashReceipt | null } }>().props.flash;
+    const printedRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        const receipt = flash?.receipt;
+        if (!receipt) return;
+        if (printedRef.current === receipt.number) return;
+        printedRef.current = receipt.number;
+        printOrderReceipt(receipt, receipt.branch, { size: receipt.branch.label_size });
+    }, [flash?.receipt]);
 
     useEffect(() => {
         const echo = getEcho();

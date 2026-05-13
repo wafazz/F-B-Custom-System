@@ -144,7 +144,7 @@ class WalkInController extends Controller
         ]);
     }
 
-    public function store(Request $request, OrderService $service): RedirectResponse
+    public function store(Request $request, OrderService $service, LoyaltyService $loyalty): RedirectResponse
     {
         $branchId = (int) $request->session()->get('pos.branch_id');
 
@@ -193,6 +193,46 @@ class WalkInController extends Controller
             return back()->withErrors(['order' => $e->getMessage()]);
         }
 
-        return redirect()->route('pos.queue')->with('success', "Order {$order->number} placed");
+        $fresh = $order->fresh(['items.modifiers', 'user', 'branch']) ?? $order;
+        $branch = $fresh->branch;
+        $customerName = $fresh->user?->name;
+        $pointsEarned = $customerId
+            ? (int) floor((float) $fresh->subtotal * $loyalty->multiplierFor($customerId))
+            : 0;
+
+        $receipt = [
+            'number' => $fresh->number,
+            'order_type' => $fresh->order_type->value,
+            'dine_in_table' => $fresh->dine_in_table,
+            'created_at' => $fresh->created_at?->toIso8601String(),
+            'paid_at' => $fresh->paid_at?->toIso8601String(),
+            'payment_method' => $fresh->payment_method,
+            'payment_reference' => $fresh->payment_reference,
+            'subtotal' => (float) $fresh->subtotal,
+            'sst_amount' => (float) $fresh->sst_amount,
+            'discount_amount' => (float) ($fresh->discount_amount ?? 0),
+            'total' => (float) $fresh->total,
+            'customer_name' => $customerName,
+            'points_earned' => $pointsEarned,
+            'items' => $fresh->items->map(fn ($i) => [
+                'name' => $i->product_name,
+                'quantity' => (int) $i->quantity,
+                'unit_price' => (float) $i->unit_price,
+                'line_total' => (float) $i->line_total,
+                'modifiers' => $i->modifiers->map(fn ($m) => ['option_name' => $m->option_name])->values(),
+            ])->values(),
+            'branch' => [
+                'name' => $branch?->name,
+                'address' => $branch?->address,
+                'receipt_header' => $branch?->receipt_header,
+                'receipt_footer' => $branch?->receipt_footer,
+                'sst_rate' => (float) ($branch?->sst_rate ?? 0),
+                'label_size' => (string) ($branch?->label_size ?? '58mm'),
+            ],
+        ];
+
+        return redirect()->route('pos.queue')
+            ->with('success', "Order {$fresh->number} placed")
+            ->with('receipt', $receipt);
     }
 }

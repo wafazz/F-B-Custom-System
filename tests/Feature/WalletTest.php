@@ -192,13 +192,18 @@ test('POST /wallet/topup creates a pending top-up and redirects to gateway', fun
     };
     $this->app->instance(BillplzGateway::class, $fake);
 
-    $response = $this->actingAs($user)->post('/wallet/topup', ['amount' => 20]);
+    $response = $this->actingAs($user)
+        ->withHeader('X-Inertia', 'true')
+        ->post('/wallet/topup', ['amount' => 20]);
 
     expect(WalletTopup::where('user_id', $user->id)->count())->toBe(1);
     $topup = WalletTopup::where('user_id', $user->id)->first();
     expect($topup->status)->toBe('pending')
         ->and($topup->billplz_reference)->toStartWith('BP-fake-');
-    $response->assertRedirect('https://billplz.test/bills/abc');
+
+    // Inertia external redirect: 409 + X-Inertia-Location header.
+    $response->assertStatus(409);
+    $response->assertHeader('X-Inertia-Location', 'https://billplz.test/bills/abc');
 });
 
 test('wallet schema rows seed correctly', function () {

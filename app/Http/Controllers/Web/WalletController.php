@@ -51,7 +51,7 @@ class WalletController extends Controller
         ]);
     }
 
-    public function topup(Request $request, BillplzGateway $gateway): RedirectResponse
+    public function topup(Request $request, BillplzGateway $gateway): \Symfony\Component\HttpFoundation\Response
     {
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:5', 'max:1000'],
@@ -76,7 +76,10 @@ class WalletController extends Controller
 
         $topup->update(['billplz_reference' => $bill->reference]);
 
-        return redirect()->away($bill->url);
+        // Inertia intercepts `redirect()->away()` and never navigates to the
+        // external URL. Inertia::location() returns a 409 with X-Inertia-Location
+        // so the client triggers a real browser navigation to the Billplz page.
+        return Inertia::location($bill->url);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
@@ -12,6 +13,8 @@ use App\Services\Orders\OrderPayload;
 use App\Services\Orders\OrderService;
 use App\Services\Payments\PaymentGateway;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
 
 class OrderController extends Controller
@@ -71,7 +74,30 @@ class OrderController extends Controller
             ], 201);
         }
 
-        $bill = $this->payments->createBill($order);
+        try {
+            $bill = $this->payments->createBill($order);
+        } catch (RuntimeException $e) {
+            Log::warning('Order placed but payment bill creation failed', [
+                'order_id' => $order->id,
+                'gateway' => $this->payments::class,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Roll the order back so stock, vouchers, and loyalty are restored.
+            try {
+                $this->orders->transition($order->fresh() ?? $order, OrderStatus::Cancelled);
+            } catch (Throwable $rollback) {
+                Log::error('Failed to cancel order after payment failure', [
+                    'order_id' => $order->id,
+                    'error' => $rollback->getMessage(),
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Payment gateway error: '.$e->getMessage(),
+            ], 422);
+        }
+
         $order->update([
             'payment_method' => $bill->method,
             'payment_reference' => $bill->reference,

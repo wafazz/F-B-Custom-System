@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\WalletTopup;
 use App\Models\WalletTransaction;
 use App\Services\Payments\BillplzGateway;
-use App\Services\Payments\PaymentGateway;
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,15 +51,11 @@ class WalletController extends Controller
         ]);
     }
 
-    public function topup(Request $request, PaymentGateway $gateway): RedirectResponse
+    public function topup(Request $request, BillplzGateway $gateway): RedirectResponse
     {
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:5', 'max:1000'],
         ]);
-
-        if (! $gateway instanceof BillplzGateway) {
-            return back()->withErrors(['amount' => 'Top-up requires the Billplz gateway. Switch driver in admin settings.']);
-        }
 
         /** @var User $user */
         $user = $request->user();
@@ -81,5 +77,34 @@ class WalletController extends Controller
         $topup->update(['billplz_reference' => $bill->reference]);
 
         return redirect()->away($bill->url);
+    }
+
+    /**
+     * Billplz redirects the customer's browser here after payment. The signed
+     * query params let us reflect paid status immediately, without waiting
+     * for the server-to-server webhook to land (useful for local dev where
+     * Billplz can't reach the callback URL).
+     */
+    public function topupReturn(Request $request, WalletTopup $topup, BillplzGateway $gateway, WalletService $wallet): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ((int) $topup->user_id !== (int) $user->getKey()) {
+            abort(403);
+        }
+
+        $payload = $request->query();
+        $update = $gateway->verifyWebhook($payload, (string) $request->query('x_signature'));
+
+        if ($update !== null && $update->reference === $topup->billplz_reference) {
+            if ($update->status === PaymentStatus::Paid && $topup->status === 'pending') {
+                $wallet->applyTopupPaid($topup);
+            } elseif ($update->status === PaymentStatus::Failed && $topup->status === 'pending') {
+                $topup->forceFill(['status' => 'failed'])->save();
+            }
+        }
+
+        return redirect()->route('wallet');
     }
 }

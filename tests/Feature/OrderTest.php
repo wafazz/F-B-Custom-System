@@ -186,6 +186,37 @@ test('POST /api/orders creates an order and returns payment stub URL', function 
     expect(Order::count())->toBe(1);
 });
 
+test('POST /api/orders rolls back order when gateway createBill fails', function () {
+    [$branch, $product] = array_values(makeMenu());
+    $user = User::factory()->create();
+
+    $boom = new class implements \App\Services\Payments\PaymentGateway
+    {
+        public function createBill(\App\Models\Order $order): \App\Services\Payments\PaymentBill
+        {
+            throw new RuntimeException('Billplz is not configured: missing API key or collection ID.');
+        }
+
+        public function verifyWebhook(array $payload, ?string $signature): ?\App\Services\Payments\PaymentBillUpdate
+        {
+            return null;
+        }
+    };
+    $this->app->instance(\App\Services\Payments\PaymentGateway::class, $boom);
+
+    $response = $this->actingAs($user)->postJson('/api/orders', [
+        'branch_id' => $branch->id,
+        'order_type' => 'pickup',
+        'lines' => [['product_id' => $product->id, 'quantity' => 1]],
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonPath('message', 'Payment gateway error: Billplz is not configured: missing API key or collection ID.');
+
+    expect(Order::count())->toBe(1);
+    expect(Order::first()->status->value)->toBe('cancelled');
+});
+
 test('POST /api/orders is rejected for guests', function () {
     [$branch, $product] = array_values(makeMenu());
 

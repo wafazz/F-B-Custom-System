@@ -66,6 +66,8 @@ Route::middleware('auth')->group(function () {
     Route::post('wallet/topup', [WalletController::class, 'topup'])
         ->middleware('throttle:10,1')
         ->name('wallet.topup');
+    Route::get('wallet/topup/{topup}/return', [WalletController::class, 'topupReturn'])
+        ->name('wallet.topup-return');
 });
 
 // POS (Branch staff)

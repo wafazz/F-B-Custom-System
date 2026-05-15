@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\WalletTopup;
 use App\Services\Orders\OrderService;
-use App\Services\Payments\PaymentGateway;
+use App\Services\Payments\BillplzGateway;
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +19,7 @@ use Throwable;
 class BillplzWebhookController extends Controller
 {
     public function __construct(
-        protected PaymentGateway $gateway,
+        protected BillplzGateway $gateway,
         protected OrderService $orders,
         protected WalletService $wallet,
     ) {}

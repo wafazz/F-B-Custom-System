@@ -16,7 +16,6 @@ use App\Services\Orders\OrderPayload;
 use App\Services\Orders\OrderService;
 use App\Services\Payments\BillplzGateway;
 use App\Services\Payments\PaymentBill;
-use App\Services\Payments\PaymentGateway;
 use App\Services\Wallet\WalletService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -191,7 +190,7 @@ test('POST /wallet/topup creates a pending top-up and redirects to gateway', fun
             return new PaymentBill(reference: 'BP-fake-'.$topup->id, url: 'https://billplz.test/bills/abc', method: 'billplz');
         }
     };
-    $this->app->instance(PaymentGateway::class, $fake);
+    $this->app->instance(BillplzGateway::class, $fake);
 
     $response = $this->actingAs($user)->post('/wallet/topup', ['amount' => 20]);
 
@@ -207,4 +206,97 @@ test('wallet schema rows seed correctly', function () {
     Wallet::create(['user_id' => $user->id, 'balance' => 12.34]);
 
     expect((float) Wallet::where('user_id', $user->id)->value('balance'))->toBe(12.34);
+});
+
+test('Billplz return route credits wallet when signed redirect arrives first', function () {
+    config()->set('services.billplz.x_signature', 'sig-secret');
+
+    $user = User::factory()->create();
+    $topup = WalletTopup::create([
+        'user_id' => $user->id,
+        'amount' => 25.00,
+        'status' => 'pending',
+        'billplz_reference' => 'BILL-RET-1',
+    ]);
+
+    $g = new BillplzGateway('apikey', 'col-1', 'sig-secret');
+    $payload = ['billplz' => ['id' => 'BILL-RET-1', 'paid' => 'true', 'paid_at' => '2026-05-15T10:00:00Z']];
+    $payload['x_signature'] = $g->computeSignature($payload);
+
+    $this->app->instance(BillplzGateway::class, $g);
+
+    $this->actingAs($user)
+        ->get(route('wallet.topup-return', ['topup' => $topup, ...$payload]))
+        ->assertRedirect(route('wallet'));
+
+    expect($topup->fresh()->status)->toBe('paid');
+    expect(app(WalletService::class)->balance($user->id))->toBe(25.0);
+});
+
+test('Billplz return route rejects mismatched user', function () {
+    config()->set('services.billplz.x_signature', 'sig');
+
+    $owner = User::factory()->create();
+    $intruder = User::factory()->create();
+    $topup = WalletTopup::create([
+        'user_id' => $owner->id,
+        'amount' => 10.00,
+        'status' => 'pending',
+        'billplz_reference' => 'BILL-RET-2',
+    ]);
+
+    $this->actingAs($intruder)
+        ->get(route('wallet.topup-return', ['topup' => $topup]))
+        ->assertForbidden();
+
+    expect($topup->fresh()->status)->toBe('pending');
+});
+
+test('Billplz return route ignores tampered redirect signature', function () {
+    config()->set('services.billplz.x_signature', 'sig-secret');
+
+    $user = User::factory()->create();
+    $topup = WalletTopup::create([
+        'user_id' => $user->id,
+        'amount' => 10.00,
+        'status' => 'pending',
+        'billplz_reference' => 'BILL-RET-3',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('wallet.topup-return', [
+            'topup' => $topup,
+            'billplz' => ['id' => 'BILL-RET-3', 'paid' => 'true'],
+            'x_signature' => 'definitely-not-the-right-signature',
+        ]))
+        ->assertRedirect(route('wallet'));
+
+    expect($topup->fresh()->status)->toBe('pending');
+    expect(app(WalletService::class)->balance($user->id))->toBe(0.0);
+});
+
+test('webhook endpoint credits wallet for matching top-up', function () {
+    config()->set('services.payment.driver', 'billplz');
+    config()->set('services.billplz.api_key', 'apikey');
+    config()->set('services.billplz.collection_id', 'col-1');
+    config()->set('services.billplz.x_signature', 'sig-secret');
+
+    $user = User::factory()->create();
+    $topup = WalletTopup::create([
+        'user_id' => $user->id,
+        'amount' => 50.00,
+        'status' => 'pending',
+        'billplz_reference' => 'BILL-WH-TOPUP',
+    ]);
+
+    $g = app(BillplzGateway::class);
+    $payload = ['id' => 'BILL-WH-TOPUP', 'paid' => 'true', 'state' => 'paid', 'amount' => '5000'];
+    $payload['x_signature'] = $g->computeSignature($payload);
+
+    $this->postJson('/api/billplz/webhook', $payload)
+        ->assertOk()
+        ->assertJson(['ok' => true, 'kind' => 'topup']);
+
+    expect($topup->fresh()->status)->toBe('paid');
+    expect(app(WalletService::class)->balance($user->id))->toBe(50.0);
 });

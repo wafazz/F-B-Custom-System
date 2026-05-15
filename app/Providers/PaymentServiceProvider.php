@@ -15,14 +15,21 @@ class PaymentServiceProvider extends ServiceProvider
     {
         $this->app->singleton(SettingsRepository::class);
 
-        $this->app->bind(PaymentGateway::class, function () {
+        // Concrete Billplz binding — always available regardless of the active
+        // driver, because wallet top-ups and the webhook callback are
+        // Billplz-only flows.
+        $this->app->bind(BillplzGateway::class, function () {
+            return new BillplzGateway(
+                apiKey: (string) config('services.billplz.api_key'),
+                collectionId: (string) config('services.billplz.collection_id'),
+                signatureKey: (string) config('services.billplz.x_signature'),
+                sandbox: (bool) config('services.billplz.sandbox', true),
+            );
+        });
+
+        $this->app->bind(PaymentGateway::class, function ($app) {
             return match ($this->resolveDriver()) {
-                'billplz' => new BillplzGateway(
-                    apiKey: (string) config('services.billplz.api_key'),
-                    collectionId: (string) config('services.billplz.collection_id'),
-                    signatureKey: (string) config('services.billplz.x_signature'),
-                    sandbox: (bool) config('services.billplz.sandbox', true),
-                ),
+                'billplz' => $app->make(BillplzGateway::class),
                 default => new StubGateway,
             };
         });

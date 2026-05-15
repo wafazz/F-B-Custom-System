@@ -159,6 +159,63 @@ test('verifyWebhook rejects tampered signature', function () {
     expect($g->verifyWebhook($payload, null))->toBeNull();
 });
 
+test('computeSignature flattens nested billplz[] for browser redirects', function () {
+    $g = new BillplzGateway('apikey', 'col-1', 'sig-secret');
+
+    $payload = ['billplz' => ['id' => 'B1', 'paid' => 'true', 'paid_at' => '2026-05-15T10:00:00Z']];
+    $sig = $g->computeSignature($payload);
+
+    $expected = hash_hmac('sha256', 'billplzidB1|billplzpaidtrue|billplzpaid_at2026-05-15T10:00:00Z', 'sig-secret');
+    expect($sig)->toBe($expected);
+});
+
+test('verifyWebhook accepts redirect-style nested payload', function () {
+    $g = new BillplzGateway('apikey', 'col-1', 'sig');
+    $payload = ['billplz' => ['id' => 'BILL-R', 'paid' => 'true', 'paid_at' => '2026-05-15T10:00:00Z']];
+    $sig = $g->computeSignature($payload);
+
+    $update = $g->verifyWebhook($payload, $sig);
+
+    expect($update)->not->toBeNull();
+    expect($update->reference)->toBe('BILL-R');
+    expect($update->status)->toBe(PaymentStatus::Paid);
+});
+
+test('ping returns balance in sen on success', function () {
+    Http::fake([
+        '*billplz-sandbox.com/api/v3/check_balance' => Http::response(['balance' => 12345], 200),
+    ]);
+
+    $g = new BillplzGateway('apikey', 'col-1', 'sig', sandbox: true);
+    expect($g->ping())->toBe(12345);
+});
+
+test('ping throws a useful error on 401', function () {
+    Http::fake(['*check_balance' => Http::response(['error' => 'unauthorized'], 401)]);
+
+    $g = new BillplzGateway('badkey', 'col-1', 'sig');
+    expect(fn () => $g->ping())->toThrow(RuntimeException::class, 'rejected the API key');
+});
+
+test('verifyCollection returns the collection payload', function () {
+    Http::fake([
+        '*api/v3/collections/col-1' => Http::response(['id' => 'col-1', 'title' => 'Star Coffee', 'status' => 'active'], 200),
+    ]);
+
+    $g = new BillplzGateway('apikey', 'col-1', 'sig', sandbox: true);
+    $data = $g->verifyCollection();
+
+    expect($data['title'])->toBe('Star Coffee');
+    expect($data['status'])->toBe('active');
+});
+
+test('verifyCollection throws on 404', function () {
+    Http::fake(['*collections/missing' => Http::response([], 404)]);
+
+    $g = new BillplzGateway('apikey', 'missing', 'sig');
+    expect(fn () => $g->verifyCollection())->toThrow(RuntimeException::class, 'not found');
+});
+
 test('webhook endpoint marks paid order + auto-advances to Preparing', function () {
     config()->set('services.payment.driver', 'billplz');
     config()->set('services.billplz.api_key', 'apikey');

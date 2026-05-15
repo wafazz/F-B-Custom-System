@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Services\Payments\BillplzGateway;
 use App\Services\Settings\SettingsRepository;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -12,6 +13,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Throwable;
 
 /**
  * @property Form $form
@@ -121,11 +123,39 @@ class PaymentSettings extends Page implements HasForms
             return;
         }
 
-        Notification::make()
-            ->title('Saved — live test stubbed')
-            ->body('Billplz client adapter not yet implemented. Once `BillplzGateway::ping()` is wired this button will hit /api/v3/check_balance and report the response.')
-            ->info()
-            ->send();
+        $sandbox = ($settings->get('billplz.sandbox', '1')) === '1';
+        $gateway = new BillplzGateway(
+            apiKey: $apiKey,
+            collectionId: $collectionId,
+            signatureKey: $settings->get('billplz.x_signature'),
+            sandbox: $sandbox,
+        );
+
+        try {
+            $balanceSen = $gateway->ping();
+            $collection = $gateway->verifyCollection();
+
+            $title = (string) ($collection['title'] ?? $collectionId);
+            $status = (string) ($collection['status'] ?? 'unknown');
+
+            Notification::make()
+                ->title('Connection OK')
+                ->body(sprintf(
+                    '%s mode. Balance RM%.2f. Collection "%s" is %s.',
+                    $sandbox ? 'Sandbox' : 'Live',
+                    $balanceSen / 100,
+                    $title,
+                    $status,
+                ))
+                ->success()
+                ->send();
+        } catch (Throwable $e) {
+            Notification::make()
+                ->title('Connection failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     public static function shouldRegisterNavigation(): bool

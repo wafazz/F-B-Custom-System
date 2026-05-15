@@ -13,7 +13,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public const RESOURCES = [
         'branch', 'branch::staff', 'user', 'role',
         'category', 'product', 'modifier::group', 'branch::stock',
-        'order',
+        'order', 'wallet',
     ];
 
     public const ACTIONS = [
@@ -78,6 +78,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $allModifier = self::slugsFor('modifier::group');
         $allStock = self::slugsFor('branch::stock');
         $allOrder = self::slugsFor('order');
+        $allWallet = self::slugsFor('wallet');
 
         $readBranch = ['view_any_branch', 'view_branch'];
         $readBranchStaff = ['view_any_branch::staff', 'view_branch::staff'];
@@ -105,7 +106,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'hq_admin' => array_merge(
                 $allBranch, $allBranchStaff, $allUser, $allRole,
                 $allCategory, $allProduct, $allModifier, $allStock,
-                $allOrder,
+                $allOrder, $allWallet,
             ),
             'ops_manager' => array_merge(
                 $allBranch, $allBranchStaff, $allUser,

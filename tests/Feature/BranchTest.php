@@ -211,5 +211,5 @@ test('users cannot delete themselves', function () {
 });
 
 test('permissions seeder creates all resource permissions', function () {
-    expect(Permission::count())->toBe(108);
+    expect(Permission::count())->toBe(120);
 });

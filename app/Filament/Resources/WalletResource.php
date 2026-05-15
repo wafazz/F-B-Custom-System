@@ -106,12 +106,17 @@ class WalletResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasRole(['super_admin', 'hq_admin']) ?? false;
+        return auth()->user()?->can('view_any_wallet') ?? false;
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole(['super_admin', 'hq_admin']) ?? false;
+        return auth()->user()?->can('view_any_wallet') ?? false;
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->user()?->can('view_wallet') ?? false;
     }
 
     public static function canCreate(): bool

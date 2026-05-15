@@ -208,10 +208,11 @@ class BillplzGateway implements PaymentGateway
             throw new RuntimeException('Billplz API key is not configured.');
         }
 
+        // check_balance only exists on the v4 namespace; bills/collections live on v3.
         $response = Http::withBasicAuth($this->apiKey, '')
             ->acceptJson()
             ->timeout(10)
-            ->get($this->baseUrl().'/check_balance');
+            ->get($this->v4BaseUrl().'/check_balance');
 
         if ($response->status() === 401) {
             throw new RuntimeException('Billplz rejected the API key (HTTP 401). Double-check the key matches your '.($this->sandbox ? 'sandbox' : 'live').' account.');
@@ -260,6 +261,13 @@ class BillplzGateway implements PaymentGateway
     protected function baseUrl(): string
     {
         return $this->sandbox ? self::SANDBOX_URL : self::LIVE_URL;
+    }
+
+    protected function v4BaseUrl(): string
+    {
+        return $this->sandbox
+            ? 'https://www.billplz-sandbox.com/api/v4'
+            : 'https://www.billplz.com/api/v4';
     }
 
     protected function coerceBool(mixed $value): bool

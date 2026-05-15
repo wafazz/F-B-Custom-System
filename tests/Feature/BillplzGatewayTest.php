@@ -183,11 +183,22 @@ test('verifyWebhook accepts redirect-style nested payload', function () {
 
 test('ping returns balance in sen on success', function () {
     Http::fake([
-        '*billplz-sandbox.com/api/v3/check_balance' => Http::response(['balance' => 12345], 200),
+        '*billplz-sandbox.com/api/v4/check_balance' => Http::response(['balance' => 12345], 200),
     ]);
 
     $g = new BillplzGateway('apikey', 'col-1', 'sig', sandbox: true);
     expect($g->ping())->toBe(12345);
+
+    Http::assertSent(fn ($r) => str_contains((string) $r->url(), '/api/v4/check_balance'));
+});
+
+test('ping uses the v4 live endpoint when sandbox=false', function () {
+    Http::fake(['*billplz.com/api/v4/check_balance' => Http::response(['balance' => 0], 200)]);
+
+    $g = new BillplzGateway('apikey', 'col-1', 'sig', sandbox: false);
+    $g->ping();
+
+    Http::assertSent(fn ($r) => str_contains((string) $r->url(), 'https://www.billplz.com/api/v4/check_balance'));
 });
 
 test('ping throws a useful error on 401', function () {

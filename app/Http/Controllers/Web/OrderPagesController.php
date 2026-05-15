@@ -8,11 +8,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Services\Orders\OrderService;
+use App\Services\Payments\BillplzGateway;
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class OrderPagesController extends Controller
 {
@@ -34,8 +37,13 @@ class OrderPagesController extends Controller
         ]);
     }
 
-    public function show(Order $order): Response
+    public function show(Order $order, BillplzGateway $gateway, OrderService $service): Response
     {
+        // Self-heal: if the order is awaiting a Billplz payment but the
+        // webhook never landed (firewall, wrong X-Signature key, etc.),
+        // re-query Billplz directly so the page reflects the real status.
+        $this->reconcileOrderPayment($order, $gateway, $service);
+
         $order->load(['items.modifiers', 'branch']);
 
         return Inertia::render('storefront/order', [
@@ -82,6 +90,47 @@ class OrderPagesController extends Controller
                 'created_at' => $o->created_at?->toIso8601String(),
             ])->values(),
         ]);
+    }
+
+    /**
+     * Re-query Billplz for an order whose payment is still Unpaid and apply
+     * paid status + auto-advance to Preparing. Idempotent — early-returns
+     * for wallet-paid orders, stub-method orders, or orders that already
+     * left Unpaid status. Failures are logged but never thrown.
+     */
+    protected function reconcileOrderPayment(Order $order, BillplzGateway $gateway, OrderService $service): void
+    {
+        if ($order->payment_status !== PaymentStatus::Unpaid) {
+            return;
+        }
+        if ($order->payment_method !== 'billplz' || ! $order->payment_reference) {
+            return;
+        }
+
+        try {
+            $bill = $gateway->fetchBill((string) $order->payment_reference);
+            $paid = (bool) ($bill['paid'] ?? false);
+            $state = (string) ($bill['state'] ?? '');
+
+            if ($paid) {
+                $order->forceFill([
+                    'payment_status' => PaymentStatus::Paid,
+                    'paid_at' => now(),
+                ])->save();
+
+                if ($order->status === OrderStatus::Pending) {
+                    $service->transition($order->fresh() ?? $order, OrderStatus::Preparing);
+                }
+            } elseif ($state === 'deleted') {
+                $order->forceFill(['payment_status' => PaymentStatus::Failed])->save();
+            }
+        } catch (Throwable $e) {
+            Log::warning('Order payment reconcile failed', [
+                'order_id' => $order->id,
+                'reference' => $order->payment_reference,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /** @return array<string, mixed> */

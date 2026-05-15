@@ -186,6 +186,41 @@ test('POST /api/orders creates an order and returns payment stub URL', function 
     expect(Order::count())->toBe(1);
 });
 
+test('GET /orders/{order} self-heals Billplz payment when webhook never arrived', function () {
+    config()->set('services.billplz.api_key', 'apikey');
+    config()->set('services.billplz.collection_id', 'col-1');
+    config()->set('services.billplz.x_signature', 'sig');
+
+    [$branch, $product] = array_values(makeMenu());
+    $user = User::factory()->create();
+
+    $order = app(OrderService::class)->place(new \App\Services\Orders\OrderPayload(
+        branchId: $branch->id,
+        userId: $user->id,
+        orderType: \App\Enums\OrderType::Pickup,
+        lines: [new \App\Services\Orders\OrderLinePayload(productId: $product->id, quantity: 1)],
+        customerSnapshot: ['name' => 'Recover Test', 'email' => 'r@x.com'],
+    ));
+    $order->update([
+        'payment_method' => 'billplz',
+        'payment_reference' => 'BILL-RECOVER',
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        '*api/v3/bills/BILL-RECOVER' => \Illuminate\Support\Facades\Http::response([
+            'id' => 'BILL-RECOVER',
+            'paid' => true,
+            'state' => 'paid',
+        ], 200),
+    ]);
+
+    $this->actingAs($user)->get("/orders/{$order->id}")->assertOk();
+
+    $fresh = $order->fresh();
+    expect($fresh->payment_status)->toBe(\App\Enums\PaymentStatus::Paid)
+        ->and($fresh->status)->toBe(\App\Enums\OrderStatus::Preparing);
+});
+
 test('POST /api/orders rolls back order when gateway createBill fails', function () {
     [$branch, $product] = array_values(makeMenu());
     $user = User::factory()->create();

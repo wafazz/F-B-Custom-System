@@ -280,6 +280,35 @@ test('Billplz return route ignores tampered redirect signature', function () {
     expect(app(WalletService::class)->balance($user->id))->toBe(0.0);
 });
 
+test('GET /wallet self-heals pending top-ups by re-querying Billplz', function () {
+    config()->set('services.payment.driver', 'billplz');
+    config()->set('services.billplz.api_key', 'apikey');
+    config()->set('services.billplz.collection_id', 'col-1');
+    config()->set('services.billplz.x_signature', 'sig');
+
+    $user = User::factory()->create();
+    $topup = WalletTopup::create([
+        'user_id' => $user->id,
+        'amount' => 30.00,
+        'status' => 'pending',
+        'billplz_reference' => 'BILL-HEAL-1',
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        '*api/v3/bills/BILL-HEAL-1' => \Illuminate\Support\Facades\Http::response([
+            'id' => 'BILL-HEAL-1',
+            'paid' => true,
+            'state' => 'paid',
+            'amount' => 3000,
+        ], 200),
+    ]);
+
+    $this->actingAs($user)->get('/wallet')->assertOk();
+
+    expect($topup->fresh()->status)->toBe('paid');
+    expect(app(WalletService::class)->balance($user->id))->toBe(30.0);
+});
+
 test('webhook endpoint credits wallet for matching top-up', function () {
     config()->set('services.payment.driver', 'billplz');
     config()->set('services.billplz.api_key', 'apikey');

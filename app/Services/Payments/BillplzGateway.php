@@ -231,6 +231,31 @@ class BillplzGateway implements PaymentGateway
     }
 
     /**
+     * Fetch a single bill from Billplz by ID — used to reconcile pending
+     * top-ups / orders when the webhook never arrived or its signature
+     * failed verification.
+     *
+     * @return array<string, mixed>
+     */
+    public function fetchBill(string $billId): array
+    {
+        if (! $this->apiKey) {
+            throw new RuntimeException('Billplz API key is not configured.');
+        }
+
+        $response = Http::withBasicAuth($this->apiKey, '')
+            ->acceptJson()
+            ->timeout(10)
+            ->get($this->baseUrl().'/bills/'.$billId);
+
+        if (! $response->successful()) {
+            throw new RuntimeException(sprintf('Billplz returned HTTP %d on bill lookup.', $response->status()));
+        }
+
+        return (array) $response->json();
+    }
+
+    /**
      * Verify the configured collection ID exists and is reachable with the
      * current API key. Returns the raw collection payload from Billplz.
      *

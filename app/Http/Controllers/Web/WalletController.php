@@ -11,16 +11,23 @@ use App\Services\Payments\BillplzGateway;
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Throwable;
 
 class WalletController extends Controller
 {
-    public function show(Request $request, WalletService $wallet): Response
+    public function show(Request $request, WalletService $wallet, BillplzGateway $gateway): Response
     {
         /** @var User $user */
         $user = $request->user();
+
+        // Self-heal: reconcile pending top-ups against Billplz on every page
+        // load so the wallet recovers even if the webhook never arrived or
+        // failed signature verification (wrong X-Signature key, etc.).
+        $this->reconcilePendingTopups($user, $gateway, $wallet);
 
         $history = WalletTransaction::query()
             ->where('user_id', $user->getKey())
@@ -106,8 +113,48 @@ class WalletController extends Controller
             } elseif ($update->status === PaymentStatus::Failed && $topup->status === 'pending') {
                 $topup->forceFill(['status' => 'failed'])->save();
             }
+        } elseif ($topup->status === 'pending' && $topup->billplz_reference) {
+            // Redirect didn't carry a valid signature (e.g. X-Signature key
+            // misconfigured). Fall back to a direct bill lookup so the user
+            // doesn't get stuck with a paid-but-unreflected top-up.
+            $this->reconcilePendingTopups($user, $gateway, $wallet);
         }
 
         return redirect()->route('wallet');
+    }
+
+    /**
+     * Re-query Billplz for any pending top-ups belonging to the user and
+     * apply paid/cancelled status. Idempotent — `applyTopupPaid` no-ops if
+     * already paid. Failures are logged but never thrown so the wallet page
+     * still renders if Billplz is unreachable.
+     */
+    protected function reconcilePendingTopups(User $user, BillplzGateway $gateway, WalletService $wallet): void
+    {
+        $pending = WalletTopup::query()
+            ->where('user_id', $user->getKey())
+            ->where('status', 'pending')
+            ->whereNotNull('billplz_reference')
+            ->get();
+
+        foreach ($pending as $topup) {
+            try {
+                $bill = $gateway->fetchBill((string) $topup->billplz_reference);
+                $paid = (bool) ($bill['paid'] ?? false);
+                $state = (string) ($bill['state'] ?? '');
+
+                if ($paid) {
+                    $wallet->applyTopupPaid($topup);
+                } elseif ($state === 'deleted') {
+                    $topup->forceFill(['status' => 'cancelled'])->save();
+                }
+            } catch (Throwable $e) {
+                Log::warning('Wallet top-up reconcile failed', [
+                    'topup_id' => $topup->id,
+                    'reference' => $topup->billplz_reference,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 }

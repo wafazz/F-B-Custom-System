@@ -105,7 +105,7 @@ export default function Order({ order, reverb }: Props) {
                                     </span>
                                     <span
                                         className={
-                                            reached ? 'text-foreground' : 'text-muted-foreground'
+                                            reached ? 'text-card-foreground' : 'text-muted-foreground'
                                         }
                                     >
                                         {prettify(stage)}

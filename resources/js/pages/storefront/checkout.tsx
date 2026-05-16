@@ -187,7 +187,7 @@ export default function Checkout({
                 <ul className="mt-2 space-y-1.5 text-xs">
                     {lines.map((line) => (
                         <li key={line.id} className="flex justify-between gap-2">
-                            <span className="text-foreground">
+                            <span className="text-card-foreground">
                                 {line.quantity}× {line.name}
                                 {line.modifiers.length > 0 && (
                                     <span className="text-muted-foreground">

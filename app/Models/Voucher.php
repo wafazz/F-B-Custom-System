@@ -66,6 +66,12 @@ class Voucher extends Model
         return $this->hasMany(VoucherRedemption::class);
     }
 
+    /** @return HasMany<VoucherClaim, $this> */
+    public function claims(): HasMany
+    {
+        return $this->hasMany(VoucherClaim::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         $now = now();

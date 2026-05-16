@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { CreditCard, Hash, ShoppingBag, Store, Wallet as WalletIcon } from 'lucide-react';
+import { CreditCard, Hash, ShoppingBag, Store, Tag, Wallet as WalletIcon, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -7,16 +7,26 @@ import { cartTotals, useCartStore } from '@/stores/cart-store';
 import type { BranchContext } from '@/types/menu';
 import { cn } from '@/lib/utils';
 
+interface VoucherChip {
+    code: string;
+    name: string;
+    discount_type: 'percentage' | 'fixed';
+    discount_value: number;
+    min_subtotal: number;
+    max_discount: number | null;
+}
+
 interface Props {
     branch: BranchContext;
     wallet_balance: number;
     is_authenticated: boolean;
+    vouchers: VoucherChip[];
 }
 
 type OrderType = 'pickup' | 'dine_in';
 type PaymentMethod = 'gateway' | 'wallet';
 
-export default function Checkout({ branch, wallet_balance, is_authenticated }: Props) {
+export default function Checkout({ branch, wallet_balance, is_authenticated, vouchers }: Props) {
     const lines = useCartStore((s) => s.lines);
     const notes = useCartStore((s) => s.notes);
     const clear = useCartStore((s) => s.clear);
@@ -25,15 +35,21 @@ export default function Checkout({ branch, wallet_balance, is_authenticated }: P
     const [orderType, setOrderType] = useState<OrderType>('pickup');
     const [tableNumber, setTableNumber] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gateway');
+    const [voucherCode, setVoucherCode] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const { subtotal } = cartTotals(lines);
-    const sst = branch.sst_enabled ? subtotal * (branch.sst_rate / 100) : 0;
-    const serviceCharge = branch.service_charge_enabled
-        ? subtotal * (branch.service_charge_rate / 100)
+    const activeVoucher = voucherCode ? vouchers.find((v) => v.code === voucherCode) : null;
+    const voucherDiscount = activeVoucher
+        ? computeVoucherDiscount(activeVoucher, subtotal)
         : 0;
-    const total = subtotal + sst + serviceCharge;
+    const discountedSubtotal = Math.max(0, subtotal - voucherDiscount);
+    const sst = branch.sst_enabled ? discountedSubtotal * (branch.sst_rate / 100) : 0;
+    const serviceCharge = branch.service_charge_enabled
+        ? discountedSubtotal * (branch.service_charge_rate / 100)
+        : 0;
+    const total = discountedSubtotal + sst + serviceCharge;
 
     const walletAffordable = is_authenticated && wallet_balance >= total;
 
@@ -67,6 +83,7 @@ export default function Checkout({ branch, wallet_balance, is_authenticated }: P
                     dine_in_table: orderType === 'dine_in' ? tableNumber : null,
                     notes,
                     payment_method: paymentMethod,
+                    voucher_code: voucherCode,
                     lines: lines.map((line) => ({
                         product_id: line.product_id,
                         quantity: line.quantity,
@@ -203,11 +220,65 @@ export default function Checkout({ branch, wallet_balance, is_authenticated }: P
                 </div>
             </section>
 
+            {vouchers.length > 0 && (
+                <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
+                    <h2 className="text-sm font-semibold">Voucher</h2>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {vouchers.map((v) => {
+                            const active = voucherCode === v.code;
+                            const eligible = subtotal >= v.min_subtotal;
+                            return (
+                                <button
+                                    key={v.code}
+                                    type="button"
+                                    onClick={() =>
+                                        setVoucherCode(active ? null : eligible ? v.code : null)
+                                    }
+                                    disabled={!eligible && !active}
+                                    className={cn(
+                                        'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                                        active
+                                            ? 'border-amber-400 bg-amber-100 text-amber-800'
+                                            : 'border-border hover:bg-secondary/50',
+                                        !eligible &&
+                                            !active &&
+                                            'cursor-not-allowed opacity-50',
+                                    )}
+                                    title={
+                                        !eligible
+                                            ? `Minimum RM${v.min_subtotal.toFixed(2)}`
+                                            : undefined
+                                    }
+                                >
+                                    {active ? (
+                                        <X className="size-3" />
+                                    ) : (
+                                        <Tag className="size-3" />
+                                    )}
+                                    <span className="font-mono">{v.code}</span>
+                                    <span className="text-muted-foreground font-normal">
+                                        {v.discount_type === 'percentage'
+                                            ? `${v.discount_value.toFixed(0)}%`
+                                            : `RM${v.discount_value.toFixed(2)}`}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
             <section className="border-border bg-card mb-4 space-y-2 rounded-xl border p-4 text-sm shadow-sm">
                 <div className="text-muted-foreground flex justify-between">
                     <span>Subtotal</span>
                     <span>RM{subtotal.toFixed(2)}</span>
                 </div>
+                {voucherDiscount > 0 && activeVoucher && (
+                    <div className="flex justify-between text-emerald-600">
+                        <span>Voucher ({activeVoucher.code})</span>
+                        <span>−RM{voucherDiscount.toFixed(2)}</span>
+                    </div>
+                )}
                 {branch.service_charge_enabled && (
                     <div className="text-muted-foreground flex justify-between">
                         <span>Service charge ({branch.service_charge_rate.toFixed(0)}%)</span>
@@ -243,6 +314,16 @@ export default function Checkout({ branch, wallet_balance, is_authenticated }: P
             </Button>
         </StorefrontLayout>
     );
+}
+
+function computeVoucherDiscount(voucher: VoucherChip, subtotal: number): number {
+    if (subtotal < voucher.min_subtotal) return 0;
+    const raw =
+        voucher.discount_type === 'percentage'
+            ? subtotal * (voucher.discount_value / 100)
+            : voucher.discount_value;
+    const capped = voucher.max_discount !== null ? Math.min(raw, voucher.max_discount) : raw;
+    return Math.min(Math.round(capped * 100) / 100, subtotal);
 }
 
 function TypeCard({

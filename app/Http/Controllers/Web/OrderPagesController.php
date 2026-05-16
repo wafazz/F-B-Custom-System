@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Models\VoucherClaim;
 use App\Services\Orders\OrderService;
 use App\Services\Payments\BillplzGateway;
 use App\Services\Wallet\WalletService;
@@ -30,10 +31,46 @@ class OrderPagesController extends Controller
     {
         $userId = $request->user()?->getKey();
 
+        $vouchers = [];
+        if ($userId !== null) {
+            $claims = VoucherClaim::query()
+                ->where('user_id', $userId)
+                ->whereNull('used_at')
+                ->with('voucher')
+                ->get();
+
+            foreach ($claims as $claim) {
+                $v = $claim->voucher;
+                if (! $v || $v->status !== 'active') {
+                    continue;
+                }
+                $now = now();
+                if ($v->valid_from !== null && $v->valid_from->greaterThan($now)) {
+                    continue;
+                }
+                if ($v->valid_until !== null && $v->valid_until->lessThan($now)) {
+                    continue;
+                }
+                $scope = $v->branch_ids;
+                if (is_array($scope) && count($scope) > 0 && ! in_array($branch->id, $scope, true)) {
+                    continue;
+                }
+                $vouchers[] = [
+                    'code' => $v->code,
+                    'name' => $v->name,
+                    'discount_type' => $v->discount_type,
+                    'discount_value' => (float) $v->discount_value,
+                    'min_subtotal' => (float) $v->min_subtotal,
+                    'max_discount' => $v->max_discount !== null ? (float) $v->max_discount : null,
+                ];
+            }
+        }
+
         return Inertia::render('storefront/checkout', [
             'branch' => $this->branchSummary($branch),
             'wallet_balance' => $userId !== null ? $wallet->balance($userId) : 0,
             'is_authenticated' => $userId !== null,
+            'vouchers' => $vouchers,
         ]);
     }
 

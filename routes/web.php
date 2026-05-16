@@ -17,6 +17,7 @@ use App\Http\Controllers\Web\OrderPagesController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReferralController;
 use App\Http\Controllers\Web\StorefrontController;
+use App\Http\Controllers\Web\VoucherClaimController;
 use App\Http\Controllers\Web\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -68,6 +69,11 @@ Route::middleware('auth')->group(function () {
         ->name('wallet.topup');
     Route::get('wallet/topup/{topup}/return', [WalletController::class, 'topupReturn'])
         ->name('wallet.topup-return');
+
+    Route::get('vouchers', [VoucherClaimController::class, 'index'])->name('vouchers.index');
+    Route::post('vouchers/{voucher}/claim', [VoucherClaimController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('vouchers.claim');
 });
 
 // POS (Branch staff)

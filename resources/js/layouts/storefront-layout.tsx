@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Coffee, Crown, Gift, Heart, Home, ShoppingBag, User, Wallet } from 'lucide-react';
+import { Coffee, Crown, Gift, ReceiptText, Home, ShoppingBag, User, Wallet } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { InstallPrompt } from '@/components/storefront/install-prompt';
@@ -113,10 +113,10 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
                         active={path === '/wallet'}
                     />
                     <NavItem
-                        href="/loyalty"
-                        icon={<Heart className="size-5" />}
-                        label="Loyalty"
-                        active={path === '/loyalty'}
+                        href={auth.user ? '/orders' : '/login?redirect=/orders'}
+                        icon={<ReceiptText className="size-5" />}
+                        label="My Orders"
+                        active={path === '/orders' || path.startsWith('/orders/')}
                     />
                     <Link
                         href={branch ? `/branches/${branch.id}/cart` : '/branches'}

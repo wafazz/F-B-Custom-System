@@ -239,7 +239,7 @@ function StatCard({
             <span className="text-muted-foreground relative z-10 truncate text-[10px] leading-tight">
                 {label}
             </span>
-            <span className="text-foreground relative z-10 truncate text-sm font-bold leading-tight sm:text-base">
+            <span className="text-card-foreground relative z-10 truncate text-sm font-bold leading-tight sm:text-base">
                 {value}
             </span>
             <span className="pointer-events-none absolute right-2 bottom-2 z-0">{icon}</span>

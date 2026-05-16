@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     Cake,
     Coffee,
@@ -121,8 +121,19 @@ export default function Menu({ branch }: Props) {
 
     const visibleCategory = allCategories.find((c) => c.id === activeCategory) ?? null;
 
+    const { auth } = usePage().props as unknown as { auth: { user: { id: number } | null } };
+
     function handleAdd(product: MenuProduct, modifiers: SelectedModifier[], qty: number) {
         addToCart(product, modifiers, qty, branch.id);
+    }
+
+    function handleBuyNow(product: MenuProduct, modifiers: SelectedModifier[], qty: number) {
+        addToCart(product, modifiers, qty, branch.id);
+        if (auth.user) {
+            router.visit(`/branches/${branch.id}/checkout`);
+        } else {
+            router.visit(`/login?redirect=/branches/${branch.id}/checkout`);
+        }
     }
 
     return (
@@ -274,6 +285,7 @@ export default function Menu({ branch }: Props) {
                     }
                 }}
                 onAdd={handleAdd}
+                onBuyNow={handleBuyNow}
             />
         </StorefrontLayout>
     );

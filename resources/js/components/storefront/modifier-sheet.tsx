@@ -10,6 +10,7 @@ interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onAdd: (product: MenuProduct, modifiers: SelectedModifier[], quantity: number) => void;
+    onBuyNow?: (product: MenuProduct, modifiers: SelectedModifier[], quantity: number) => void;
 }
 
 type Selection = Record<number, number[]>;
@@ -25,18 +26,19 @@ function defaultsFor(product: MenuProduct): Selection {
     return defaults;
 }
 
-export function ModifierSheet({ product, open, onOpenChange, onAdd }: Props) {
+export function ModifierSheet({ product, open, onOpenChange, onAdd, onBuyNow }: Props) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="bottom"
-                className="sm:mx-auto sm:max-w-3xl sm:rounded-xl"
+                className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50 sm:mx-auto sm:max-w-3xl sm:rounded-xl"
             >
                 {product && (
                     <SheetBody
                         key={product.id}
                         product={product}
                         onAdd={onAdd}
+                        onBuyNow={onBuyNow}
                         onClose={() => onOpenChange(false)}
                     />
                 )}
@@ -48,10 +50,12 @@ export function ModifierSheet({ product, open, onOpenChange, onAdd }: Props) {
 function SheetBody({
     product,
     onAdd,
+    onBuyNow,
     onClose,
 }: {
     product: MenuProduct;
     onAdd: (product: MenuProduct, modifiers: SelectedModifier[], quantity: number) => void;
+    onBuyNow?: (product: MenuProduct, modifiers: SelectedModifier[], quantity: number) => void;
     onClose: () => void;
 }) {
     const [selection, setSelection] = useState<Selection>(() => defaultsFor(product));
@@ -101,8 +105,7 @@ function SheetBody({
         });
     }
 
-    function handleAdd() {
-        if (!valid) return;
+    function collectModifiers(): SelectedModifier[] {
         const modifiers: SelectedModifier[] = [];
         for (const group of product.modifier_groups) {
             const picked = selection[group.id] ?? [];
@@ -116,7 +119,18 @@ function SheetBody({
                 });
             }
         }
-        onAdd(product, modifiers, quantity);
+        return modifiers;
+    }
+
+    function handleAdd() {
+        if (!valid) return;
+        onAdd(product, collectModifiers(), quantity);
+        onClose();
+    }
+
+    function handleBuyNow() {
+        if (!valid || !onBuyNow) return;
+        onBuyNow(product, collectModifiers(), quantity);
         onClose();
     }
 
@@ -234,9 +248,28 @@ function SheetBody({
                         {!valid && validationMessage && (
                             <p className="mb-2 text-xs text-red-600">{validationMessage}</p>
                         )}
-                        <Button onClick={handleAdd} disabled={!valid} className="w-full">
-                            Add to cart — RM{totalPrice.toFixed(2)}
-                        </Button>
+                        <div className="flex gap-2">
+                            {onBuyNow && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleBuyNow}
+                                    disabled={!valid}
+                                    className="flex-1"
+                                >
+                                    Buy now
+                                </Button>
+                            )}
+                            <Button
+                                onClick={handleAdd}
+                                disabled={!valid}
+                                className={onBuyNow ? 'flex-1' : 'w-full'}
+                            >
+                                {onBuyNow
+                                    ? `Add to cart — RM${totalPrice.toFixed(2)}`
+                                    : `Add to cart — RM${totalPrice.toFixed(2)}`}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>

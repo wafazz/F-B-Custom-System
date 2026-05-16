@@ -86,7 +86,45 @@ class OrderResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(collect(OrderStatus::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()])),
                 Tables\Filters\SelectFilter::make('branch')->relationship('branch', 'name'),
+                Tables\Filters\Filter::make('created_at')
+                    ->label('Date range')
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if (! empty($data['from'])) {
+                            $indicators[] = 'From '.\Illuminate\Support\Carbon::parse($data['from'])->isoFormat('D MMM Y H:mm');
+                        }
+                        if (! empty($data['to'])) {
+                            $indicators[] = 'Until '.\Illuminate\Support\Carbon::parse($data['to'])->isoFormat('D MMM Y H:mm');
+                        }
+
+                        return $indicators;
+                    })
+                    ->form([
+                        Forms\Components\DateTimePicker::make('from')
+                            ->label('From')
+                            ->seconds(false)
+                            ->native(false),
+                        Forms\Components\DateTimePicker::make('to')
+                            ->label('To')
+                            ->seconds(false)
+                            ->native(false),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'] ?? null,
+                                fn (Builder $q, $date) => $q->where('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['to'] ?? null,
+                                fn (Builder $q, $date) => $q->where('created_at', '<=', $date),
+                            );
+                    })
+                    ->columnSpan(2)
+                    ->columns(2),
             ])
+            ->filtersFormColumns(2)
+            ->filtersFormWidth(\Filament\Support\Enums\MaxWidth::Large)
             ->actions([
                 Tables\Actions\Action::make('advance')
                     ->label(fn (Order $r) => match ($r->status) {

@@ -182,7 +182,7 @@ function CustomerStatsStrip({ stats }: { stats: CustomerStats }) {
                     chip={{ label: 'Top up', color: 'bg-amber-700 text-amber-50' }}
                     label="Wallet (RM)"
                     value={stats.wallet_balance.toFixed(2)}
-                    icon={<Coffee className="size-7 text-amber-700/80" />}
+                    icon={<Coffee className="size-5 text-amber-700/60" />}
                 />
                 <StatCard
                     href="/loyalty"
@@ -191,7 +191,7 @@ function CustomerStatsStrip({ stats }: { stats: CustomerStats }) {
                     value={tierProgress}
                     icon={
                         <Crown
-                            className="size-7"
+                            className="size-5 opacity-70"
                             style={{ color: stats.tier?.color ?? '#b45309' }}
                         />
                     }
@@ -201,7 +201,7 @@ function CustomerStatsStrip({ stats }: { stats: CustomerStats }) {
                     chip={{ label: 'Vouchers', color: 'bg-amber-300 text-amber-900' }}
                     label="Points"
                     value={`${stats.points.toLocaleString()} pts`}
-                    icon={<Gift className="size-7 text-amber-700/80" />}
+                    icon={<Gift className="size-5 text-amber-700/60" />}
                 />
             </div>
         </div>
@@ -224,21 +224,25 @@ function StatCard({
     return (
         <Link
             href={href}
-            className="border-border bg-card relative flex flex-col gap-1 overflow-hidden rounded-2xl border p-3 pt-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
+            className="border-border bg-card relative flex min-h-[78px] flex-col gap-1 overflow-hidden rounded-2xl border p-3 pt-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
         >
             {chip && (
                 <span
                     className={cn(
-                        'absolute -top-0 left-2 rounded-b-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide',
+                        'absolute top-0 left-2 z-10 rounded-b-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide',
                         chip.color,
                     )}
                 >
                     {chip.label}
                 </span>
             )}
-            <span className="text-muted-foreground text-[10px] leading-tight">{label}</span>
-            <span className="text-foreground text-base font-bold leading-tight">{value}</span>
-            <span className="absolute right-2 bottom-2 opacity-70">{icon}</span>
+            <span className="text-muted-foreground relative z-10 truncate text-[10px] leading-tight">
+                {label}
+            </span>
+            <span className="text-foreground relative z-10 truncate text-sm font-bold leading-tight sm:text-base">
+                {value}
+            </span>
+            <span className="pointer-events-none absolute right-2 bottom-2 z-0">{icon}</span>
         </Link>
     );
 }

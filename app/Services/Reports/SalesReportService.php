@@ -138,6 +138,85 @@ class SalesReportService
         return $out;
     }
 
+    /**
+     * @return list<array{
+     *     id: int,
+     *     number: string,
+     *     branch: string,
+     *     status: string,
+     *     payment_status: string,
+     *     payment_method: string|null,
+     *     order_type: string,
+     *     customer: string|null,
+     *     subtotal: float,
+     *     discount: float,
+     *     sst: float,
+     *     service_charge: float,
+     *     total: float,
+     *     created_at: string,
+     *     items: list<array{name: string, quantity: int, unit_price: float, line_total: float, modifiers: string}>,
+     * }>
+     */
+    public function orders(Carbon|CarbonImmutable $from, Carbon|CarbonImmutable $to, ?int $branchId = null, ?int $limit = null): array
+    {
+        $query = Order::query()
+            ->whereBetween('created_at', [$from, $to])
+            ->when($branchId, fn ($q, $id) => $q->where('branch_id', $id))
+            ->with([
+                'branch:id,name',
+                'items' => fn ($q) => $q->select(['id', 'order_id', 'product_name', 'quantity', 'unit_price', 'line_total']),
+                'items.modifiers:id,order_item_id,option_name',
+            ])
+            ->orderBy('created_at');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        $rows = $query->get();
+
+        $out = [];
+        foreach ($rows as $order) {
+            $items = [];
+            foreach ($order->items as $item) {
+                $modifiers = $item->modifiers
+                    ->pluck('option_name')
+                    ->filter()
+                    ->join(', ');
+                $items[] = [
+                    'name' => (string) $item->product_name,
+                    'quantity' => (int) $item->quantity,
+                    'unit_price' => (float) $item->unit_price,
+                    'line_total' => (float) $item->line_total,
+                    'modifiers' => (string) $modifiers,
+                ];
+            }
+
+            /** @var array<string, mixed>|null $snapshot */
+            $snapshot = $order->customer_snapshot;
+
+            $out[] = [
+                'id' => (int) $order->id,
+                'number' => (string) $order->number,
+                'branch' => $order->branch ? (string) $order->branch->name : '—',
+                'status' => $order->status->value,
+                'payment_status' => $order->payment_status->value,
+                'payment_method' => $order->payment_method,
+                'order_type' => $order->order_type->value,
+                'customer' => isset($snapshot['name']) ? (string) $snapshot['name'] : null,
+                'subtotal' => (float) $order->subtotal,
+                'discount' => (float) $order->discount_amount,
+                'sst' => (float) $order->sst_amount,
+                'service_charge' => (float) ($order->service_charge_amount ?? 0),
+                'total' => (float) $order->total,
+                'created_at' => $order->created_at?->toDateTimeString() ?? '',
+                'items' => $items,
+            ];
+        }
+
+        return $out;
+    }
+
     /** @return Builder<Order> */
     protected function paidOrders(?int $branchId = null): Builder
     {

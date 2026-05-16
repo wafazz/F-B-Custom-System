@@ -95,6 +95,74 @@ class SalesReportExporter
                 ]));
             }
 
+            // Sheet 5 — Orders (one row per order, items joined inline)
+            $orders = $this->reports->orders($from, $to, $branchId);
+            $writer->addNewSheetAndMakeItCurrent()->setName('Orders');
+            $writer->addRow(Row::fromValues([
+                'Order #',
+                'Placed at',
+                'Branch',
+                'Type',
+                'Status',
+                'Payment',
+                'Method',
+                'Customer',
+                'Items',
+                'Subtotal (RM)',
+                'Discount (RM)',
+                'SST (RM)',
+                'Service charge (RM)',
+                'Total (RM)',
+            ])->setStyle($header));
+            foreach ($orders as $order) {
+                $itemsInline = collect($order['items'])
+                    ->map(fn (array $i): string => $i['quantity'].'× '.$i['name'].($i['modifiers'] !== '' ? ' ('.$i['modifiers'].')' : ''))
+                    ->join(', ');
+                $writer->addRow(Row::fromValues([
+                    $order['number'],
+                    $order['created_at'],
+                    $order['branch'],
+                    $order['order_type'],
+                    $order['status'],
+                    $order['payment_status'],
+                    $order['payment_method'] ?? '',
+                    $order['customer'] ?? 'Walk-in',
+                    $itemsInline,
+                    $order['subtotal'],
+                    $order['discount'],
+                    $order['sst'],
+                    $order['service_charge'],
+                    $order['total'],
+                ]));
+            }
+
+            // Sheet 6 — Order items (one row per item, normalized for pivot tables)
+            $writer->addNewSheetAndMakeItCurrent()->setName('Order items');
+            $writer->addRow(Row::fromValues([
+                'Order #',
+                'Placed at',
+                'Branch',
+                'Product',
+                'Modifiers',
+                'Quantity',
+                'Unit price (RM)',
+                'Line total (RM)',
+            ])->setStyle($header));
+            foreach ($orders as $order) {
+                foreach ($order['items'] as $item) {
+                    $writer->addRow(Row::fromValues([
+                        $order['number'],
+                        $order['created_at'],
+                        $order['branch'],
+                        $item['name'],
+                        $item['modifiers'],
+                        $item['quantity'],
+                        $item['unit_price'],
+                        $item['line_total'],
+                    ]));
+                }
+            }
+
             $writer->close();
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

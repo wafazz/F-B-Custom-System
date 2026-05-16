@@ -6,7 +6,6 @@ use App\Models\Branch;
 use App\Models\User;
 use App\Services\Reports\SalesReportExporter;
 use App\Services\Reports\SalesReportService;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Group;
@@ -90,6 +89,13 @@ class Reports extends Page implements HasForms
         $reports = app(SalesReportService::class);
         [$from, $to] = $reports->range($period, $anchor);
 
+        $screenCap = 100;
+        $orders = $reports->orders($from, $to, $branchId, $screenCap + 1);
+        $truncated = count($orders) > $screenCap;
+        if ($truncated) {
+            $orders = array_slice($orders, 0, $screenCap);
+        }
+
         return [
             'period' => $period,
             'from' => $from,
@@ -100,6 +106,9 @@ class Reports extends Page implements HasForms
             'by_branch' => $reports->byBranch($from, $to, $branchId),
             'top_products' => $reports->topProducts($from, $to, $branchId),
             'series' => $reports->timeSeries($from, $to, $branchId),
+            'orders' => $orders,
+            'orders_truncated' => $truncated,
+            'orders_cap' => $screenCap,
         ];
     }
 

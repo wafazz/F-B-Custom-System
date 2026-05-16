@@ -1,5 +1,5 @@
-import { Head, router } from '@inertiajs/react';
-import { Coffee, CreditCard, Hash, MessageSquare, Package, ShoppingBag, Store, Tag, Wallet as WalletIcon, X } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Coffee, CreditCard, Hash, MessageSquare, Package, ShoppingBag, Sparkles, Store, Tag, Wallet as WalletIcon, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -16,17 +16,31 @@ interface VoucherChip {
     max_discount: number | null;
 }
 
+interface SuggestionProduct {
+    id: number;
+    name: string;
+    image: string | null;
+    price: number;
+}
+
 interface Props {
     branch: BranchContext;
     wallet_balance: number;
     is_authenticated: boolean;
     vouchers: VoucherChip[];
+    suggestions: SuggestionProduct[];
 }
 
 type OrderType = 'pickup' | 'dine_in';
 type PaymentMethod = 'gateway' | 'wallet';
 
-export default function Checkout({ branch, wallet_balance, is_authenticated, vouchers }: Props) {
+export default function Checkout({
+    branch,
+    wallet_balance,
+    is_authenticated,
+    vouchers,
+    suggestions,
+}: Props) {
     const lines = useCartStore((s) => s.lines);
     const notes = useCartStore((s) => s.notes);
     const setNotes = useCartStore((s) => s.setNotes);
@@ -358,6 +372,43 @@ export default function Checkout({ branch, wallet_balance, is_authenticated, vou
                                 </button>
                             );
                         })}
+                    </div>
+                </section>
+            )}
+
+            {suggestions.length > 0 && (
+                <section className="mb-4">
+                    <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                        <Sparkles className="size-3.5 text-amber-500" /> You might also want
+                    </h2>
+                    <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+                        {suggestions.map((s) => (
+                            <Link
+                                key={s.id}
+                                href={`/branches/${branch.id}/menu?product=${s.id}`}
+                                className="border-border bg-card hover:bg-secondary/30 flex w-32 shrink-0 snap-start flex-col gap-1.5 rounded-xl border p-2 shadow-sm transition-colors"
+                            >
+                                <div className="bg-secondary aspect-square overflow-hidden rounded-lg">
+                                    {s.image ? (
+                                        <img
+                                            src={`/storage/${s.image}`}
+                                            alt={s.name}
+                                            className="size-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex size-full items-center justify-center">
+                                            <Coffee className="text-muted-foreground size-6" />
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="line-clamp-2 text-xs font-medium leading-tight">
+                                    {s.name}
+                                </p>
+                                <p className="text-primary text-xs font-bold">
+                                    RM{s.price.toFixed(2)}
+                                </p>
+                            </Link>
+                        ))}
                     </div>
                 </section>
             )}

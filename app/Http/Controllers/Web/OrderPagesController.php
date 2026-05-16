@@ -83,11 +83,25 @@ class OrderPagesController extends Controller
             }
         }
 
+        $suggestions = Product::active()
+            ->featured()
+            ->availableAtBranch($branch->id)
+            ->limit(6)
+            ->get(['id', 'name', 'slug', 'image', 'base_price'])
+            ->map(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'image' => $p->image,
+                'price' => (float) $p->priceForBranch($branch->id),
+            ])
+            ->values();
+
         return Inertia::render('storefront/checkout', [
             'branch' => $this->branchSummary($branch),
             'wallet_balance' => $userId !== null ? $wallet->balance($userId) : 0,
             'is_authenticated' => $userId !== null,
             'vouchers' => $vouchers,
+            'suggestions' => $suggestions,
         ]);
     }
 

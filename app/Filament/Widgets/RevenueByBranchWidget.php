@@ -9,7 +9,7 @@ use Filament\Widgets\ChartWidget;
 
 class RevenueByBranchWidget extends ChartWidget
 {
-    protected static ?int $sort = 4;
+    protected static ?int $sort = 5;
 
     protected static ?string $heading = 'Revenue by branch (last 30 days)';
 

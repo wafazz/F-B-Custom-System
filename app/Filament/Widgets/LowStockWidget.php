@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LowStockWidget extends BaseWidget
 {
-    protected static ?int $sort = 6;
+    protected static ?int $sort = 8;
 
     protected static ?string $heading = 'Low stock alerts';
 

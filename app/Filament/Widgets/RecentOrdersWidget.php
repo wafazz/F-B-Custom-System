@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RecentOrdersWidget extends BaseWidget
 {
-    protected static ?int $sort = 7;
+    protected static ?int $sort = 3;
 
     protected static ?string $heading = 'Latest orders';
 
@@ -24,7 +24,13 @@ class RecentOrdersWidget extends BaseWidget
         return $table
             ->query($this->buildQuery())
             ->columns([
-                Tables\Columns\TextColumn::make('order_number')->label('Order')->searchable(),
+                Tables\Columns\TextColumn::make('number')
+                    ->label('Order')
+                    ->searchable()
+                    ->description(fn (Order $r): string => $r->items
+                        ->map(fn ($i): string => "{$i->quantity}× {$i->product_name}")
+                        ->join(', '))
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('branch.name')->label('Branch'),
                 Tables\Columns\TextColumn::make('customer_snapshot.name')->label('Customer')->placeholder('Walk-in'),
                 Tables\Columns\TextColumn::make('total')->money('MYR'),
@@ -41,12 +47,17 @@ class RecentOrdersWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('created_at')->since()->label('Placed'),
             ])
             ->recordUrl(fn (Order $r): string => route('filament.admin.resources.orders.view', $r))
-            ->paginated(false);
+            ->paginated(false)
+            ->contentGrid(['md' => 1])
+            ->striped();
     }
 
     /** @return Builder<Order> */
     protected function buildQuery(): Builder
     {
-        return Order::query()->with(['branch'])->latest('created_at')->limit(8);
+        return Order::query()
+            ->with(['branch', 'items:id,order_id,product_name,quantity'])
+            ->latest('created_at')
+            ->limit(8);
     }
 }

@@ -9,7 +9,7 @@ use Filament\Widgets\ChartWidget;
 
 class RevenueChartWidget extends ChartWidget
 {
-    protected static ?int $sort = 3;
+    protected static ?int $sort = 4;
 
     protected static ?string $heading = 'Revenue (last 14 days)';
 

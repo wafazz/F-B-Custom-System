@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TopProductsWidget extends BaseWidget
 {
-    protected static ?int $sort = 5;
+    protected static ?int $sort = 6;
 
     protected static ?string $heading = 'Top products (last 30 days)';
 

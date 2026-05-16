@@ -67,6 +67,7 @@ export interface BranchSummary {
     longitude: number | null;
     operating_hours: Record<string, { enabled: boolean; open: string; close: string }> | null;
     logo: string | null;
+    cover_image?: string | null;
     is_open_now: boolean;
     debug_status?: string;
     debug_accepts_orders?: boolean;

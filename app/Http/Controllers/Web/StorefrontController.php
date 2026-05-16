@@ -30,7 +30,7 @@ class StorefrontController extends Controller
     {
         $branches = Branch::active()
             ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo'])
+            ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo', 'cover_image'])
             ->map(function (Branch $b) {
                 $day = strtolower(now()->englishDayOfWeek);
                 $hours = is_array($b->operating_hours) ? ($b->operating_hours[$day] ?? null) : null;
@@ -47,6 +47,7 @@ class StorefrontController extends Controller
                     'longitude' => $b->longitude !== null ? (float) $b->longitude : null,
                     'operating_hours' => $b->operating_hours,
                     'logo' => $b->logo,
+                    'cover_image' => $b->cover_image,
                     'is_open_now' => $b->isOpenNow(),
                     'debug_status' => $b->status,
                     'debug_accepts_orders' => (bool) $b->accepts_orders,

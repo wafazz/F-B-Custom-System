@@ -63,15 +63,25 @@ class HandleInertiaRequests extends Middleware
                 $loyalty = app(LoyaltyService::class);
 
                 $userId = (int) $user->getKey();
-                $tier = CustomerTier::with('tier')->where('user_id', $userId)->first();
+                $tierRow = CustomerTier::with('tier')->where('user_id', $userId)->first();
+                $lifetimeSpend = $tierRow ? (float) $tierRow->lifetime_spend : 0.0;
+                $next = \App\Models\MembershipTier::query()
+                    ->where('min_lifetime_spend', '>', $lifetimeSpend)
+                    ->orderBy('min_lifetime_spend')
+                    ->first();
 
                 return [
                     'wallet_balance' => (float) $wallet->balance($userId),
                     'points' => (int) $loyalty->balance($userId),
-                    'tier' => $tier?->tier ? [
-                        'name' => $tier->tier->name,
-                        'color' => $tier->tier->color,
-                        'multiplier' => (float) $tier->tier->earn_multiplier,
+                    'lifetime_spend' => $lifetimeSpend,
+                    'tier' => $tierRow?->tier ? [
+                        'name' => $tierRow->tier->name,
+                        'color' => $tierRow->tier->color,
+                        'multiplier' => (float) $tierRow->tier->earn_multiplier,
+                    ] : null,
+                    'next_tier' => $next ? [
+                        'name' => $next->name,
+                        'min_spend' => (float) $next->min_lifetime_spend,
                     ] : null,
                 ];
             },

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Heart, Home, ShoppingBag, Sparkles, Trophy, User, Wallet } from 'lucide-react';
+import { Coffee, Crown, Gift, Heart, Home, ShoppingBag, User, Wallet } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { InstallPrompt } from '@/components/storefront/install-prompt';
@@ -10,7 +10,9 @@ import { cn } from '@/lib/utils';
 interface CustomerStats {
     wallet_balance: number;
     points: number;
+    lifetime_spend: number;
     tier: { name: string; color: string | null; multiplier: number } | null;
+    next_tier: { name: string; min_spend: number } | null;
 }
 
 interface Props {
@@ -80,41 +82,11 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
                     </div>
                 </div>
 
-                {auth.user && customer_stats && (
-                    <div className="border-border border-t bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40">
-                        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2 text-xs">
-                            <Link
-                                href="/wallet"
-                                className="flex items-center gap-1.5 font-semibold text-amber-900 transition-opacity hover:opacity-75 dark:text-amber-200"
-                            >
-                                <Wallet className="size-3.5" />
-                                <span>RM{customer_stats.wallet_balance.toFixed(2)}</span>
-                            </Link>
-                            <Link
-                                href="/loyalty"
-                                className="flex items-center gap-1.5 font-semibold text-amber-900 transition-opacity hover:opacity-75 dark:text-amber-200"
-                            >
-                                <Sparkles className="size-3.5" />
-                                <span>{customer_stats.points.toLocaleString()} pts</span>
-                            </Link>
-                            {customer_stats.tier && (
-                                <Link
-                                    href="/loyalty"
-                                    className="flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-0.5 font-bold uppercase tracking-wide text-amber-800 shadow-sm transition-opacity hover:opacity-75 dark:bg-amber-900/50 dark:text-amber-100"
-                                    style={
-                                        customer_stats.tier.color
-                                            ? { borderLeft: `3px solid ${customer_stats.tier.color}` }
-                                            : undefined
-                                    }
-                                >
-                                    <Trophy className="size-3" />
-                                    <span>{customer_stats.tier.name}</span>
-                                </Link>
-                            )}
-                        </div>
-                    </div>
-                )}
             </header>
+
+            {auth.user && customer_stats && (
+                <CustomerStatsStrip stats={customer_stats} />
+            )}
 
             <main className="bg-card mx-auto w-full max-w-3xl flex-1 px-4 py-4">{children}</main>
 
@@ -192,6 +164,81 @@ function NavItem({
         >
             {icon}
             <span>{label}</span>
+        </Link>
+    );
+}
+
+function CustomerStatsStrip({ stats }: { stats: CustomerStats }) {
+    const tierProgress = stats.next_tier
+        ? `RM${stats.lifetime_spend.toFixed(0)} / RM${stats.next_tier.min_spend.toFixed(0)}`
+        : 'MAX';
+    const tierName = stats.tier?.name ?? 'Bronze';
+
+    return (
+        <div className="mx-auto w-full max-w-3xl px-4 pt-4">
+            <div className="grid grid-cols-3 gap-2">
+                <StatCard
+                    href="/wallet"
+                    chip={{ label: 'Top up', color: 'bg-amber-700 text-amber-50' }}
+                    label="Wallet (RM)"
+                    value={stats.wallet_balance.toFixed(2)}
+                    icon={<Coffee className="size-7 text-amber-700/80" />}
+                />
+                <StatCard
+                    href="/loyalty"
+                    chip={null}
+                    label={tierName}
+                    value={tierProgress}
+                    icon={
+                        <Crown
+                            className="size-7"
+                            style={{ color: stats.tier?.color ?? '#b45309' }}
+                        />
+                    }
+                />
+                <StatCard
+                    href="/vouchers"
+                    chip={{ label: 'Vouchers', color: 'bg-amber-300 text-amber-900' }}
+                    label="Points"
+                    value={`${stats.points.toLocaleString()} pts`}
+                    icon={<Gift className="size-7 text-amber-700/80" />}
+                />
+            </div>
+        </div>
+    );
+}
+
+function StatCard({
+    href,
+    chip,
+    label,
+    value,
+    icon,
+}: {
+    href: string;
+    chip: { label: string; color: string } | null;
+    label: string;
+    value: string;
+    icon: ReactNode;
+}) {
+    return (
+        <Link
+            href={href}
+            className="border-border bg-card relative flex flex-col gap-1 overflow-hidden rounded-2xl border p-3 pt-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
+        >
+            {chip && (
+                <span
+                    className={cn(
+                        'absolute -top-0 left-2 rounded-b-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide',
+                        chip.color,
+                    )}
+                >
+                    {chip.label}
+                </span>
+            )}
+            <span className="text-muted-foreground text-[10px] leading-tight">{label}</span>
+            <span className="text-foreground text-base font-bold leading-tight">{value}</span>
+            <span className="absolute right-2 bottom-2 opacity-70">{icon}</span>
         </Link>
     );
 }

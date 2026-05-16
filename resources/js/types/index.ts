@@ -20,10 +20,15 @@ export interface Flash {
 export interface CustomerStats {
     wallet_balance: number;
     points: number;
+    lifetime_spend: number;
     tier: {
         name: string;
         color: string | null;
         multiplier: number;
+    } | null;
+    next_tier: {
+        name: string;
+        min_spend: number;
     } | null;
 }
 

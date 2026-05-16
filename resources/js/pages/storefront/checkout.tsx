@@ -115,7 +115,8 @@ export default function Checkout({
                     packaging,
                     use_own_tumbler: useOwnTumbler,
                     lines: lines.map((line) => ({
-                        product_id: line.product_id,
+                        product_id: line.product_id ?? undefined,
+                        combo_id: line.combo_id ?? undefined,
                         quantity: line.quantity,
                         modifier_option_ids: line.modifiers.map((m) => m.option_id),
                         notes: line.notes,

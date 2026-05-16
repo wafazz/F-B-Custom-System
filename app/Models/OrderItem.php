@@ -11,8 +11,10 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_id',
+        'combo_id',
         'product_name',
         'product_sku',
+        'combo_snapshot',
         'unit_price',
         'quantity',
         'line_total',
@@ -24,6 +26,7 @@ class OrderItem extends Model
         return [
             'unit_price' => 'decimal:2',
             'line_total' => 'decimal:2',
+            'combo_snapshot' => 'array',
         ];
     }
 
@@ -35,6 +38,11 @@ class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function combo(): BelongsTo
+    {
+        return $this->belongsTo(Combo::class);
     }
 
     /** @return HasMany<OrderItemModifier, $this> */

@@ -45,19 +45,44 @@ class OrderService
                 throw new RuntimeException('Branch is not accepting orders.');
             }
 
-            $productIds = collect($payload->lines)->pluck('productId')->unique()->values();
-            $products = Product::query()
-                ->whereIn('id', $productIds)
-                ->with([
-                    'branches' => fn ($q) => $q->where('branches.id', $branch->id),
-                    'stocks' => fn ($q) => $q->where('branch_id', $branch->id),
-                ])
-                ->get()
-                ->keyBy('id');
+            $productIds = collect($payload->lines)
+                ->pluck('productId')
+                ->filter()
+                ->unique()
+                ->values();
+            $products = $productIds->isEmpty()
+                ? collect()
+                : Product::query()
+                    ->whereIn('id', $productIds)
+                    ->with([
+                        'branches' => fn ($q) => $q->where('branches.id', $branch->id),
+                        'stocks' => fn ($q) => $q->where('branch_id', $branch->id),
+                    ])
+                    ->get()
+                    ->keyBy('id');
 
             foreach ($productIds as $id) {
                 if (! $products->has($id)) {
                     throw new RuntimeException("Product {$id} not found.");
+                }
+            }
+
+            $comboIds = collect($payload->lines)
+                ->pluck('comboId')
+                ->filter()
+                ->unique()
+                ->values();
+            $combos = $comboIds->isEmpty()
+                ? collect()
+                : \App\Models\Combo::query()
+                    ->whereIn('id', $comboIds)
+                    ->with('products:id,name')
+                    ->get()
+                    ->keyBy('id');
+
+            foreach ($comboIds as $id) {
+                if (! $combos->has($id)) {
+                    throw new RuntimeException("Combo {$id} not found.");
                 }
             }
 
@@ -76,6 +101,33 @@ class OrderService
             $stockToDecrement = [];
 
             foreach ($payload->lines as $line) {
+                if ($line->comboId !== null) {
+                    /** @var \App\Models\Combo $combo */
+                    $combo = $combos->get($line->comboId);
+                    $unit = (float) $combo->price;
+                    $lineTotal = $unit * $line->quantity;
+                    $subtotal += $lineTotal;
+                    $sstAmount += $lineTotal * $sstRate;
+
+                    $snapshot = $combo->products->map(fn (Product $p) => [
+                        'product_id' => $p->id,
+                        'name' => $p->name,
+                        'quantity' => (int) $p->getRelationValue('pivot')->quantity,
+                    ])->all();
+
+                    $itemsToInsert[] = [
+                        'combo' => $combo,
+                        'product' => null,
+                        'unit_price' => $unit,
+                        'quantity' => $line->quantity,
+                        'line_total' => $lineTotal,
+                        'notes' => $line->notes,
+                        'modifiers' => [],
+                        'combo_snapshot' => $snapshot,
+                    ];
+                    continue;
+                }
+
                 /** @var Product $product */
                 $product = $products->get($line->productId);
 
@@ -221,6 +273,23 @@ class OrderService
             }
 
             foreach ($itemsToInsert as $row) {
+                if (isset($row['combo'])) {
+                    /** @var \App\Models\Combo $combo */
+                    $combo = $row['combo'];
+                    $order->items()->create([
+                        'product_id' => null,
+                        'combo_id' => $combo->id,
+                        'product_name' => $combo->name,
+                        'product_sku' => null,
+                        'combo_snapshot' => $row['combo_snapshot'],
+                        'unit_price' => $row['unit_price'],
+                        'quantity' => $row['quantity'],
+                        'line_total' => $row['line_total'],
+                        'notes' => $row['notes'],
+                    ]);
+                    continue;
+                }
+
                 /** @var Product $product */
                 $product = $row['product'];
                 /** @var OrderItem $item */

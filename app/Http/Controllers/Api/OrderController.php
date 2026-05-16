@@ -39,10 +39,11 @@ class OrderController extends Controller
             userId: $request->user()?->getKey(),
             orderType: OrderType::from($request->string('order_type')->value()),
             lines: collect($request->input('lines', []))->map(fn (array $line) => new OrderLinePayload(
-                productId: (int) $line['product_id'],
+                productId: isset($line['product_id']) ? (int) $line['product_id'] : null,
                 quantity: (int) $line['quantity'],
                 modifierOptionIds: array_map('intval', $line['modifier_option_ids'] ?? []),
                 notes: $line['notes'] ?? null,
+                comboId: isset($line['combo_id']) ? (int) $line['combo_id'] : null,
             ))->all(),
             dineInTable: $request->input('dine_in_table'),
             pickupAt: $request->input('pickup_at'),

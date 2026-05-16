@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CartLine, MenuProduct, SelectedModifier } from '@/types/menu';
+import type { CartLine, MenuCombo, MenuProduct, SelectedModifier } from '@/types/menu';
 
 interface CartState {
     branchId: number | null;
@@ -12,6 +12,7 @@ interface CartState {
         quantity: number,
         branchId: number,
     ) => void;
+    addCombo: (combo: MenuCombo, quantity: number, branchId: number) => void;
     increment: (lineId: string) => void;
     decrement: (lineId: string) => void;
     remove: (lineId: string) => void;
@@ -39,6 +40,30 @@ export const useCartStore = create<CartState>()(
             branchId: null,
             lines: [],
             notes: '',
+            addCombo: (combo, quantity, branchId) => {
+                const key = `combo#${combo.id}`;
+                const existing = get().lines.find((l) => l.id === key);
+                const lines = existing
+                    ? get().lines.map((l) =>
+                          l.id === key ? { ...l, quantity: l.quantity + quantity } : l,
+                      )
+                    : [
+                          ...get().lines,
+                          {
+                              id: key,
+                              product_id: null,
+                              combo_id: combo.id,
+                              combo_items: combo.items,
+                              name: combo.name,
+                              image: combo.image,
+                              unit_price: Number(combo.price),
+                              tumbler_discount: 0,
+                              quantity,
+                              modifiers: [],
+                          },
+                      ];
+                set({ lines, branchId });
+            },
             add: (product, modifiers, quantity, branchId) => {
                 const key = lineKey(product.id, modifiers);
                 const existing = get().lines.find((l) => l.id === key);

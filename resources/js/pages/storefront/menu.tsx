@@ -11,6 +11,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { ComboSheet } from '@/components/storefront/combo-sheet';
 import { ModifierSheet } from '@/components/storefront/modifier-sheet';
 import { ProductCard } from '@/components/storefront/product-card';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ import { useCartStore } from '@/stores/cart-store';
 import type {
     BranchContext,
     MenuCategory,
+    MenuCombo,
     MenuProduct,
     SelectedModifier,
     StockChangedEvent,
@@ -53,6 +55,8 @@ interface Props {
 export default function Menu({ branch }: Props) {
     const setBranch = useBranchStore((s) => s.setBranch);
     const addToCart = useCartStore((s) => s.add);
+    const addComboToCart = useCartStore((s) => s.addCombo);
+    const [activeCombo, setActiveCombo] = useState<MenuCombo | null>(null);
     const rebindBranch = useCartStore((s) => s.rebindBranch);
 
     useEffect(() => {
@@ -136,6 +140,19 @@ export default function Menu({ branch }: Props) {
         }
     }
 
+    function handleAddCombo(combo: MenuCombo, qty: number) {
+        addComboToCart(combo, qty, branch.id);
+    }
+
+    function handleBuyNowCombo(combo: MenuCombo, qty: number) {
+        addComboToCart(combo, qty, branch.id);
+        router.visit(
+            auth.user
+                ? `/branches/${branch.id}/checkout`
+                : `/login?redirect=/branches/${branch.id}/checkout`,
+        );
+    }
+
     return (
         <StorefrontLayout>
             <Head title={`${branch.name} — Menu`} />
@@ -174,6 +191,47 @@ export default function Menu({ branch }: Props) {
                 <div className="border-border bg-card text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
                     {data.message ?? 'No items available right now.'}
                 </div>
+            )}
+
+            {data && (data.combos?.length ?? 0) > 0 && (
+                <section className="mb-4">
+                    <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                        <Sparkles className="size-3.5 text-amber-500" /> Combos
+                    </h2>
+                    <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+                        {data.combos!.map((combo) => (
+                            <button
+                                key={combo.id}
+                                type="button"
+                                onClick={() => setActiveCombo(combo)}
+                                className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100 hover:from-amber-100 hover:to-orange-200 dark:border-amber-900 dark:from-amber-950/50 dark:to-orange-950/50 flex w-44 shrink-0 snap-start flex-col gap-1.5 rounded-xl border p-2 text-left shadow-sm transition-colors"
+                            >
+                                <div className="bg-secondary aspect-[4/3] overflow-hidden rounded-lg">
+                                    {combo.image ? (
+                                        <img
+                                            src={`/storage/${combo.image}`}
+                                            alt={combo.name}
+                                            className="size-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex size-full items-center justify-center">
+                                            <Coffee className="text-muted-foreground size-6" />
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="line-clamp-1 text-sm font-semibold leading-tight">
+                                    {combo.name}
+                                </p>
+                                <p className="text-muted-foreground line-clamp-1 text-[10px]">
+                                    {combo.items.map((i) => `${i.quantity}× ${i.name}`).join(' + ')}
+                                </p>
+                                <p className="text-primary text-sm font-bold">
+                                    RM{Number(combo.price).toFixed(2)}
+                                </p>
+                            </button>
+                        ))}
+                    </div>
+                </section>
             )}
 
             {data && data.categories.length > 0 && (
@@ -286,6 +344,16 @@ export default function Menu({ branch }: Props) {
                 }}
                 onAdd={handleAdd}
                 onBuyNow={handleBuyNow}
+            />
+
+            <ComboSheet
+                combo={activeCombo}
+                open={activeCombo !== null}
+                onOpenChange={(open) => {
+                    if (!open) setActiveCombo(null);
+                }}
+                onAdd={handleAddCombo}
+                onBuyNow={handleBuyNowCombo}
             />
         </StorefrontLayout>
     );

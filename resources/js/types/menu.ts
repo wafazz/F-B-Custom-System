@@ -42,6 +42,23 @@ export interface MenuCategory {
     products: MenuProduct[];
 }
 
+export interface ComboItem {
+    product_id: number;
+    name: string;
+    image: string | null;
+    quantity: number;
+}
+
+export interface MenuCombo {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    image: string | null;
+    price: number;
+    items: ComboItem[];
+}
+
 export interface MenuPayload {
     branch: {
         id: number;
@@ -52,6 +69,7 @@ export interface MenuPayload {
         status: string;
     };
     categories: MenuCategory[];
+    combos?: MenuCombo[];
     message?: string;
 }
 
@@ -100,7 +118,9 @@ export interface SelectedModifier {
 
 export interface CartLine {
     id: string;
-    product_id: number;
+    product_id: number | null;
+    combo_id?: number | null;
+    combo_items?: ComboItem[];
     name: string;
     image: string | null;
     unit_price: number;

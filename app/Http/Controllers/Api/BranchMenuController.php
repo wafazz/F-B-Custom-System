@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\Combo;
 use App\Models\Product;
 use App\Support\RequestChannel;
 use Illuminate\Http\JsonResponse;
@@ -61,6 +62,34 @@ class BranchMenuController extends Controller
         $categories = array_values($byCategory);
         usort($categories, fn ($a, $b) => $a['sort_order'] <=> $b['sort_order']);
 
+        $comboModels = Combo::active()
+            ->forBranch($branch->id)
+            ->with(['products:id,name,image'])
+            ->orderBy('sort_order')
+            ->get();
+
+        $combos = [];
+        foreach ($comboModels as $combo) {
+            $items = [];
+            foreach ($combo->products as $p) {
+                $items[] = [
+                    'product_id' => $p->id,
+                    'name' => $p->name,
+                    'image' => $p->image,
+                    'quantity' => (int) $p->getRelationValue('pivot')->quantity,
+                ];
+            }
+            $combos[] = [
+                'id' => $combo->id,
+                'name' => $combo->name,
+                'slug' => $combo->slug,
+                'description' => $combo->description,
+                'image' => $combo->image,
+                'price' => (float) $combo->price,
+                'items' => $items,
+            ];
+        }
+
         return response()->json([
             'branch' => [
                 'id' => $branch->id,
@@ -73,6 +102,7 @@ class BranchMenuController extends Controller
                 'status' => $branch->status,
             ],
             'categories' => $categories,
+            'combos' => $combos,
         ]);
     }
 

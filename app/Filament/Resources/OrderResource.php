@@ -61,8 +61,17 @@ class OrderResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with([
+                'items:id,order_id,product_name,quantity',
+            ]))
             ->columns([
-                Tables\Columns\TextColumn::make('number')->searchable()->copyable(),
+                Tables\Columns\TextColumn::make('number')
+                    ->searchable()
+                    ->copyable()
+                    ->description(fn (Order $r): string => $r->items
+                        ->map(fn ($i): string => "{$i->quantity}× {$i->product_name}")
+                        ->join(', '))
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('branch.code')->badge()->color('primary')->sortable(),
                 Tables\Columns\TextColumn::make('order_type')
                     ->badge()

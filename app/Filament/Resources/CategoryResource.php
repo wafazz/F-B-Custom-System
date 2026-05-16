@@ -68,6 +68,27 @@ class CategoryResource extends Resource
                 ])
                 ->columns(2)
                 ->collapsed(),
+
+            Forms\Components\Section::make('Channel availability')
+                ->description('Toggle which surfaces this category appears on. Hiding here also hides its products on that surface.')
+                ->schema([
+                    Forms\Components\Toggle::make('available_web')
+                        ->label('Web')
+                        ->helperText('Browser storefront')
+                        ->default(true)
+                        ->inline(false),
+                    Forms\Components\Toggle::make('available_pwa')
+                        ->label('PWA')
+                        ->helperText('Installed PWA')
+                        ->default(true)
+                        ->inline(false),
+                    Forms\Components\Toggle::make('available_pos')
+                        ->label('POS')
+                        ->helperText('Branch walk-in POS')
+                        ->default(true)
+                        ->inline(false),
+                ])
+                ->columns(3),
         ]);
     }
 
@@ -86,10 +107,16 @@ class CategoryResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state) => $state === 'active' ? 'success' : 'gray'),
+                Tables\Columns\ToggleColumn::make('available_web')->label('Web')->toggleable(),
+                Tables\Columns\ToggleColumn::make('available_pwa')->label('PWA')->toggleable(),
+                Tables\Columns\ToggleColumn::make('available_pos')->label('POS')->toggleable(),
             ])
             ->defaultSort('sort_order')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(['active' => 'Active', 'hidden' => 'Hidden']),
+                Tables\Filters\TernaryFilter::make('available_web')->label('Web'),
+                Tables\Filters\TernaryFilter::make('available_pwa')->label('PWA'),
+                Tables\Filters\TernaryFilter::make('available_pos')->label('POS'),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([

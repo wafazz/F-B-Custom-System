@@ -170,6 +170,8 @@ class HomeSlideResource extends Resource
             '/wallet' => 'Wallet',
             '/referral' => 'Referral',
             '/branches' => 'Branch picker',
+            '/register' => 'Sign up — registration',
+            '/login' => 'Sign in — login',
         ];
 
         $categories = Category::query()

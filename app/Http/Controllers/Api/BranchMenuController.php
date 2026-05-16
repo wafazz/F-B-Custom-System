@@ -23,10 +23,12 @@ class BranchMenuController extends Controller
             ]);
         }
 
-        $channelColumn = RequestChannel::availableColumn(RequestChannel::detect($request));
+        $channel = RequestChannel::detect($request);
+        $channelColumn = RequestChannel::availableColumn($channel);
 
         $products = Product::availableAtBranch($branch->id)
             ->where($channelColumn, true)
+            ->whereHas('category', fn ($q) => $q->where(Category::channelColumn($channel), true))
             ->with([
                 'category',
                 'modifierGroups.options' => fn ($q) => $q->where('is_available', true),

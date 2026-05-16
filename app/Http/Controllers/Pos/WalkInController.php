@@ -31,8 +31,9 @@ class WalkInController extends Controller
         $branch = Branch::findOrFail($branchId);
 
         $products = Product::availableAtBranch($branchId)
+            ->whereHas('category', fn ($q) => $q->where('available_pos', true))
             ->with([
-                'category:id,name,parent_id',
+                'category:id,name,parent_id,available_pos',
                 'category.parent:id,name',
                 'modifierGroups.options' => fn ($q) => $q->where('is_available', true),
                 'branches' => fn ($q) => $q->where('branches.id', $branchId),

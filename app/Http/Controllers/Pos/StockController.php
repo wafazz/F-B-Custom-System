@@ -22,6 +22,7 @@ class StockController extends Controller
 
         $rows = Product::query()
             ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId)->where('branch_product.is_available', true))
+            ->whereHas('category', fn ($q) => $q->where('available_pos', true))
             ->with([
                 'category:id,name',
                 'stocks' => fn ($q) => $q->where('branch_id', $branchId),

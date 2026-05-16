@@ -25,7 +25,19 @@ class Category extends Model
         'icon',
         'sort_order',
         'status',
+        'available_web',
+        'available_pwa',
+        'available_pos',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'available_web' => 'boolean',
+            'available_pwa' => 'boolean',
+            'available_pos' => 'boolean',
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -54,6 +66,20 @@ class Category extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');
+    }
+
+    public function scopeVisibleOn(Builder $query, string $channel): Builder
+    {
+        return $query->where(self::channelColumn($channel), true);
+    }
+
+    public static function channelColumn(string $channel): string
+    {
+        return match ($channel) {
+            'pwa' => 'available_pwa',
+            'pos' => 'available_pos',
+            default => 'available_web',
+        };
     }
 
     public function scopeRoot(Builder $query): Builder

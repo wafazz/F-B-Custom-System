@@ -62,11 +62,11 @@ class StorefrontController extends Controller
 
     public function branchHome(\Illuminate\Http\Request $request, Branch $branch): Response
     {
-        $channelColumn = \App\Support\RequestChannel::availableColumn(
-            \App\Support\RequestChannel::detect($request)
-        );
+        $channel = \App\Support\RequestChannel::detect($request);
+        $channelColumn = \App\Support\RequestChannel::availableColumn($channel);
 
         $categories = Category::active()
+            ->visibleOn($channel)
             ->root()
             ->orderBy('sort_order')
             ->get(['id', 'slug', 'name', 'image', 'icon'])

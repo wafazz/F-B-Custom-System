@@ -175,8 +175,9 @@ function CustomerStatsStrip({ stats }: { stats: CustomerStats }) {
     const tierName = stats.tier?.name ?? 'Bronze';
 
     return (
-        <div className="mx-auto w-full max-w-3xl px-4 pt-4">
-            <div className="grid grid-cols-3 gap-2">
+        <div className="bg-white shadow-sm dark:bg-neutral-900">
+            <div className="mx-auto w-full max-w-3xl px-4 py-4">
+                <div className="grid grid-cols-3 gap-2">
                 <StatCard
                     href="/wallet"
                     chip={{ label: 'Top up', color: 'bg-amber-700 text-amber-50' }}
@@ -203,6 +204,7 @@ function CustomerStatsStrip({ stats }: { stats: CustomerStats }) {
                     value={`${stats.points.toLocaleString()} pts`}
                     icon={<Gift className="size-5 text-amber-700/60" />}
                 />
+                </div>
             </div>
         </div>
     );

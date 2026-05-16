@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Auth\SessionGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,8 +13,12 @@ use Inertia\Response;
 
 class LoginController extends Controller
 {
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
+        if (Auth::check()) {
+            return redirect()->intended('/branches');
+        }
+
         if ($redirect = $request->query('redirect')) {
             $request->session()->put('url.intended', (string) $redirect);
         }
@@ -26,14 +31,21 @@ class LoginController extends Controller
         $credentials = $request->validate([
             'identifier' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'remember' => ['boolean'],
         ]);
 
         $field = filter_var($credentials['identifier'], FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
 
+        // Stay logged in for 30 days (60 × 24 × 30 minutes). Remember cookie
+        // revives the session after the short session-cookie expires, so the
+        // customer stays in until they manually log out or 30 days elapse.
+        $guard = Auth::guard('web');
+        if ($guard instanceof SessionGuard) {
+            $guard->setRememberDuration(60 * 24 * 30);
+        }
+
         if (! Auth::attempt(
             [$field => $credentials['identifier'], 'password' => $credentials['password']],
-            (bool) ($credentials['remember'] ?? false),
+            true,
         )) {
             throw ValidationException::withMessages([
                 'identifier' => 'These credentials do not match our records.',
@@ -42,6 +54,6 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended('/');
+        return redirect()->intended('/branches');
     }
 }

@@ -17,12 +17,23 @@ export interface Flash {
     error?: string;
 }
 
+export interface CustomerStats {
+    wallet_balance: number;
+    points: number;
+    tier: {
+        name: string;
+        color: string | null;
+        multiplier: number;
+    } | null;
+}
+
 export interface PageProps {
     name: string;
     auth: {
         user: User | null;
     };
     flash: Flash;
+    customer_stats: CustomerStats | null;
     ziggy: {
         url: string;
         port: number | null;

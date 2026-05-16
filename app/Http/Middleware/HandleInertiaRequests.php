@@ -2,7 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CustomerTier;
 use App\Models\PosShift;
+use App\Services\Loyalty\LoyaltyService;
+use App\Services\Wallet\WalletService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -46,6 +49,30 @@ class HandleInertiaRequests extends Middleware
                 return [
                     'id' => $shift->id,
                     'opened_at' => $shift->opened_at->toIso8601String(),
+                ];
+            },
+            'customer_stats' => function () use ($request) {
+                $user = $request->user();
+                if (! $user) {
+                    return null;
+                }
+
+                /** @var WalletService $wallet */
+                $wallet = app(WalletService::class);
+                /** @var LoyaltyService $loyalty */
+                $loyalty = app(LoyaltyService::class);
+
+                $userId = (int) $user->getKey();
+                $tier = CustomerTier::with('tier')->where('user_id', $userId)->first();
+
+                return [
+                    'wallet_balance' => (float) $wallet->balance($userId),
+                    'points' => (int) $loyalty->balance($userId),
+                    'tier' => $tier?->tier ? [
+                        'name' => $tier->tier->name,
+                        'color' => $tier->tier->color,
+                        'multiplier' => (float) $tier->tier->earn_multiplier,
+                    ] : null,
                 ];
             },
         ];

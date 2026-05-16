@@ -6,7 +6,6 @@ export default function Login() {
     const { data, setData, post, processing, errors, reset } = useForm({
         identifier: '',
         password: '',
-        remember: false,
     });
 
     const submit = (e: FormEvent) => {
@@ -52,15 +51,9 @@ export default function Login() {
                     />
                     {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
                 </div>
-                <label className="flex items-center gap-2 text-xs text-white/70">
-                    <input
-                        type="checkbox"
-                        checked={data.remember}
-                        onChange={(e) => setData('remember', e.target.checked)}
-                        className="size-4 accent-amber-500"
-                    />
-                    Remember me
-                </label>
+                <p className="text-xs text-white/55">
+                    You'll stay signed in on this device for 30 days unless you sign out.
+                </p>
                 <button
                     type="submit"
                     disabled={processing}

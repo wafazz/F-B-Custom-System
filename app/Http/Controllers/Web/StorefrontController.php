@@ -7,13 +7,20 @@ use App\Models\Branch;
 use App\Models\Category;
 use App\Models\HomeSlide;
 use App\Models\Product;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class StorefrontController extends Controller
 {
-    public function splash(): Response
+    public function splash(): Response|RedirectResponse
     {
+        // Returning customers skip the splash and go straight to picking a branch.
+        if (Auth::check()) {
+            return redirect()->route('branches.select');
+        }
+
         return Inertia::render('storefront/splash', [
             'hasBranches' => Branch::active()->exists(),
         ]);

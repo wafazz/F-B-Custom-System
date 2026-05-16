@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Heart, Home, ShoppingBag, User, Wallet } from 'lucide-react';
+import { Heart, Home, ShoppingBag, Sparkles, Trophy, User, Wallet } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { InstallPrompt } from '@/components/storefront/install-prompt';
@@ -7,15 +7,22 @@ import { useBranchStore } from '@/stores/branch-store';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
 import { cn } from '@/lib/utils';
 
+interface CustomerStats {
+    wallet_balance: number;
+    points: number;
+    tier: { name: string; color: string | null; multiplier: number } | null;
+}
+
 interface Props {
     children: ReactNode;
     showBranchPicker?: boolean;
 }
 
 export default function StorefrontLayout({ children, showBranchPicker = true }: Props) {
-    const { auth, url } = usePage().props as unknown as {
+    const { auth, url, customer_stats } = usePage().props as unknown as {
         auth: { user: { name: string } | null };
         url: string;
+        customer_stats: CustomerStats | null;
     };
     const branch = useBranchStore((s) => s.selected);
     const lines = useCartStore((s) => s.lines);
@@ -72,6 +79,41 @@ export default function StorefrontLayout({ children, showBranchPicker = true }: 
                         </Link>
                     </div>
                 </div>
+
+                {auth.user && customer_stats && (
+                    <div className="border-border border-t bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40">
+                        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2 text-xs">
+                            <Link
+                                href="/wallet"
+                                className="flex items-center gap-1.5 font-semibold text-amber-900 transition-opacity hover:opacity-75 dark:text-amber-200"
+                            >
+                                <Wallet className="size-3.5" />
+                                <span>RM{customer_stats.wallet_balance.toFixed(2)}</span>
+                            </Link>
+                            <Link
+                                href="/loyalty"
+                                className="flex items-center gap-1.5 font-semibold text-amber-900 transition-opacity hover:opacity-75 dark:text-amber-200"
+                            >
+                                <Sparkles className="size-3.5" />
+                                <span>{customer_stats.points.toLocaleString()} pts</span>
+                            </Link>
+                            {customer_stats.tier && (
+                                <Link
+                                    href="/loyalty"
+                                    className="flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-0.5 font-bold uppercase tracking-wide text-amber-800 shadow-sm transition-opacity hover:opacity-75 dark:bg-amber-900/50 dark:text-amber-100"
+                                    style={
+                                        customer_stats.tier.color
+                                            ? { borderLeft: `3px solid ${customer_stats.tier.color}` }
+                                            : undefined
+                                    }
+                                >
+                                    <Trophy className="size-3" />
+                                    <span>{customer_stats.tier.name}</span>
+                                </Link>
+                            )}
+                        </div>
+                    </div>
+                )}
             </header>
 
             <main className="bg-card mx-auto w-full max-w-3xl flex-1 px-4 py-4">{children}</main>

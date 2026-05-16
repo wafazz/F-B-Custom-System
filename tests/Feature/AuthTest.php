@@ -42,7 +42,7 @@ test('user can login with email', function () {
     $this->post('/login', [
         'identifier' => 'me@example.com',
         'password' => 'secret123',
-    ])->assertRedirect('/');
+    ])->assertRedirect('/branches');
 
     $this->assertAuthenticatedAs($user);
 });
@@ -56,7 +56,7 @@ test('user can login with phone', function () {
     $this->post('/login', [
         'identifier' => '+60177777777',
         'password' => 'secret123',
-    ])->assertRedirect('/');
+    ])->assertRedirect('/branches');
 
     $this->assertAuthenticatedAs($user);
 });

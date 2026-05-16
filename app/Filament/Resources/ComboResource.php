@@ -72,8 +72,8 @@ class ComboResource extends Resource
             Forms\Components\Section::make('Included products')
                 ->description('Pick the products that come with this combo. Quantity defaults to 1.')
                 ->schema([
-                    Forms\Components\Repeater::make('products')
-                        ->relationship('products')
+                    Forms\Components\Repeater::make('items')
+                        ->relationship('items')
                         ->schema([
                             Forms\Components\Select::make('product_id')
                                 ->label('Product')

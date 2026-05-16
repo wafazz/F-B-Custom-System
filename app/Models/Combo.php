@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
@@ -55,6 +56,12 @@ class Combo extends Model
             ->withPivot('quantity', 'sort_order')
             ->orderBy('combo_products.sort_order')
             ->withTimestamps();
+    }
+
+    /** @return HasMany<ComboProduct, $this> */
+    public function items(): HasMany
+    {
+        return $this->hasMany(ComboProduct::class)->orderBy('sort_order');
     }
 
     public function scopeActive(Builder $query): Builder

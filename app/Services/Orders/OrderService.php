@@ -70,6 +70,7 @@ class OrderService
             $serviceRate = $branch->service_charge_enabled ? (float) $branch->service_charge_rate / 100 : 0;
             $subtotal = 0;
             $sstAmount = 0;
+            $tumblerDiscount = 0.0;
 
             $itemsToInsert = [];
             $stockToDecrement = [];
@@ -111,6 +112,10 @@ class OrderService
                     $sstAmount += $lineTotal * $sstRate;
                 }
 
+                if ($payload->useOwnTumbler) {
+                    $tumblerDiscount += (float) $product->tumbler_discount * $line->quantity;
+                }
+
                 $itemsToInsert[] = [
                     'product' => $product,
                     'unit_price' => $unitBase,
@@ -146,7 +151,8 @@ class OrderService
                 $loyaltyDiscount = $this->loyalty->dollarsForPoints($payload->loyaltyRedeemPoints);
             }
 
-            $discountTotal = round(min($subtotal, $voucherDiscount + $loyaltyDiscount), 2);
+            $tumblerDiscount = round($tumblerDiscount, 2);
+            $discountTotal = round(min($subtotal, $voucherDiscount + $loyaltyDiscount + $tumblerDiscount), 2);
 
             // Recompute SST on discounted subtotal proportionally.
             $discountedSubtotal = max(0, $subtotal - $discountTotal);
@@ -186,6 +192,9 @@ class OrderService
                 'discount_amount' => $discountTotal,
                 'total' => $total,
                 'notes' => $payload->notes,
+                'packaging' => $payload->packaging !== [] ? $payload->packaging : null,
+                'use_own_tumbler' => $payload->useOwnTumbler,
+                'tumbler_discount_amount' => $tumblerDiscount,
                 'customer_snapshot' => $payload->customerSnapshot,
                 'payment_method' => $payload->paymentMethod === 'wallet' ? 'wallet' : null,
             ]);

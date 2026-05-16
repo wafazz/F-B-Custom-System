@@ -55,6 +55,8 @@ class OrderController extends Controller
             voucherCode: $request->input('voucher_code'),
             loyaltyRedeemPoints: (int) $request->input('loyalty_redeem_points', 0),
             paymentMethod: $request->input('payment_method') === 'wallet' ? 'wallet' : 'gateway',
+            packaging: array_values((array) $request->input('packaging', [])),
+            useOwnTumbler: (bool) $request->boolean('use_own_tumbler'),
         );
 
         try {

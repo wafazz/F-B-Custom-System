@@ -109,6 +109,7 @@ class BranchMenuController extends Controller
             'description' => $product->description,
             'price' => $product->priceForBranch($branchId),
             'base_price' => (float) $product->base_price,
+            'tumbler_discount' => (float) $product->tumbler_discount,
             'image' => $product->image,
             'gallery' => $product->gallery,
             'calories' => $product->calories,

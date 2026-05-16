@@ -24,6 +24,7 @@ class Product extends Model
         'description',
         'sku',
         'base_price',
+        'tumbler_discount',
         'sst_applicable',
         'image',
         'gallery',
@@ -42,6 +43,7 @@ class Product extends Model
         return [
             'gallery' => 'array',
             'base_price' => 'decimal:2',
+            'tumbler_discount' => 'decimal:2',
             'sst_applicable' => 'boolean',
             'is_featured' => 'boolean',
             'available_web' => 'boolean',

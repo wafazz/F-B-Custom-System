@@ -23,5 +23,8 @@ class OrderPayload
         public int $loyaltyRedeemPoints = 0,
         public string $paymentMethod = 'gateway', // 'gateway' (Billplz/Stub) or 'wallet'
         public ?int $shiftId = null,
+        /** @var list<string> */
+        public array $packaging = [],
+        public bool $useOwnTumbler = false,
     ) {}
 }

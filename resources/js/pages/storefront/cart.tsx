@@ -1,15 +1,25 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Coffee, LogIn, Minus, Plus, Trash2 } from 'lucide-react';
+import { Coffee, LogIn, Minus, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
 import type { BranchContext } from '@/types/menu';
 
-interface Props {
-    branch: BranchContext;
+interface RecommendedProduct {
+    id: number;
+    name: string;
+    slug: string;
+    image: string | null;
+    price: number;
+    tumbler_discount: number;
 }
 
-export default function Cart({ branch }: Props) {
+interface Props {
+    branch: BranchContext;
+    recommendations: RecommendedProduct[];
+}
+
+export default function Cart({ branch, recommendations }: Props) {
     const { auth } = usePage().props as unknown as { auth: { user: { id: number } | null } };
     const isAuthed = auth.user !== null;
     const lines = useCartStore((s) => s.lines);
@@ -132,6 +142,43 @@ export default function Cart({ branch }: Props) {
                             placeholder="Allergies, special requests..."
                         />
                     </div>
+
+                    {recommendations.length > 0 && (
+                        <section className="mt-4">
+                            <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                                <Sparkles className="size-3.5 text-amber-500" /> Frequently bought with
+                            </h2>
+                            <div className="mt-2 -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+                                {recommendations.map((rec) => (
+                                    <Link
+                                        key={rec.id}
+                                        href={`/branches/${branch.id}/menu?product=${rec.id}`}
+                                        className="border-border bg-card hover:bg-secondary/30 flex w-32 shrink-0 snap-start flex-col gap-1.5 rounded-xl border p-2 shadow-sm transition-colors"
+                                    >
+                                        <div className="bg-secondary aspect-square overflow-hidden rounded-lg">
+                                            {rec.image ? (
+                                                <img
+                                                    src={`/storage/${rec.image}`}
+                                                    alt={rec.name}
+                                                    className="size-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex size-full items-center justify-center">
+                                                    <Coffee className="text-muted-foreground size-6" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <p className="line-clamp-2 text-xs font-medium leading-tight">
+                                            {rec.name}
+                                        </p>
+                                        <p className="text-primary text-xs font-bold">
+                                            RM{rec.price.toFixed(2)}
+                                        </p>
+                                    </Link>
+                                ))}
+                            </div>
+                        </section>
+                    )}
 
                     <div className="border-border bg-card mt-4 space-y-2 rounded-xl border p-4 text-sm shadow-sm">
                         <div className="text-muted-foreground flex justify-between">

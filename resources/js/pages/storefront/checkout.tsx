@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { CreditCard, Hash, ShoppingBag, Store, Tag, Wallet as WalletIcon, X } from 'lucide-react';
+import { Coffee, CreditCard, Hash, MessageSquare, Package, ShoppingBag, Store, Tag, Wallet as WalletIcon, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -29,27 +29,41 @@ type PaymentMethod = 'gateway' | 'wallet';
 export default function Checkout({ branch, wallet_balance, is_authenticated, vouchers }: Props) {
     const lines = useCartStore((s) => s.lines);
     const notes = useCartStore((s) => s.notes);
+    const setNotes = useCartStore((s) => s.setNotes);
     const clear = useCartStore((s) => s.clear);
     const cartBranchId = useCartStore((s) => s.branchId);
+    const NOTES_LIMIT = 200;
 
     const [orderType, setOrderType] = useState<OrderType>('pickup');
     const [tableNumber, setTableNumber] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gateway');
     const [voucherCode, setVoucherCode] = useState<string | null>(null);
+    const [packaging, setPackaging] = useState<string[]>([]);
+    const [useOwnTumbler, setUseOwnTumbler] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const { subtotal } = cartTotals(lines);
+    const tumblerSaving = useOwnTumbler
+        ? lines.reduce((sum, l) => sum + (l.tumbler_discount ?? 0) * l.quantity, 0)
+        : 0;
     const activeVoucher = voucherCode ? vouchers.find((v) => v.code === voucherCode) : null;
     const voucherDiscount = activeVoucher
         ? computeVoucherDiscount(activeVoucher, subtotal)
         : 0;
-    const discountedSubtotal = Math.max(0, subtotal - voucherDiscount);
+    const discountedSubtotal = Math.max(0, subtotal - voucherDiscount - tumblerSaving);
     const sst = branch.sst_enabled ? discountedSubtotal * (branch.sst_rate / 100) : 0;
     const serviceCharge = branch.service_charge_enabled
         ? discountedSubtotal * (branch.service_charge_rate / 100)
         : 0;
     const total = discountedSubtotal + sst + serviceCharge;
+    const hasTumblerEligibleItem = lines.some((l) => (l.tumbler_discount ?? 0) > 0);
+
+    function togglePackaging(key: string) {
+        setPackaging((current) =>
+            current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
+        );
+    }
 
     const walletAffordable = is_authenticated && wallet_balance >= total;
 
@@ -84,6 +98,8 @@ export default function Checkout({ branch, wallet_balance, is_authenticated, vou
                     notes,
                     payment_method: paymentMethod,
                     voucher_code: voucherCode,
+                    packaging,
+                    use_own_tumbler: useOwnTumbler,
                     lines: lines.map((line) => ({
                         product_id: line.product_id,
                         quantity: line.quantity,
@@ -220,6 +236,84 @@ export default function Checkout({ branch, wallet_balance, is_authenticated, vou
                 </div>
             </section>
 
+            <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
+                <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                    <MessageSquare className="size-3.5" /> Special remarks
+                </h2>
+                <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value.slice(0, NOTES_LIMIT))}
+                    rows={2}
+                    placeholder="Let us know if you have any special requests. E.g. less ice, extra napkins."
+                    className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
+                />
+                <p className="text-muted-foreground mt-1 text-right text-[10px]">
+                    {notes.length}/{NOTES_LIMIT}
+                </p>
+            </section>
+
+            {hasTumblerEligibleItem && (
+                <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
+                    <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                            type="checkbox"
+                            checked={useOwnTumbler}
+                            onChange={(e) => setUseOwnTumbler(e.target.checked)}
+                            className="border-border accent-primary mt-0.5 size-4 rounded"
+                        />
+                        <span className="flex-1">
+                            <span className="flex items-center gap-1.5 text-sm font-semibold">
+                                <Coffee className="size-3.5" /> Bring your own tumbler
+                            </span>
+                            <span className="text-muted-foreground mt-0.5 block text-xs">
+                                We'll skip the disposable cup. Discount applies to eligible drinks.
+                            </span>
+                        </span>
+                        {tumblerSaving > 0 && (
+                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                −RM{tumblerSaving.toFixed(2)}
+                            </span>
+                        )}
+                    </label>
+                </section>
+            )}
+
+            <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
+                <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                    <Package className="size-3.5" /> Packaging{' '}
+                    <span className="text-muted-foreground text-[10px] font-normal">
+                        (Only if you really need it)
+                    </span>
+                </h2>
+                <div className="mt-3 space-y-2">
+                    {[
+                        { key: 'straws', label: 'I need straws' },
+                        { key: 'paper_bag', label: 'I need a paper bag for my order' },
+                    ].map((opt) => {
+                        const active = packaging.includes(opt.key);
+                        return (
+                            <label
+                                key={opt.key}
+                                className={cn(
+                                    'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors',
+                                    active
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-border hover:bg-secondary/50',
+                                )}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={active}
+                                    onChange={() => togglePackaging(opt.key)}
+                                    className="border-border accent-primary size-4 rounded"
+                                />
+                                <span className="text-sm">{opt.label}</span>
+                            </label>
+                        );
+                    })}
+                </div>
+            </section>
+
             {vouchers.length > 0 && (
                 <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
                     <h2 className="text-sm font-semibold">Voucher</h2>
@@ -277,6 +371,12 @@ export default function Checkout({ branch, wallet_balance, is_authenticated, vou
                     <div className="flex justify-between text-emerald-600">
                         <span>Voucher ({activeVoucher.code})</span>
                         <span>−RM{voucherDiscount.toFixed(2)}</span>
+                    </div>
+                )}
+                {tumblerSaving > 0 && (
+                    <div className="flex justify-between text-emerald-600">
+                        <span>BYO tumbler</span>
+                        <span>−RM{tumblerSaving.toFixed(2)}</span>
                     </div>
                 )}
                 {branch.service_charge_enabled && (

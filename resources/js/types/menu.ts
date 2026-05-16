@@ -23,6 +23,7 @@ export interface MenuProduct {
     description: string | null;
     price: number;
     base_price: number;
+    tumbler_discount: number;
     image: string | null;
     gallery: string[] | null;
     calories: number | null;
@@ -102,6 +103,7 @@ export interface CartLine {
     name: string;
     image: string | null;
     unit_price: number;
+    tumbler_discount: number;
     quantity: number;
     modifiers: SelectedModifier[];
     notes?: string;

@@ -54,6 +54,7 @@ export const useCartStore = create<CartState>()(
                               name: product.name,
                               image: product.image,
                               unit_price: unitPrice(product.price, modifiers),
+                              tumbler_discount: Number(product.tumbler_discount ?? 0),
                               quantity,
                               modifiers,
                           },

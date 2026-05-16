@@ -61,6 +61,13 @@ class ProductResource extends Resource
                         ->numeric()
                         ->prefix('RM')
                         ->step(0.01),
+                    Forms\Components\TextInput::make('tumbler_discount')
+                        ->label('BYO tumbler — RM off')
+                        ->helperText('Per-unit discount when customer brings own tumbler. 0 = ineligible.')
+                        ->numeric()
+                        ->default(0)
+                        ->prefix('RM')
+                        ->step(0.01),
                     Forms\Components\Toggle::make('sst_applicable')->default(true),
                     Forms\Components\TextInput::make('calories')
                         ->numeric()

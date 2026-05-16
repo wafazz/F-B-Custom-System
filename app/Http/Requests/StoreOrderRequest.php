@@ -30,7 +30,10 @@ class StoreOrderRequest extends FormRequest
             'lines.*.notes' => ['nullable', 'string', 'max:200'],
             'voucher_code' => ['nullable', 'string', 'max:40'],
             'loyalty_redeem_points' => ['nullable', 'integer', 'min:0', 'max:100000'],
-            'payment_method' => ['nullable', \Illuminate\Validation\Rule::in(['gateway', 'wallet'])],
+            'payment_method' => ['nullable', Rule::in(['gateway', 'wallet'])],
+            'packaging' => ['nullable', 'array', 'max:5'],
+            'packaging.*' => ['string', Rule::in(['straws', 'paper_bag'])],
+            'use_own_tumbler' => ['nullable', 'boolean'],
         ];
     }
 }

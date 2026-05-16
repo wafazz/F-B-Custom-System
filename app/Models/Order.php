@@ -62,6 +62,9 @@ class Order extends Model
         'payment_reference',
         'paid_at',
         'notes',
+        'packaging',
+        'use_own_tumbler',
+        'tumbler_discount_amount',
         'cancellation_reason',
         'customer_snapshot',
         'preparing_at',
@@ -88,6 +91,9 @@ class Order extends Model
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'customer_snapshot' => 'array',
+            'packaging' => 'array',
+            'use_own_tumbler' => 'boolean',
+            'tumbler_discount_amount' => 'decimal:2',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\VoucherClaim;
 use App\Services\Orders\OrderService;
 use App\Services\Payments\BillplzGateway;
@@ -22,8 +23,24 @@ class OrderPagesController extends Controller
 {
     public function cart(Branch $branch): Response
     {
+        $recommendations = Product::active()
+            ->featured()
+            ->availableAtBranch($branch->id)
+            ->limit(6)
+            ->get(['id', 'name', 'slug', 'image', 'base_price', 'tumbler_discount'])
+            ->map(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'slug' => $p->slug,
+                'image' => $p->image,
+                'price' => (float) $p->priceForBranch($branch->id),
+                'tumbler_discount' => (float) $p->tumbler_discount,
+            ])
+            ->values();
+
         return Inertia::render('storefront/cart', [
             'branch' => $this->branchSummary($branch),
+            'recommendations' => $recommendations,
         ]);
     }
 

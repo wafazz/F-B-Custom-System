@@ -10,7 +10,7 @@ import {
     Sun,
     type LucideIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ComboSheet } from '@/components/storefront/combo-sheet';
 import { ModifierSheet } from '@/components/storefront/modifier-sheet';
 import { ProductCard } from '@/components/storefront/product-card';
@@ -204,8 +204,45 @@ export default function Menu({ branch }: Props) {
           )
         : allCategories;
 
-    const visibleCategory =
-        sidebarCategories.find((c) => c.id === activeCategory) ?? sidebarCategories[0] ?? null;
+    const sectionRefs = useRef<Map<number, HTMLElement>>(new Map());
+    const scrollingToRef = useRef<number | null>(null);
+
+    const setSectionRef = (id: number) => (el: HTMLElement | null) => {
+        if (el) sectionRefs.current.set(id, el);
+        else sectionRefs.current.delete(id);
+    };
+
+    const scrollToCategory = (id: number) => {
+        setUserPicked(id);
+        const el = sectionRefs.current.get(id);
+        if (!el) return;
+        scrollingToRef.current = id;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.setTimeout(() => {
+            scrollingToRef.current = null;
+        }, 700);
+    };
+
+    const sidebarKey = sidebarCategories.map((c) => c.id).join(',');
+    useEffect(() => {
+        if (!data || sidebarCategories.length === 0) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (scrollingToRef.current !== null) return;
+                const top = entries
+                    .filter((e) => e.isIntersecting)
+                    .sort(
+                        (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
+                    )[0];
+                if (!top) return;
+                const id = Number((top.target as HTMLElement).dataset.catId);
+                if (Number.isFinite(id)) setUserPicked(id);
+            },
+            { rootMargin: '-30% 0px -60% 0px', threshold: 0 },
+        );
+        sectionRefs.current.forEach((el) => observer.observe(el));
+        return () => observer.disconnect();
+    }, [data, sidebarKey]);
 
     const { auth } = usePage().props as unknown as { auth: { user: { id: number } | null } };
 
@@ -360,8 +397,8 @@ export default function Menu({ branch }: Props) {
             )}
 
             {data && data.categories.length > 0 && (
-                <div className="-mx-4 flex gap-0">
-                    <aside className="bg-muted/40 border-border w-24 shrink-0 border-r">
+                <div className="-mx-4 flex items-start gap-0">
+                    <aside className="bg-muted/40 border-border sticky top-16 max-h-[calc(100vh-4rem)] w-24 shrink-0 self-start overflow-y-auto border-r">
                         <ul className="flex flex-col">
                             {sidebarCategories.map((cat) => {
                                 const Icon = iconFor(cat.slug);
@@ -371,7 +408,7 @@ export default function Menu({ branch }: Props) {
                                     <li key={cat.id}>
                                         <button
                                             type="button"
-                                            onClick={() => setUserPicked(cat.id)}
+                                            onClick={() => scrollToCategory(cat.id)}
                                             className={cn(
                                                 'flex w-full flex-col items-center gap-1.5 px-2 py-3 text-center transition-colors',
                                                 active
@@ -426,19 +463,24 @@ export default function Menu({ branch }: Props) {
                     </aside>
 
                     <main className="min-w-0 flex-1 px-3 py-2">
-                        {visibleCategory && (
-                            <>
+                        {sidebarCategories.map((cat) => (
+                            <section
+                                key={cat.id}
+                                ref={setSectionRef(cat.id)}
+                                data-cat-id={cat.id}
+                                className="scroll-mt-20 mb-8 last:mb-4"
+                            >
                                 <div className="mb-3 flex items-center gap-2">
                                     <Coffee className="text-primary size-4" />
                                     <h2 className="text-sm font-bold tracking-wider uppercase">
-                                        {visibleCategory.name}
+                                        {cat.name}
                                     </h2>
                                     <span className="text-muted-foreground text-xs">
-                                        · {visibleCategory.products.length} items
+                                        · {cat.products.length} items
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                                    {visibleCategory.products.map((product) => (
+                                    {cat.products.map((product) => (
                                         <ProductCard
                                             key={product.id}
                                             product={product}
@@ -446,14 +488,14 @@ export default function Menu({ branch }: Props) {
                                             onSelect={setUserPickedProduct}
                                         />
                                     ))}
-                                    {visibleCategory.products.length === 0 && (
+                                    {cat.products.length === 0 && (
                                         <p className="text-muted-foreground col-span-2 py-12 text-center text-sm">
                                             No items in this category yet.
                                         </p>
                                     )}
                                 </div>
-                            </>
-                        )}
+                            </section>
+                        ))}
                     </main>
                 </div>
             )}

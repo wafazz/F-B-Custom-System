@@ -77,14 +77,34 @@ class StorefrontController extends Controller
             ->visibleOn($channel)
             ->root()
             ->orderBy('sort_order')
-            ->get(['id', 'slug', 'name', 'image', 'icon'])
-            ->map(fn (Category $c) => [
-                'id' => $c->id,
-                'slug' => $c->slug,
-                'name' => $c->name,
-                'image' => $c->image,
-                'icon' => $c->icon,
+            ->with([
+                'children' => fn ($q) => $q->where('status', 'active')
+                    ->orderBy('sort_order'),
             ])
+            ->get(['id', 'slug', 'name', 'image', 'icon'])
+            ->map(function (Category $c) {
+                // Prefer the category's own admin-uploaded image. When the
+                // parent has none, borrow the first child's image so the
+                // circle never falls back to the generic Coffee icon
+                // unnecessarily.
+                $image = $c->image;
+                if (! $image) {
+                    foreach ($c->children as $child) {
+                        if ($child->image) {
+                            $image = $child->image;
+                            break;
+                        }
+                    }
+                }
+
+                return [
+                    'id' => $c->id,
+                    'slug' => $c->slug,
+                    'name' => $c->name,
+                    'image' => $image,
+                    'icon' => $c->icon,
+                ];
+            })
             ->values();
 
         $featured = Product::active()

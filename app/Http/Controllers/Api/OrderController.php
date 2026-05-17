@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
 use App\Models\Branch;
@@ -11,8 +12,10 @@ use App\Models\Order;
 use App\Services\Orders\OrderLinePayload;
 use App\Services\Orders\OrderPayload;
 use App\Services\Orders\OrderService;
+use App\Services\Payments\BillplzGateway;
 use App\Services\Payments\PaymentGateway;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
@@ -128,6 +131,114 @@ class OrderController extends Controller
         $order->load(['items.modifiers', 'branch']);
 
         return response()->json(['order' => $this->present($order)]);
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $userId = $request->user()?->getKey();
+        abort_unless($userId !== null, 401);
+
+        $this->cancelStaleUnpaidOrders((int) $userId);
+
+        $orders = Order::query()
+            ->where('user_id', $userId)
+            ->with(['items:id,order_id,product_name,quantity'])
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        return response()->json([
+            'orders' => $orders->map(fn (Order $o) => [
+                'id' => $o->id,
+                'number' => $o->number,
+                'status' => $o->status->value,
+                'status_label' => $o->status->label(),
+                'order_type' => $o->order_type->value,
+                'total' => (float) $o->total,
+                'payment_status' => $o->payment_status->value,
+                'can_pay_again' => $this->canPayAgain($o),
+                'items_summary' => $o->items
+                    ->map(fn ($i) => "{$i->quantity}× {$i->product_name}")
+                    ->join(', '),
+                'created_at' => $o->created_at?->toIso8601String(),
+            ])->values(),
+        ]);
+    }
+
+    public function payAgain(Order $order, BillplzGateway $gateway): JsonResponse
+    {
+        abort_unless($this->canPayAgain($order), 422, 'This order is not eligible for payment.');
+
+        try {
+            $bill = $gateway->createBill($order->fresh() ?? $order);
+        } catch (Throwable $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+
+        $order->forceFill([
+            'payment_method' => 'billplz',
+            'payment_reference' => $bill->reference,
+            'payment_status' => PaymentStatus::Unpaid,
+        ])->save();
+
+        return response()->json([
+            'order' => $this->present($order->fresh(['items.modifiers'])),
+            'payment' => [
+                'reference' => $bill->reference,
+                'url' => $bill->url,
+                'method' => $bill->method,
+            ],
+        ]);
+    }
+
+    protected function canPayAgain(Order $order): bool
+    {
+        if ($order->user_id === null) {
+            return false;
+        }
+        if ($order->status !== OrderStatus::Pending) {
+            return false;
+        }
+        if (! in_array($order->payment_status, [PaymentStatus::Unpaid, PaymentStatus::Failed], true)) {
+            return false;
+        }
+        $snapshot = $order->customer_snapshot ?? [];
+        if (($snapshot['source'] ?? null) === 'walk-in') {
+            return false;
+        }
+
+        return $order->created_at instanceof \Illuminate\Support\Carbon
+            && $order->created_at->isToday();
+    }
+
+    protected function cancelStaleUnpaidOrders(int $userId): void
+    {
+        $stale = Order::query()
+            ->where('user_id', $userId)
+            ->where('status', OrderStatus::Pending->value)
+            ->whereIn('payment_status', [PaymentStatus::Unpaid->value, PaymentStatus::Failed->value])
+            ->whereDate('created_at', '<', now()->toDateString())
+            ->get();
+
+        foreach ($stale as $order) {
+            $snapshot = $order->customer_snapshot ?? [];
+            if (($snapshot['source'] ?? null) === 'walk-in') {
+                continue;
+            }
+            try {
+                $order->forceFill([
+                    'cancellation_reason' => 'Auto-cancelled — payment not completed by end of day.',
+                ])->save();
+                $this->orders->transition($order->fresh() ?? $order, OrderStatus::Cancelled);
+            } catch (Throwable $e) {
+                Log::warning('API auto-cancel stale unpaid order failed', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /** @return array<string, mixed> */

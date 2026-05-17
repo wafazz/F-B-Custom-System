@@ -295,6 +295,26 @@ export default function Menu({ branch }: Props) {
         }
     }
 
+    function handleProductSelect(product: MenuProduct) {
+        if (!branch.is_open_now) {
+            window.alert(
+                `Sorry, ${branch.name} is currently closed. Online ordering will resume during operating hours — feel free to keep browsing the menu!`,
+            );
+            return;
+        }
+        setUserPickedProduct(product);
+    }
+
+    function handleComboSelect(combo: MenuCombo) {
+        if (!branch.is_open_now) {
+            window.alert(
+                `Sorry, ${branch.name} is currently closed. Online ordering will resume during operating hours — feel free to keep browsing the menu!`,
+            );
+            return;
+        }
+        setActiveCombo(combo);
+    }
+
     function handleAddCombo(combo: MenuCombo, qty: number) {
         addComboToCart(combo, qty, branch.id);
     }
@@ -358,7 +378,7 @@ export default function Menu({ branch }: Props) {
                             <button
                                 key={combo.id}
                                 type="button"
-                                onClick={() => setActiveCombo(combo)}
+                                onClick={() => handleComboSelect(combo)}
                                 className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100 hover:from-amber-100 hover:to-orange-200 dark:border-amber-900 dark:from-amber-950/50 dark:to-orange-950/50 flex w-44 shrink-0 snap-start flex-col gap-1.5 rounded-xl border p-2 text-left shadow-sm transition-colors"
                             >
                                 <div className="bg-secondary aspect-[4/3] overflow-hidden rounded-lg">
@@ -481,7 +501,7 @@ export default function Menu({ branch }: Props) {
                                             key={product.id}
                                             product={product}
                                             isAvailable={!unavailable.has(product.id)}
-                                            onSelect={setUserPickedProduct}
+                                            onSelect={handleProductSelect}
                                         />
                                     ))}
                                     {sec.products.length === 0 && (

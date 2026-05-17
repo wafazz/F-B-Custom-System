@@ -141,9 +141,9 @@ function SheetBody({
         <>
             <SheetTitle className="sr-only">{product.name}</SheetTitle>
 
-            <div className="flex min-h-0 flex-1 flex-col gap-4 sm:flex-row sm:gap-6">
-                <aside className="flex-shrink-0 sm:w-2/5">
-                    <div className="bg-secondary/50 flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 sm:flex-row sm:gap-6">
+                <aside className="flex flex-shrink-0 items-start gap-3 sm:block sm:w-2/5">
+                    <div className="bg-secondary/50 flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl sm:size-auto sm:aspect-[4/3] sm:w-full">
                         {imageSrc ? (
                             <img
                                 src={imageSrc.startsWith('http') ? imageSrc : `/storage/${imageSrc}`}
@@ -151,18 +151,22 @@ function SheetBody({
                                 className="size-full object-cover"
                             />
                         ) : (
-                            <Coffee className="text-muted-foreground size-16" />
+                            <Coffee className="text-muted-foreground size-10 sm:size-16" />
                         )}
                     </div>
-                    <h3 className="mt-3 text-lg leading-tight font-bold">{product.name}</h3>
-                    {product.description && (
-                        <p className="text-muted-foreground mt-1 text-xs leading-snug">
-                            {product.description}
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-base leading-tight font-bold sm:mt-3 sm:text-lg">
+                            {product.name}
+                        </h3>
+                        {product.description && (
+                            <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs leading-snug sm:mt-1 sm:line-clamp-none">
+                                {product.description}
+                            </p>
+                        )}
+                        <p className="text-primary mt-1 text-base font-bold sm:mt-2 sm:text-xl">
+                            RM{Number(product.price).toFixed(2)}
                         </p>
-                    )}
-                    <p className="text-primary mt-2 text-xl font-bold">
-                        RM{Number(product.price).toFixed(2)}
-                    </p>
+                    </div>
                 </aside>
 
                 <div className="flex min-h-0 flex-1 flex-col">

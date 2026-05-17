@@ -31,7 +31,7 @@ class BranchMenuController extends Controller
             ->where($channelColumn, true)
             ->whereHas('category', fn ($q) => $q->where(Category::channelColumn($channel), true))
             ->with([
-                'category',
+                'category.parent',
                 'modifierGroups.options' => fn ($q) => $q->where('is_available', true)->orderBy('sort_order')->orderBy('id'),
                 'branches' => fn ($q) => $q->where('branches.id', $branch->id),
                 'stocks' => fn ($q) => $q->where('branch_id', $branch->id),
@@ -47,12 +47,17 @@ class BranchMenuController extends Controller
             $category = $product->category;
             $catId = $category->getKey();
             if (! isset($byCategory[$catId])) {
+                $parent = $category->parent;
                 $byCategory[$catId] = [
                     'id' => $catId,
                     'name' => $category->name,
                     'slug' => $category->slug,
                     'icon' => $category->icon,
                     'sort_order' => $category->sort_order,
+                    'parent_id' => $parent?->id,
+                    'parent_name' => $parent?->name,
+                    'parent_slug' => $parent?->slug,
+                    'parent_sort_order' => $parent ? (int) $parent->sort_order : null,
                     'products' => [],
                 ];
             }

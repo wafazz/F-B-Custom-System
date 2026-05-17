@@ -39,6 +39,10 @@ export interface MenuCategory {
     slug: string;
     icon: string | null;
     sort_order: number;
+    parent_id: number | null;
+    parent_name: string | null;
+    parent_slug: string | null;
+    parent_sort_order: number | null;
     products: MenuProduct[];
 }
 

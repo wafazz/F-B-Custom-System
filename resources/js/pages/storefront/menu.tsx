@@ -116,6 +116,27 @@ export default function Menu({ branch }: Props) {
 
     const allCategories = data?.categories ?? [];
 
+    // Parents are only built from categories that actually declare a parent_id.
+    // When the catalog is flat (no hierarchy), we fall back to the original
+    // single-column sidebar — no tabs, no filtering.
+    const parents: { id: number; name: string }[] = (() => {
+        const map = new Map<number, { id: number; name: string; sort: number }>();
+        for (const c of allCategories) {
+            if (c.parent_id === null || c.parent_name === null) continue;
+            if (!map.has(c.parent_id)) {
+                map.set(c.parent_id, {
+                    id: c.parent_id,
+                    name: c.parent_name,
+                    sort: c.parent_sort_order ?? c.sort_order,
+                });
+            }
+        }
+        return [...map.values()]
+            .sort((a, b) => a.sort - b.sort)
+            .map((p) => ({ id: p.id, name: p.name }));
+    })();
+    const hierarchical = parents.length > 0;
+
     const activeCategory: number | null =
         typeof userPicked === 'number'
             ? userPicked
@@ -123,7 +144,20 @@ export default function Menu({ branch }: Props) {
               ? (allCategories.find((c) => c.slug === initialSlug)?.id ?? allCategories[0].id)
               : (allCategories[0]?.id ?? null);
 
-    const visibleCategory = allCategories.find((c) => c.id === activeCategory) ?? null;
+    const activeCategoryObj = allCategories.find((c) => c.id === activeCategory) ?? null;
+    const [userParent, setUserParent] = useState<number | null>(null);
+    const activeParent: number | null = hierarchical
+        ? (userParent ?? activeCategoryObj?.parent_id ?? parents[0].id)
+        : null;
+
+    // Sidebar shows ONLY children of the active parent tab.
+    // When flat, fall back to all categories.
+    const sidebarCategories = hierarchical
+        ? allCategories.filter((c) => c.parent_id === activeParent)
+        : allCategories;
+
+    const visibleCategory =
+        sidebarCategories.find((c) => c.id === activeCategory) ?? sidebarCategories[0] ?? null;
 
     const { auth } = usePage().props as unknown as { auth: { user: { id: number } | null } };
 
@@ -234,11 +268,40 @@ export default function Menu({ branch }: Props) {
                 </section>
             )}
 
+            {data && data.categories.length > 0 && hierarchical && (
+                <div className="-mx-1 mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1">
+                    {parents.map((p) => {
+                        const isActive = p.id === activeParent;
+                        return (
+                            <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => {
+                                    setUserParent(p.id);
+                                    const firstChild = allCategories.find(
+                                        (c) => c.parent_id === p.id,
+                                    );
+                                    if (firstChild) setUserPicked(firstChild.id);
+                                }}
+                                className={cn(
+                                    'shrink-0 snap-start whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all',
+                                    isActive
+                                        ? 'bg-primary text-primary-foreground shadow-sm'
+                                        : 'bg-card text-card-foreground border-border border hover:bg-amber-50',
+                                )}
+                            >
+                                {p.name}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
             {data && data.categories.length > 0 && (
                 <div className="-mx-4 flex gap-0">
                     <aside className="bg-muted/40 border-border w-24 shrink-0 border-r">
                         <ul className="flex flex-col">
-                            {data.categories.map((cat) => {
+                            {sidebarCategories.map((cat) => {
                                 const Icon = iconFor(cat.slug);
                                 const thumb = categoryThumb(cat);
                                 const active = cat.id === activeCategory;

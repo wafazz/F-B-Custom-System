@@ -437,7 +437,7 @@ export default function Menu({ branch }: Props) {
                                         · {visibleCategory.products.length} items
                                     </span>
                                 </div>
-                                <div className="grid gap-2">
+                                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                                     {visibleCategory.products.map((product) => (
                                         <ProductCard
                                             key={product.id}
@@ -447,7 +447,7 @@ export default function Menu({ branch }: Props) {
                                         />
                                     ))}
                                     {visibleCategory.products.length === 0 && (
-                                        <p className="text-muted-foreground py-12 text-center text-sm">
+                                        <p className="text-muted-foreground col-span-2 py-12 text-center text-sm">
                                             No items in this category yet.
                                         </p>
                                     )}

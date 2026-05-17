@@ -16,13 +16,13 @@ export function ProductCard({ product, onSelect, isAvailable = true }: Props) {
             onClick={() => isAvailable && onSelect(product)}
             disabled={!isAvailable}
             className={cn(
-                'group border-border bg-card flex w-full items-stretch gap-3 rounded-xl border p-3 text-left shadow-sm transition-all',
+                'group border-border bg-card flex h-full w-full flex-col rounded-xl border p-2.5 text-left shadow-sm transition-all',
                 isAvailable
                     ? 'hover:-translate-y-0.5 hover:shadow-md'
                     : 'cursor-not-allowed opacity-50',
             )}
         >
-            <div className="bg-secondary relative size-20 flex-shrink-0 overflow-hidden rounded-lg">
+            <div className="bg-secondary relative aspect-square w-full flex-shrink-0 overflow-hidden rounded-lg">
                 {product.image ? (
                     <img
                         src={`/storage/${product.image}`}
@@ -31,8 +31,16 @@ export function ProductCard({ product, onSelect, isAvailable = true }: Props) {
                     />
                 ) : (
                     <div className="text-muted-foreground flex size-full items-center justify-center">
-                        <Coffee className="size-7" />
+                        <Coffee className="size-8" />
                     </div>
+                )}
+                {product.is_featured && (
+                    <Badge
+                        variant="warning"
+                        className="absolute top-1.5 left-1.5 text-[9px]"
+                    >
+                        Featured
+                    </Badge>
                 )}
                 {!isAvailable && (
                     <div className="bg-background/80 text-muted-foreground absolute inset-0 flex items-center justify-center text-xs font-semibold">
@@ -40,28 +48,21 @@ export function ProductCard({ product, onSelect, isAvailable = true }: Props) {
                     </div>
                 )}
             </div>
-            <div className="flex flex-1 flex-col justify-between">
-                <div>
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold">{product.name}</h3>
-                        {product.is_featured && (
-                            <Badge variant="warning" className="text-[10px]">
-                                Featured
-                            </Badge>
-                        )}
-                    </div>
-                    {product.description && (
-                        <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
-                            {product.description}
-                        </p>
-                    )}
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                    <span className="text-primary text-sm font-semibold">
+            <div className="mt-2 flex flex-1 flex-col">
+                <h3 className="line-clamp-2 text-sm font-semibold leading-tight">
+                    {product.name}
+                </h3>
+                {product.description && (
+                    <p className="text-muted-foreground mt-1 line-clamp-2 text-[11px] leading-snug">
+                        {product.description}
+                    </p>
+                )}
+                <div className="mt-auto flex items-center justify-between pt-2">
+                    <span className="text-primary text-sm font-bold">
                         RM{product.price.toFixed(2)}
                     </span>
                     <span className="text-muted-foreground text-[10px]">
-                        {product.prep_time_minutes}min prep
+                        {product.prep_time_minutes} min
                     </span>
                 </div>
             </div>

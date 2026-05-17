@@ -38,10 +38,13 @@ export interface MenuCategory {
     name: string;
     slug: string;
     icon: string | null;
+    image: string | null;
     sort_order: number;
     parent_id: number | null;
     parent_name: string | null;
     parent_slug: string | null;
+    parent_image: string | null;
+    parent_icon: string | null;
     parent_sort_order: number | null;
     products: MenuProduct[];
 }

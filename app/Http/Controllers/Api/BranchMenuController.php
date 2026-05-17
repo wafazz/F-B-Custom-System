@@ -53,10 +53,13 @@ class BranchMenuController extends Controller
                     'name' => $category->name,
                     'slug' => $category->slug,
                     'icon' => $category->icon,
+                    'image' => $category->image,
                     'sort_order' => $category->sort_order,
                     'parent_id' => $parent?->id,
                     'parent_name' => $parent?->name,
                     'parent_slug' => $parent?->slug,
+                    'parent_image' => $parent?->image,
+                    'parent_icon' => $parent?->icon,
                     'parent_sort_order' => $parent ? (int) $parent->sort_order : null,
                     'products' => [],
                 ];

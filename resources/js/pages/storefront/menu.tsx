@@ -44,7 +44,9 @@ function iconFor(slug: string): LucideIcon {
 }
 
 function categoryThumb(cat: MenuCategory): string | null {
-    return cat.products.find((p) => p.image)?.image ?? null;
+    // Prefer the admin-uploaded category image; fall back to the first product
+    // image only when the category has no image of its own.
+    return cat.image ?? cat.products.find((p) => p.image)?.image ?? null;
 }
 
 interface Props {
@@ -119,10 +121,23 @@ export default function Menu({ branch }: Props) {
     // Parents are derived from any category that declares a parent_id. Each
     // parent carries its own slug so URL deep-links like ?category=pastry can
     // match either a real child slug or a parent slug.
-    const parents: { id: number; name: string; slug: string }[] = (() => {
+    const parents: {
+        id: number;
+        name: string;
+        slug: string;
+        image: string | null;
+        icon: string | null;
+    }[] = (() => {
         const map = new Map<
             number,
-            { id: number; name: string; slug: string; sort: number }
+            {
+                id: number;
+                name: string;
+                slug: string;
+                image: string | null;
+                icon: string | null;
+                sort: number;
+            }
         >();
         for (const c of allCategories) {
             if (c.parent_id === null || c.parent_name === null) continue;
@@ -131,13 +146,21 @@ export default function Menu({ branch }: Props) {
                     id: c.parent_id,
                     name: c.parent_name,
                     slug: c.parent_slug ?? '',
+                    image: c.parent_image ?? null,
+                    icon: c.parent_icon ?? null,
                     sort: c.parent_sort_order ?? c.sort_order,
                 });
             }
         }
         return [...map.values()]
             .sort((a, b) => a.sort - b.sort)
-            .map((p) => ({ id: p.id, name: p.name, slug: p.slug }));
+            .map((p) => ({
+                id: p.id,
+                name: p.name,
+                slug: p.slug,
+                image: p.image,
+                icon: p.icon,
+            }));
     })();
     const hierarchical = parents.length > 0;
 
@@ -309,13 +332,27 @@ export default function Menu({ branch }: Props) {
                                     if (firstChild) setUserPicked(firstChild.id);
                                 }}
                                 className={cn(
-                                    'shrink-0 snap-start whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all',
+                                    'shrink-0 snap-start flex items-center gap-2 whitespace-nowrap rounded-full text-xs font-bold uppercase tracking-wide transition-all',
+                                    p.image ? 'pl-1 pr-4 py-1' : 'px-4 py-2',
                                     isActive
                                         ? 'bg-primary text-primary-foreground shadow-sm'
                                         : 'bg-card text-card-foreground border-border border hover:bg-amber-50',
                                 )}
                             >
-                                {p.name}
+                                {p.image && (
+                                    <span className="bg-secondary/40 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full">
+                                        <img
+                                            src={
+                                                p.image.startsWith('http')
+                                                    ? p.image
+                                                    : `/storage/${p.image}`
+                                            }
+                                            alt={p.name}
+                                            className="size-full object-cover"
+                                        />
+                                    </span>
+                                )}
+                                <span>{p.name}</span>
                             </button>
                         );
                     })}

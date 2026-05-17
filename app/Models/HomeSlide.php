@@ -28,6 +28,7 @@ class HomeSlide extends Model
         'title',
         'subtitle',
         'image',
+        'placement',
         'cta_label',
         'cta_url',
         'is_global',
@@ -70,5 +71,11 @@ class HomeSlide extends Model
             ->where('is_global', true)
             ->orWhereHas('branches', fn (Builder $sub) => $sub->where('branches.id', $branchId))
         );
+    }
+
+    /** @param  Builder<self>  $query */
+    public function scopePlacement(Builder $query, string $placement): Builder
+    {
+        return $query->where('placement', $placement);
     }
 }

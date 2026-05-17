@@ -31,6 +31,15 @@ class HomeSlideResource extends Resource
         return $form->schema([
             Forms\Components\Section::make('Slide content')
                 ->schema([
+                    Forms\Components\Select::make('placement')
+                        ->label('Banner slot')
+                        ->required()
+                        ->default('hero')
+                        ->options([
+                            'hero' => 'Top — Hero carousel (above categories)',
+                            'rewards' => 'Bottom — Rewards / promo carousel',
+                        ])
+                        ->helperText('Pick which storefront banner this slide belongs to. The two carousels rotate independently.'),
                     Forms\Components\TextInput::make('title')
                         ->required()
                         ->maxLength(80)
@@ -115,6 +124,11 @@ class HomeSlideResource extends Resource
                     ->square()
                     ->size(48),
                 Tables\Columns\TextColumn::make('title')->searchable(),
+                Tables\Columns\TextColumn::make('placement')
+                    ->label('Slot')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => $state === 'rewards' ? 'Bottom' : 'Top')
+                    ->color(fn (string $state): string => $state === 'rewards' ? 'warning' : 'info'),
                 Tables\Columns\TextColumn::make('subtitle')->limit(40)->toggleable(),
                 Tables\Columns\IconColumn::make('is_global')
                     ->label('All branches')
@@ -129,6 +143,12 @@ class HomeSlideResource extends Resource
             ])
             ->defaultSort('sort_order')
             ->filters([
+                Tables\Filters\SelectFilter::make('placement')
+                    ->label('Slot')
+                    ->options([
+                        'hero' => 'Top — Hero',
+                        'rewards' => 'Bottom — Rewards',
+                    ]),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
                 Tables\Filters\TernaryFilter::make('is_global')->label('Global'),
             ])

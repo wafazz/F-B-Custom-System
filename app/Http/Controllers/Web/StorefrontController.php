@@ -107,11 +107,12 @@ class StorefrontController extends Controller
             ->forBranch($branch->id)
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->groupBy('placement');
 
-        $slides = [];
-        foreach ($managed as $row) {
-            $slides[] = [
+        $hero = [];
+        foreach (($managed['hero'] ?? collect()) as $row) {
+            $hero[] = [
                 'type' => 'managed',
                 'image' => $row->image,
                 'title' => $row->title,
@@ -121,9 +122,9 @@ class StorefrontController extends Controller
             ];
         }
 
-        if (count($slides) === 0) {
+        if (count($hero) === 0) {
             if ($branch->cover_image) {
-                $slides[] = [
+                $hero[] = [
                     'type' => 'cover',
                     'image' => $branch->cover_image,
                     'title' => "Welcome to {$branch->name}",
@@ -133,7 +134,7 @@ class StorefrontController extends Controller
                 ];
             }
             foreach ($featured as $p) {
-                $slides[] = [
+                $hero[] = [
                     'type' => 'product',
                     'image' => $p['image'],
                     'title' => $p['name'],
@@ -142,8 +143,8 @@ class StorefrontController extends Controller
                     'cta_url' => null,
                 ];
             }
-            if (count($slides) === 0) {
-                $slides[] = [
+            if (count($hero) === 0) {
+                $hero[] = [
                     'type' => 'cover',
                     'image' => null,
                     'title' => $branch->name,
@@ -152,6 +153,29 @@ class StorefrontController extends Controller
                     'cta_url' => null,
                 ];
             }
+        }
+
+        $rewards = [];
+        foreach (($managed['rewards'] ?? collect()) as $row) {
+            $rewards[] = [
+                'type' => 'managed',
+                'image' => $row->image,
+                'title' => $row->title,
+                'subtitle' => $row->subtitle,
+                'cta_label' => $row->cta_label,
+                'cta_url' => $row->cta_url,
+            ];
+        }
+
+        if (count($rewards) === 0) {
+            $rewards[] = [
+                'type' => 'cover',
+                'image' => null,
+                'title' => 'Brew More, Earn More',
+                'subtitle' => 'Collect points and enjoy exclusive rewards.',
+                'cta_label' => 'View rewards',
+                'cta_url' => '/loyalty',
+            ];
         }
 
         return Inertia::render('storefront/branch-home', [
@@ -163,7 +187,8 @@ class StorefrontController extends Controller
                 'is_open_now' => $branch->isOpenNow(),
                 'accepts_orders' => $branch->accepts_orders,
             ],
-            'slides' => $slides,
+            'slides' => $hero,
+            'rewards_slides' => $rewards,
             'categories' => $categories,
         ]);
     }

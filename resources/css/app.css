@@ -42,25 +42,25 @@
 }
 
 :root {
-    /* Palette per brand spec: brown body · cream cards · dark cocoa CTAs · pink-beige secondary */
-    --background: #775542;
-    --foreground: #F7F3F0;
-    --card: #F7F3F0;
+    /* Palette per brand spec: warm cream body · white cards · dark cocoa CTAs · pink-beige secondary */
+    --background: #F7F3F0;
+    --foreground: #1F1716;
+    --card: #FFFFFF;
     --card-foreground: #1F1716;
-    --popover: #F7F3F0;
+    --popover: #FFFFFF;
     --popover-foreground: #1F1716;
     --primary: #402724;
     --primary-foreground: #F7F3F0;
     --secondary: #EADCDC;
     --secondary-foreground: #402724;
-    --muted: #EADCDC;
+    --muted: #F0E8E2;
     --muted-foreground: #6B5048;
     --accent: #402724;
     --accent-foreground: #F7F3F0;
     --destructive: oklch(0.6 0.22 25);
     --destructive-foreground: #FFFFFF;
-    --border: #D9CBC1;
-    --input: #F7F3F0;
+    --border: #E8DED4;
+    --input: #FFFFFF;
     --ring: #402724;
     --chart-1: #402724;
     --chart-2: #775542;

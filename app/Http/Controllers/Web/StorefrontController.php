@@ -30,7 +30,9 @@ class StorefrontController extends Controller
     {
         $branches = Branch::active()
             ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo', 'cover_image'])
+            // status + accepts_orders are required by Branch::isOpenNow(); without
+            // them the method short-circuits to false and every branch reads "Closed".
+            ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo', 'cover_image', 'status', 'accepts_orders'])
             ->map(function (Branch $b) {
                 $day = strtolower(now()->englishDayOfWeek);
                 $hours = is_array($b->operating_hours) ? ($b->operating_hours[$day] ?? null) : null;

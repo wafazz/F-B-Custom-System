@@ -116,44 +116,69 @@ export default function Menu({ branch }: Props) {
 
     const allCategories = data?.categories ?? [];
 
-    // Parents are only built from categories that actually declare a parent_id.
-    // When the catalog is flat (no hierarchy), we fall back to the original
-    // single-column sidebar — no tabs, no filtering.
-    const parents: { id: number; name: string }[] = (() => {
-        const map = new Map<number, { id: number; name: string; sort: number }>();
+    // Parents are derived from any category that declares a parent_id. Each
+    // parent carries its own slug so URL deep-links like ?category=pastry can
+    // match either a real child slug or a parent slug.
+    const parents: { id: number; name: string; slug: string }[] = (() => {
+        const map = new Map<
+            number,
+            { id: number; name: string; slug: string; sort: number }
+        >();
         for (const c of allCategories) {
             if (c.parent_id === null || c.parent_name === null) continue;
             if (!map.has(c.parent_id)) {
                 map.set(c.parent_id, {
                     id: c.parent_id,
                     name: c.parent_name,
+                    slug: c.parent_slug ?? '',
                     sort: c.parent_sort_order ?? c.sort_order,
                 });
             }
         }
         return [...map.values()]
             .sort((a, b) => a.sort - b.sort)
-            .map((p) => ({ id: p.id, name: p.name }));
+            .map((p) => ({ id: p.id, name: p.name, slug: p.slug }));
     })();
     const hierarchical = parents.length > 0;
+
+    // Resolve ?category=... against children first, then against parent slugs.
+    const slugChildMatch = initialSlug
+        ? (allCategories.find((c) => c.slug === initialSlug) ?? null)
+        : null;
+    const slugParentMatch =
+        !slugChildMatch && initialSlug
+            ? (parents.find((p) => p.slug === initialSlug) ?? null)
+            : null;
+    const slugFallbackChild = slugParentMatch
+        ? (allCategories.find((c) => c.parent_id === slugParentMatch.id) ?? null)
+        : null;
 
     const activeCategory: number | null =
         typeof userPicked === 'number'
             ? userPicked
-            : initialSlug && allCategories.length > 0
-              ? (allCategories.find((c) => c.slug === initialSlug)?.id ?? allCategories[0].id)
-              : (allCategories[0]?.id ?? null);
+            : (slugChildMatch?.id ?? slugFallbackChild?.id ?? allCategories[0]?.id ?? null);
 
     const activeCategoryObj = allCategories.find((c) => c.id === activeCategory) ?? null;
+
     const [userParent, setUserParent] = useState<number | null>(null);
+
+    // A category whose own id appears in `parents` is itself a parent.
+    const isItselfParent =
+        activeCategoryObj !== null && parents.some((p) => p.id === activeCategoryObj.id);
+
     const activeParent: number | null = hierarchical
-        ? (userParent ?? activeCategoryObj?.parent_id ?? parents[0].id)
+        ? (userParent ??
+              (isItselfParent ? activeCategoryObj!.id : activeCategoryObj?.parent_id) ??
+              slugParentMatch?.id ??
+              parents[0].id)
         : null;
 
-    // Sidebar shows ONLY children of the active parent tab.
-    // When flat, fall back to all categories.
+    // Sidebar = the active parent's children PLUS the parent itself when it has
+    // products (so a parent that's also a leaf can be selected from its own tab).
     const sidebarCategories = hierarchical
-        ? allCategories.filter((c) => c.parent_id === activeParent)
+        ? allCategories.filter(
+              (c) => c.parent_id === activeParent || c.id === activeParent,
+          )
         : allCategories;
 
     const visibleCategory =

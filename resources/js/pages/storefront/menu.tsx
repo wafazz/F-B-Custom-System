@@ -241,6 +241,24 @@ export default function Menu({ branch }: Props) {
         }, 700);
     };
 
+    const didInitialScrollRef = useRef(false);
+    useEffect(() => {
+        if (didInitialScrollRef.current) return;
+        if (!slugSection) return;
+        didInitialScrollRef.current = true;
+        const id = slugSection.id;
+        requestAnimationFrame(() => {
+            const el = sectionRefs.current.get(id);
+            if (!el) return;
+            scrollingToRef.current = id;
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setUserPicked(id);
+            window.setTimeout(() => {
+                scrollingToRef.current = null;
+            }, 700);
+        });
+    }, [slugSection]);
+
     const sidebarKey = sections.map((s) => s.id).join(',');
     useEffect(() => {
         if (!data || sections.length === 0) return;

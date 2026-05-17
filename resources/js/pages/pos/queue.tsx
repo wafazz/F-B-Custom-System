@@ -118,21 +118,40 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
         return () => window.clearInterval(id);
     }, []);
 
-    function advance(orderId: number, current: QueueOrder['status']) {
-        const next =
-            current === 'pending' ? 'preparing' : current === 'preparing' ? 'ready' : 'completed';
-
-        if (next === 'preparing' && branch.auto_print_labels) {
-            const order = orders.find((o) => o.id === orderId);
-            if (order) {
-                printOrderLabels(order, {
+    // Auto-print kitchen labels the moment an order enters "preparing" —
+    // i.e., payment is confirmed (mobile / PWA / web) or POS cashier has
+    // accepted it. Pending orders are not paid yet, so they're skipped.
+    const prevStatusById = useRef<Map<number, QueueOrder['status']>>(new Map());
+    const printInitializedRef = useRef(false);
+    useEffect(() => {
+        if (!printInitializedRef.current) {
+            for (const o of orders) prevStatusById.current.set(o.id, o.status);
+            printInitializedRef.current = true;
+            return;
+        }
+        for (const o of orders) {
+            const prev = prevStatusById.current.get(o.id);
+            prevStatusById.current.set(o.id, o.status);
+            if (
+                branch.auto_print_labels &&
+                o.status === 'preparing' &&
+                prev !== 'preparing'
+            ) {
+                printOrderLabels(o, {
                     copies: branch.label_copies,
                     size: branch.label_size,
                     branchName: branch.name,
                 });
             }
         }
+    }, [orders, branch.auto_print_labels, branch.label_copies, branch.label_size, branch.name]);
 
+    function advance(orderId: number, current: QueueOrder['status']) {
+        const next =
+            current === 'pending' ? 'preparing' : current === 'preparing' ? 'ready' : 'completed';
+
+        // Printing is handled centrally by the status-transition effect above —
+        // it fires whenever any order (POS, mobile, PWA, web) enters preparing.
         router.post(
             `/pos/orders/${orderId}/transition`,
             { status: next },

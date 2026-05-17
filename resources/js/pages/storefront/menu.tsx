@@ -49,6 +49,14 @@ function categoryThumb(cat: MenuCategory): string | null {
     return cat.image ?? cat.products.find((p) => p.image)?.image ?? null;
 }
 
+type Section = {
+    id: number;
+    name: string;
+    slug: string;
+    image: string | null;
+    products: MenuProduct[];
+};
+
 interface Props {
     branch: BranchContext;
     reverb: { channel: string; event: string };
@@ -164,45 +172,55 @@ export default function Menu({ branch }: Props) {
     })();
     const hierarchical = parents.length > 0;
 
-    // Resolve ?category=... against children first, then against parent slugs.
-    const slugChildMatch = initialSlug
-        ? (allCategories.find((c) => c.slug === initialSlug) ?? null)
-        : null;
-    const slugParentMatch =
-        !slugChildMatch && initialSlug
-            ? (parents.find((p) => p.slug === initialSlug) ?? null)
-            : null;
-    const slugFallbackChild = slugParentMatch
-        ? (allCategories.find((c) => c.parent_id === slugParentMatch.id) ?? null)
+    // Sections drive both the sidebar and the scrollable content. In
+    // hierarchical mode each parent collapses its own products plus every
+    // child's products into a single section; flat menus map 1:1.
+    const sections: Section[] = hierarchical
+        ? parents.map((p) => {
+              const self = allCategories.find((c) => c.id === p.id);
+              const children = allCategories.filter((c) => c.parent_id === p.id);
+              return {
+                  id: p.id,
+                  name: p.name,
+                  slug: p.slug,
+                  image:
+                      p.image ??
+                      self?.image ??
+                      children.find((c) => c.image)?.image ??
+                      null,
+                  products: [
+                      ...(self?.products ?? []),
+                      ...children.flatMap((c) => c.products),
+                  ],
+              };
+          })
+        : allCategories.map((c) => ({
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
+              image: categoryThumb(c),
+              products: c.products,
+          }));
+
+    // ?category=foo can match a section directly, or a child whose parent
+    // owns the section in hierarchical mode.
+    const slugSection = initialSlug
+        ? (sections.find((s) => s.slug === initialSlug) ??
+              (() => {
+                  const child = allCategories.find((c) => c.slug === initialSlug);
+                  if (!child) return null;
+                  return (
+                      sections.find(
+                          (s) => s.id === child.parent_id || s.id === child.id,
+                      ) ?? null
+                  );
+              })())
         : null;
 
     const activeCategory: number | null =
         typeof userPicked === 'number'
             ? userPicked
-            : (slugChildMatch?.id ?? slugFallbackChild?.id ?? allCategories[0]?.id ?? null);
-
-    const activeCategoryObj = allCategories.find((c) => c.id === activeCategory) ?? null;
-
-    const [userParent, setUserParent] = useState<number | null>(null);
-
-    // A category whose own id appears in `parents` is itself a parent.
-    const isItselfParent =
-        activeCategoryObj !== null && parents.some((p) => p.id === activeCategoryObj.id);
-
-    const activeParent: number | null = hierarchical
-        ? (userParent ??
-              (isItselfParent ? activeCategoryObj!.id : activeCategoryObj?.parent_id) ??
-              slugParentMatch?.id ??
-              parents[0].id)
-        : null;
-
-    // Sidebar = the active parent's children PLUS the parent itself when it has
-    // products (so a parent that's also a leaf can be selected from its own tab).
-    const sidebarCategories = hierarchical
-        ? allCategories.filter(
-              (c) => c.parent_id === activeParent || c.id === activeParent,
-          )
-        : allCategories;
+            : (slugSection?.id ?? sections[0]?.id ?? null);
 
     const sectionRefs = useRef<Map<number, HTMLElement>>(new Map());
     const scrollingToRef = useRef<number | null>(null);
@@ -223,9 +241,9 @@ export default function Menu({ branch }: Props) {
         }, 700);
     };
 
-    const sidebarKey = sidebarCategories.map((c) => c.id).join(',');
+    const sidebarKey = sections.map((s) => s.id).join(',');
     useEffect(() => {
-        if (!data || sidebarCategories.length === 0) return;
+        if (!data || sections.length === 0) return;
         const observer = new IntersectionObserver(
             (entries) => {
                 if (scrollingToRef.current !== null) return;
@@ -353,62 +371,22 @@ export default function Menu({ branch }: Props) {
                 </section>
             )}
 
-            {data && data.categories.length > 0 && hierarchical && (
-                <div className="-mx-1 mb-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1">
-                    {parents.map((p) => {
-                        const isActive = p.id === activeParent;
-                        return (
-                            <button
-                                key={p.id}
-                                type="button"
-                                onClick={() => {
-                                    setUserParent(p.id);
-                                    const firstChild = allCategories.find(
-                                        (c) => c.parent_id === p.id,
-                                    );
-                                    if (firstChild) setUserPicked(firstChild.id);
-                                }}
-                                className={cn(
-                                    'shrink-0 snap-start flex items-center gap-2 whitespace-nowrap rounded-full text-xs font-bold uppercase tracking-wide transition-all',
-                                    p.image ? 'pl-1 pr-4 py-1' : 'px-4 py-2',
-                                    isActive
-                                        ? 'bg-primary text-primary-foreground shadow-sm'
-                                        : 'bg-card text-card-foreground border-border border hover:bg-amber-50',
-                                )}
-                            >
-                                {p.image && (
-                                    <span className="bg-secondary/40 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full">
-                                        <img
-                                            src={
-                                                p.image.startsWith('http')
-                                                    ? p.image
-                                                    : `/storage/${p.image}`
-                                            }
-                                            alt={p.name}
-                                            className="size-full object-cover"
-                                        />
-                                    </span>
-                                )}
-                                <span>{p.name}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-
             {data && data.categories.length > 0 && (
                 <div className="-mx-4 flex items-start gap-0">
                     <aside className="bg-muted/40 border-border sticky top-16 max-h-[calc(100vh-4rem)] w-24 shrink-0 self-start overflow-y-auto border-r">
                         <ul className="flex flex-col">
-                            {sidebarCategories.map((cat) => {
-                                const Icon = iconFor(cat.slug);
-                                const thumb = categoryThumb(cat);
-                                const active = cat.id === activeCategory;
+                            {sections.map((sec) => {
+                                const Icon = iconFor(sec.slug);
+                                const thumb =
+                                    sec.image ??
+                                    sec.products.find((p) => p.image)?.image ??
+                                    null;
+                                const active = sec.id === activeCategory;
                                 return (
-                                    <li key={cat.id}>
+                                    <li key={sec.id}>
                                         <button
                                             type="button"
-                                            onClick={() => scrollToCategory(cat.id)}
+                                            onClick={() => scrollToCategory(sec.id)}
                                             className={cn(
                                                 'flex w-full flex-col items-center gap-1.5 px-2 py-3 text-center transition-colors',
                                                 active
@@ -431,7 +409,7 @@ export default function Menu({ branch }: Props) {
                                                                 ? thumb
                                                                 : `/storage/${thumb}`
                                                         }
-                                                        alt={cat.name}
+                                                        alt={sec.name}
                                                         className="size-full object-cover"
                                                     />
                                                 ) : (
@@ -453,7 +431,7 @@ export default function Menu({ branch }: Props) {
                                                         : 'text-muted-foreground',
                                                 )}
                                             >
-                                                {cat.name}
+                                                {sec.name}
                                             </span>
                                         </button>
                                     </li>
@@ -463,24 +441,24 @@ export default function Menu({ branch }: Props) {
                     </aside>
 
                     <main className="min-w-0 flex-1 px-3 py-2">
-                        {sidebarCategories.map((cat) => (
+                        {sections.map((sec) => (
                             <section
-                                key={cat.id}
-                                ref={setSectionRef(cat.id)}
-                                data-cat-id={cat.id}
+                                key={sec.id}
+                                ref={setSectionRef(sec.id)}
+                                data-cat-id={sec.id}
                                 className="scroll-mt-20 mb-8 last:mb-4"
                             >
                                 <div className="mb-3 flex items-center gap-2">
                                     <Coffee className="text-primary size-4" />
                                     <h2 className="text-sm font-bold tracking-wider uppercase">
-                                        {cat.name}
+                                        {sec.name}
                                     </h2>
                                     <span className="text-muted-foreground text-xs">
-                                        · {cat.products.length} items
+                                        · {sec.products.length} items
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                                    {cat.products.map((product) => (
+                                    {sec.products.map((product) => (
                                         <ProductCard
                                             key={product.id}
                                             product={product}
@@ -488,7 +466,7 @@ export default function Menu({ branch }: Props) {
                                             onSelect={setUserPickedProduct}
                                         />
                                     ))}
-                                    {cat.products.length === 0 && (
+                                    {sec.products.length === 0 && (
                                         <p className="text-muted-foreground col-span-2 py-12 text-center text-sm">
                                             No items in this category yet.
                                         </p>

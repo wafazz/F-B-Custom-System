@@ -108,6 +108,16 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
         };
     }, [reverb.channel, reverb.event]);
 
+    // Polling fallback in case websocket misses an event (network blip,
+    // backend deploy, etc.) — partial reload, orders prop only, no scroll jump.
+    useEffect(() => {
+        const id = window.setInterval(() => {
+            if (document.hidden) return;
+            router.reload({ only: ['orders'] });
+        }, 10_000);
+        return () => window.clearInterval(id);
+    }, []);
+
     function advance(orderId: number, current: QueueOrder['status']) {
         const next =
             current === 'pending' ? 'preparing' : current === 'preparing' ? 'ready' : 'completed';

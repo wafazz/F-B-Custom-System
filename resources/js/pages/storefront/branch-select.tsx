@@ -214,6 +214,28 @@ export default function BranchSelect({ branches }: Props) {
         requestLocate();
     }, []);
 
+    // Inertia caches page props in history state, so the back button can
+    // restore a stale "Open now / Closed" snapshot. Silently refetch the
+    // branches list whenever the tab becomes visible again or the page is
+    // restored from bfcache.
+    useEffect(() => {
+        const refresh = () => {
+            router.reload({ only: ['branches'] });
+        };
+        const onVisible = () => {
+            if (document.visibilityState === 'visible') refresh();
+        };
+        const onPageShow = (e: PageTransitionEvent) => {
+            if (e.persisted) refresh();
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('pageshow', onPageShow);
+        return () => {
+            document.removeEventListener('visibilitychange', onVisible);
+            window.removeEventListener('pageshow', onPageShow);
+        };
+    }, []);
+
     // Scroll-snap → update active branch on swipe.
     useEffect(() => {
         if (skipSyncRef.current) {

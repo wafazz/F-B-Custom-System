@@ -52,6 +52,18 @@ class StorefrontController extends Controller
                     'cover_image' => $b->cover_image,
                     'is_open_now' => $b->isOpenNow(),
                     'closed_reason' => $b->closedReason(),
+                    'todays_hours' => (function () use ($hours) {
+                        if (! is_array($hours) || empty($hours['enabled'])) {
+                            return null;
+                        }
+                        $open = (string) ($hours['open'] ?? '');
+                        $close = (string) ($hours['close'] ?? '');
+                        if ($open === '' || $close === '') {
+                            return null;
+                        }
+
+                        return $open.' – '.$close;
+                    })(),
                     'debug_status' => $b->status,
                     'debug_accepts_orders' => (bool) $b->accepts_orders,
                     'debug_today' => $day,

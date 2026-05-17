@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import L, { type Map as LeafletMap, type Marker as LeafletMarker } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Coffee, Crosshair, Navigation } from 'lucide-react';
+import { ArrowLeft, Clock3, Coffee, Crosshair, Navigation } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useBranchStore } from '@/stores/branch-store';
 import { useCartStore } from '@/stores/cart-store';
@@ -373,29 +373,49 @@ export default function BranchSelect({ branches }: Props) {
                                         <p className="text-amber-700 text-[10px] font-bold uppercase tracking-[0.18em]">
                                             Star Coffee
                                         </p>
-                                        <span
-                                            title={
-                                                !branch.is_open_now && branch.closed_reason
-                                                    ? branch.closed_reason
-                                                    : undefined
-                                            }
-                                            className={cn(
-                                                'flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider',
-                                                branch.is_open_now
-                                                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                                                    : 'bg-red-50 text-red-600 ring-1 ring-red-200',
-                                            )}
-                                        >
+                                        <div className="flex shrink-0 flex-col items-end gap-1">
                                             <span
+                                                title={
+                                                    !branch.is_open_now && branch.closed_reason
+                                                        ? branch.closed_reason
+                                                        : undefined
+                                                }
                                                 className={cn(
-                                                    'size-1.5 rounded-full',
+                                                    'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)]',
                                                     branch.is_open_now
-                                                        ? 'bg-emerald-500'
-                                                        : 'bg-red-500',
+                                                        ? 'bg-gradient-to-b from-emerald-50 to-emerald-100/70 text-emerald-700 ring-1 ring-emerald-200/80'
+                                                        : 'bg-gradient-to-b from-red-50 to-red-100/70 text-red-600 ring-1 ring-red-200/80',
                                                 )}
-                                            />
-                                            {branch.is_open_now ? 'Open now' : 'Closed'}
-                                        </span>
+                                            >
+                                                <span className="relative flex size-1.5">
+                                                    <span
+                                                        className={cn(
+                                                            'absolute inset-0 animate-ping rounded-full opacity-60',
+                                                            branch.is_open_now
+                                                                ? 'bg-emerald-400'
+                                                                : 'bg-red-400',
+                                                        )}
+                                                    />
+                                                    <span
+                                                        className={cn(
+                                                            'relative size-1.5 rounded-full',
+                                                            branch.is_open_now
+                                                                ? 'bg-emerald-500'
+                                                                : 'bg-red-500',
+                                                        )}
+                                                    />
+                                                </span>
+                                                {branch.is_open_now ? 'Open now' : 'Closed'}
+                                            </span>
+                                            {branch.todays_hours && (
+                                                <span className="text-muted-foreground/90 flex items-center gap-1 text-[10px] font-medium tabular-nums">
+                                                    <Clock3 className="size-2.5 opacity-70" />
+                                                    <span className="tracking-[0.05em]">
+                                                        {branch.todays_hours}
+                                                    </span>
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <h3 className="text-card-foreground mt-0.5 truncate text-base font-bold leading-tight">
                                         {branch.name.replace(/^star coffee[\s—-]*/i, '')}

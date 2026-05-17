@@ -372,9 +372,7 @@ export default function BranchSelect({ branches }: Props) {
                                                         : 'bg-red-500',
                                                 )}
                                             />
-                                            {branch.is_open_now
-                                                ? 'Open'
-                                                : (branch.closed_reason ?? 'Closed')}
+                                            {branch.is_open_now ? 'Open now' : 'Closed'}
                                         </span>
                                     </div>
                                     <h3 className="text-card-foreground mt-0.5 truncate text-base font-bold leading-tight">

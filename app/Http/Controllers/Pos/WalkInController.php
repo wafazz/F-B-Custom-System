@@ -35,7 +35,7 @@ class WalkInController extends Controller
             ->with([
                 'category:id,name,parent_id,available_pos',
                 'category.parent:id,name',
-                'modifierGroups.options' => fn ($q) => $q->where('is_available', true),
+                'modifierGroups.options' => fn ($q) => $q->where('is_available', true)->orderBy('sort_order')->orderBy('id'),
                 'branches' => fn ($q) => $q->where('branches.id', $branchId),
             ])
             ->orderBy('category_id')

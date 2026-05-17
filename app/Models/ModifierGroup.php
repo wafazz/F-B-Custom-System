@@ -45,7 +45,9 @@ class ModifierGroup extends Model
     /** @return HasMany<ModifierOption, $this> */
     public function options(): HasMany
     {
-        return $this->hasMany(ModifierOption::class)->orderBy('sort_order');
+        return $this->hasMany(ModifierOption::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function products(): BelongsToMany

@@ -72,6 +72,8 @@ class Product extends Model
         return $this->belongsToMany(ModifierGroup::class, 'product_modifier_group')
             ->withPivot('sort_order')
             ->orderBy('product_modifier_group.sort_order')
+            ->orderBy('modifier_groups.sort_order')
+            ->orderBy('modifier_groups.id')
             ->withTimestamps();
     }
 

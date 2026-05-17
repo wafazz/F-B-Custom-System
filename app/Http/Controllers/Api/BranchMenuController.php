@@ -32,7 +32,7 @@ class BranchMenuController extends Controller
             ->whereHas('category', fn ($q) => $q->where(Category::channelColumn($channel), true))
             ->with([
                 'category',
-                'modifierGroups.options' => fn ($q) => $q->where('is_available', true),
+                'modifierGroups.options' => fn ($q) => $q->where('is_available', true)->orderBy('sort_order')->orderBy('id'),
                 'branches' => fn ($q) => $q->where('branches.id', $branch->id),
                 'stocks' => fn ($q) => $q->where('branch_id', $branch->id),
             ])

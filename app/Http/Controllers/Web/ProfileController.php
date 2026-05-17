@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\CustomerTier;
+use App\Models\Order;
 use App\Models\User;
 use App\Services\Loyalty\LoyaltyService;
 use Illuminate\Http\RedirectResponse;
@@ -52,6 +53,25 @@ class ProfileController extends Controller
             'branches' => Branch::active()->orderBy('sort_order')
                 ->get(['id', 'name', 'code'])
                 ->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->name, 'code' => $b->code])
+                ->values(),
+            'recent_orders' => Order::query()
+                ->where('user_id', $user->getKey())
+                ->with(['branch:id,name', 'items:id,order_id,product_name,quantity'])
+                ->latest()
+                ->limit(5)
+                ->get()
+                ->map(fn (Order $o) => [
+                    'id' => $o->id,
+                    'number' => $o->number,
+                    'status' => $o->status->value,
+                    'status_label' => $o->status->label(),
+                    'total' => (float) $o->total,
+                    'branch_name' => $o->branch?->name,
+                    'items_summary' => $o->items
+                        ->map(fn ($i) => "{$i->quantity}× {$i->product_name}")
+                        ->join(', '),
+                    'created_at' => $o->created_at?->toIso8601String(),
+                ])
                 ->values(),
         ]);
     }

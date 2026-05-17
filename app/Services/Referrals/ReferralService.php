@@ -2,6 +2,7 @@
 
 namespace App\Services\Referrals;
 
+use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\ReferralReward;
@@ -20,6 +21,11 @@ class ReferralService
     public function maybeAwardForCompletedOrder(Order $order): ?ReferralReward
     {
         if ($order->user_id === null) {
+            return null;
+        }
+
+        // Referral bonus only fires on orders that were actually paid for.
+        if ($order->payment_status !== PaymentStatus::Paid) {
             return null;
         }
 

@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Bell, Download, Home, Key, LogOut, Mail, Phone, Trash2, Trophy, User } from 'lucide-react';
+import { Bell, ChevronRight, Download, Home, Key, LogOut, Mail, Package, Phone, Trash2, Trophy, User } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -56,18 +56,36 @@ interface BranchOption {
     code: string;
 }
 
+interface RecentOrder {
+    id: number;
+    number: string;
+    status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'refunded';
+    status_label: string;
+    total: number;
+    branch_name: string | null;
+    items_summary: string;
+    created_at: string | null;
+}
+
 interface Props {
     profile: ProfileData;
     loyalty: Loyalty;
     branches: BranchOption[];
+    recent_orders: RecentOrder[];
 }
 
 const FIELD =
     'w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20';
 const LABEL = 'text-xs font-medium text-muted-foreground';
 
-export default function Profile({ profile, loyalty, branches }: Props) {
-    const [tab, setTab] = useState<'profile' | 'security' | 'data'>('profile');
+export default function Profile({ profile, loyalty, branches, recent_orders }: Props) {
+    const initialTab: 'profile' | 'security' | 'data' = (() => {
+        if (typeof window === 'undefined') return 'profile';
+        const q = new URLSearchParams(window.location.search).get('tab');
+        if (q === 'security' || q === 'data') return q;
+        return 'profile';
+    })();
+    const [tab, setTab] = useState<'profile' | 'security' | 'data'>(initialTab);
     const form = useForm({
         name: profile.name,
         phone: profile.phone ?? '',
@@ -147,6 +165,75 @@ export default function Profile({ profile, loyalty, branches }: Props) {
                     <LogOut className="size-4" />
                 </button>
             </header>
+
+            <section className="mb-4">
+                <div className="mb-2 flex items-center justify-between">
+                    <h2 className="text-card-foreground flex items-center gap-1.5 text-sm font-bold">
+                        <Package className="size-4" /> Recent orders
+                    </h2>
+                    <Link
+                        href="/orders"
+                        className="text-muted-foreground hover:text-amber-700 flex items-center gap-1 text-xs font-medium"
+                    >
+                        View all <ChevronRight className="size-3" />
+                    </Link>
+                </div>
+                {recent_orders.length === 0 ? (
+                    <div className="border-border bg-card text-muted-foreground flex flex-col items-center gap-2 rounded-xl border border-dashed p-6 text-sm">
+                        <Package className="size-8 opacity-40" />
+                        <p>No orders yet — your past orders will show up here.</p>
+                    </div>
+                ) : (
+                    <ul className="space-y-2">
+                        {recent_orders.slice(0, 3).map((order) => (
+                            <li key={order.id}>
+                                <Link
+                                    href={`/orders/${order.id}`}
+                                    className="border-border bg-card flex items-start gap-3 rounded-xl border p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
+                                >
+                                    <div
+                                        className={cn(
+                                            'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full',
+                                            statusTint(order.status),
+                                        )}
+                                    >
+                                        <Package className="size-4" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="font-mono text-xs font-semibold">
+                                                {order.number}
+                                            </p>
+                                            <span
+                                                className={cn(
+                                                    'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                                                    statusBadge(order.status),
+                                                )}
+                                            >
+                                                {order.status_label}
+                                            </span>
+                                        </div>
+                                        <p className="text-card-foreground mt-0.5 line-clamp-1 text-xs">
+                                            {order.items_summary || 'Order items'}
+                                        </p>
+                                        <div className="text-muted-foreground mt-1 flex items-center justify-between gap-2 text-[10px]">
+                                            <span className="truncate">
+                                                {order.branch_name ?? '—'}
+                                                {order.created_at &&
+                                                    ` · ${new Date(order.created_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                                            </span>
+                                            <span className="text-primary shrink-0 text-xs font-bold">
+                                                RM{order.total.toFixed(2)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="text-muted-foreground mt-2 size-4 shrink-0" />
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
 
             <div className="border-border bg-card mb-4 flex gap-1 overflow-x-auto rounded-full border p-1 text-xs">
                 <TabBtn
@@ -453,6 +540,40 @@ export default function Profile({ profile, loyalty, branches }: Props) {
             )}
         </StorefrontLayout>
     );
+}
+
+function statusTint(status: RecentOrder['status']): string {
+    switch (status) {
+        case 'completed':
+            return 'bg-emerald-100 text-emerald-700';
+        case 'preparing':
+            return 'bg-amber-100 text-amber-700';
+        case 'ready':
+            return 'bg-blue-100 text-blue-700';
+        case 'cancelled':
+        case 'refunded':
+            return 'bg-red-100 text-red-700';
+        case 'pending':
+        default:
+            return 'bg-gray-100 text-gray-700';
+    }
+}
+
+function statusBadge(status: RecentOrder['status']): string {
+    switch (status) {
+        case 'completed':
+            return 'bg-emerald-50 text-emerald-700';
+        case 'preparing':
+            return 'bg-amber-50 text-amber-700';
+        case 'ready':
+            return 'bg-blue-50 text-blue-700';
+        case 'cancelled':
+        case 'refunded':
+            return 'bg-red-50 text-red-700';
+        case 'pending':
+        default:
+            return 'bg-gray-50 text-gray-700';
+    }
 }
 
 function Field({ children }: { children: React.ReactNode }) {

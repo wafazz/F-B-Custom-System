@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ChevronRight, Package } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import StorefrontLayout from '@/layouts/storefront-layout';
 
@@ -21,7 +21,16 @@ export default function OrdersHistory({ orders }: Props) {
         <StorefrontLayout>
             <Head title="Your Orders" />
 
-            <h1 className="mb-4 text-xl font-bold">Your Orders</h1>
+            <div className="mb-4 flex items-center gap-3">
+                <Link
+                    href="/profile"
+                    className="bg-card text-card-foreground hover:bg-amber-50 flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-100 shadow-sm transition-colors"
+                    aria-label="Back to profile"
+                >
+                    <ArrowLeft className="size-4" />
+                </Link>
+                <h1 className="text-xl font-bold">Your Orders</h1>
+            </div>
 
             {orders.length === 0 ? (
                 <div className="border-border bg-card text-muted-foreground flex flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-sm">

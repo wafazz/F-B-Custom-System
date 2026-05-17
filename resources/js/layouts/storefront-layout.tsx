@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, Coffee, CreditCard, Crown, Gift, Home, ShoppingBag, Star, User, Wallet } from 'lucide-react';
+import { Bell, ChevronDown, Coffee, CreditCard, Crown, Gift, Home, ShoppingBag, Star, User, Wallet } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { InstallPrompt } from '@/components/storefront/install-prompt';
 import { useBranchStore } from '@/stores/branch-store';
@@ -30,9 +30,11 @@ interface Props {
     /** @deprecated kept for backward-compat — the default greeting header replaced the branch picker. */
     showBranchPicker?: boolean;
     headerSlot?: ReactNode;
+    /** Hide the Wallet / Membership / Vouchers stat strip (e.g. on info pages). */
+    hideStats?: boolean;
 }
 
-export default function StorefrontLayout({ children, headerSlot }: Props) {
+export default function StorefrontLayout({ children, headerSlot, hideStats = false }: Props) {
     const { auth, url, customer_stats } = usePage().props as unknown as {
         auth: { user: { name: string } | null };
         url: string;
@@ -58,7 +60,7 @@ export default function StorefrontLayout({ children, headerSlot }: Props) {
                 )}
             </header>
 
-            {auth.user && customer_stats && (
+            {!hideStats && auth.user && customer_stats && (
                 <CustomerStatsStrip stats={customer_stats} />
             )}
 
@@ -141,24 +143,37 @@ function DefaultGreetingHeader({
 
     return (
         <div className="bg-background mx-2 mt-2 flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5">
-            <Link href={homeHref} className="flex min-w-0 flex-1 items-center gap-3">
-                <img
-                    src={avatarSrc}
-                    alt={branchName ?? 'Star Coffee'}
-                    className="size-11 shrink-0 rounded-full object-cover ring-2 ring-amber-100"
-                />
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+                <Link href={homeHref} className="shrink-0" aria-label="Home">
+                    <img
+                        src={avatarSrc}
+                        alt={branchName ?? 'Star Coffee'}
+                        className="size-11 rounded-full object-cover ring-2 ring-amber-100"
+                    />
+                </Link>
                 <div className="min-w-0">
-                    <p className="text-muted-foreground text-[11px] leading-tight">{greeting},</p>
-                    <p className="text-card-foreground truncate text-sm font-bold leading-tight">
-                        {name} <span aria-hidden>✨</span>
-                    </p>
-                    <p className="text-muted-foreground truncate text-[10px] uppercase tracking-wider">
-                        {branchName
-                            ? `Star Coffee — ${branchName.replace(/^star coffee[\s—-]*/i, '')}`
-                            : 'Choose a branch'}
-                    </p>
+                    <Link href={homeHref} className="block">
+                        <p className="text-muted-foreground text-[11px] leading-tight">
+                            {greeting},
+                        </p>
+                        <p className="text-card-foreground truncate text-sm font-bold leading-tight">
+                            {name} <span aria-hidden>✨</span>
+                        </p>
+                    </Link>
+                    <Link
+                        href="/branches"
+                        className="hover:bg-amber-50/70 mt-0.5 -ml-1 inline-flex max-w-full items-center gap-1 rounded-full px-1.5 py-0.5 transition-colors"
+                        aria-label="Change branch"
+                    >
+                        <span className="text-muted-foreground truncate text-[10px] uppercase tracking-wider">
+                            {branchName
+                                ? `Star Coffee — ${branchName.replace(/^star coffee[\s—-]*/i, '')}`
+                                : 'Choose a branch'}
+                        </span>
+                        <ChevronDown className="text-muted-foreground size-3 shrink-0" />
+                    </Link>
                 </div>
-            </Link>
+            </div>
             <div className="flex shrink-0 items-center gap-2">
                 <Link
                     href={userName ? '/orders' : '/login?redirect=/orders'}

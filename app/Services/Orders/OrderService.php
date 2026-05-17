@@ -368,7 +368,11 @@ class OrderService
             }
         }
 
-        if ($next === OrderStatus::Completed && $fresh->user_id !== null) {
+        if (
+            $next === OrderStatus::Completed
+            && $fresh->user_id !== null
+            && $fresh->payment_status === PaymentStatus::Paid
+        ) {
             $this->loyalty->earnFromOrder($fresh);
             $this->loyalty->applyTierUpgrade($fresh->user_id, (float) $fresh->subtotal);
             $this->referrals->maybeAwardForCompletedOrder($fresh);

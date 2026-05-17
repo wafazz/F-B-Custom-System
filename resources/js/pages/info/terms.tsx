@@ -1,11 +1,21 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import StorefrontLayout from '@/layouts/storefront-layout';
 
 export default function Terms() {
     return (
-        <StorefrontLayout showBranchPicker={false}>
+        <StorefrontLayout hideStats>
             <Head title="Terms & Conditions" />
             <article className="prose prose-sm dark:prose-invert max-w-none space-y-4">
+                <div className="not-prose mb-2 flex items-center gap-3">
+                    <Link
+                        href="/profile?tab=data"
+                        className="bg-card text-card-foreground hover:bg-amber-50 inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors"
+                    >
+                        <ArrowLeft className="size-4" />
+                        <span>Back to Privacy & Data</span>
+                    </Link>
+                </div>
                 <h1 className="text-xl font-bold">Terms & Conditions</h1>
                 <p className="text-muted-foreground text-xs">Last updated: 2026-05-09</p>
 

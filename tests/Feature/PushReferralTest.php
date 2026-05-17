@@ -2,6 +2,7 @@
 
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Order;
@@ -32,6 +33,17 @@ function makeBranchWithProduct(): array
     $branch->products()->attach($product->id, ['is_available' => true]);
 
     return [$branch, $product];
+}
+
+/** Force an order to Paid so the loyalty + referral hooks fire on Completed. */
+function payReferralOrder(Order $order): Order
+{
+    $order->forceFill([
+        'payment_status' => PaymentStatus::Paid,
+        'paid_at' => now(),
+    ])->save();
+
+    return $order->fresh() ?? $order;
 }
 
 test('GET /api/push/vapid-key returns the public key', function () {
@@ -92,6 +104,7 @@ test('referral reward is granted on referee first completed order', function () 
         branchId: $branch->id, userId: $referee->id, orderType: OrderType::Pickup,
         lines: [new OrderLinePayload(productId: $product->id, quantity: 1)],
     ));
+    payReferralOrder($order);
     foreach ([OrderStatus::Preparing, OrderStatus::Ready, OrderStatus::Completed] as $s) {
         app(OrderService::class)->transition($order->fresh(), $s);
     }
@@ -118,6 +131,7 @@ test('referral reward is not duplicated on second completed order', function () 
             branchId: $branch->id, userId: $referee->id, orderType: OrderType::Pickup,
             lines: [new OrderLinePayload(productId: $product->id, quantity: 1)],
         ));
+        payReferralOrder($order);
         foreach ([OrderStatus::Preparing, OrderStatus::Ready, OrderStatus::Completed] as $s) {
             app(OrderService::class)->transition($order->fresh(), $s);
         }

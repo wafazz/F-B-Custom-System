@@ -2,6 +2,7 @@
 
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\CustomerTier;
@@ -37,6 +38,17 @@ function buildBranchProduct(float $basePrice = 12.00): array
     return [$branch, $product];
 }
 
+/** Mark an order paid so the loyalty + tier upgrade hooks fire on Completed. */
+function markPaid(Order $order): Order
+{
+    $order->forceFill([
+        'payment_status' => PaymentStatus::Paid,
+        'paid_at' => now(),
+    ])->save();
+
+    return $order->fresh() ?? $order;
+}
+
 test('order completion earns 1 point per RM subtotal', function () {
     [$branch, $product] = buildBranchProduct(20.00);
     $user = User::factory()->create();
@@ -45,6 +57,7 @@ test('order completion earns 1 point per RM subtotal', function () {
         branchId: $branch->id, userId: $user->id, orderType: OrderType::Pickup,
         lines: [new OrderLinePayload(productId: $product->id, quantity: 1)],
     ));
+    markPaid($order);
 
     app(OrderService::class)->transition($order, OrderStatus::Preparing);
     app(OrderService::class)->transition($order->fresh(), OrderStatus::Ready);
@@ -63,6 +76,7 @@ test('points balance after redemption goes down accordingly', function () {
         branchId: $branch->id, userId: $user->id, orderType: OrderType::Pickup,
         lines: [new OrderLinePayload(productId: $product->id, quantity: 10)],
     ));
+    markPaid($first);
     foreach ([OrderStatus::Preparing, OrderStatus::Ready, OrderStatus::Completed] as $s) {
         app(OrderService::class)->transition($first->fresh(), $s);
     }
@@ -196,6 +210,7 @@ test('completion auto-upgrades tier when lifetime spend crosses threshold', func
         branchId: $branch->id, userId: $user->id, orderType: OrderType::Pickup,
         lines: [new OrderLinePayload(productId: $product->id, quantity: 1)],
     ));
+    markPaid($order);
     foreach ([OrderStatus::Preparing, OrderStatus::Ready, OrderStatus::Completed] as $s) {
         app(OrderService::class)->transition($order->fresh(), $s);
     }
@@ -213,6 +228,7 @@ test('refund of completed order reverses earned points', function () {
         branchId: $branch->id, userId: $user->id, orderType: OrderType::Pickup,
         lines: [new OrderLinePayload(productId: $product->id, quantity: 1)],
     ));
+    markPaid($order);
     foreach ([OrderStatus::Preparing, OrderStatus::Ready, OrderStatus::Completed] as $s) {
         app(OrderService::class)->transition($order->fresh(), $s);
     }

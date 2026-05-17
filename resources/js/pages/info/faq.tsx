@@ -1,4 +1,5 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import StorefrontLayout from '@/layouts/storefront-layout';
 
 const QA = [
@@ -30,8 +31,17 @@ const QA = [
 
 export default function Faq() {
     return (
-        <StorefrontLayout showBranchPicker={false}>
+        <StorefrontLayout hideStats>
             <Head title="FAQ" />
+            <div className="mb-2 flex items-center gap-3">
+                <Link
+                    href="/profile?tab=data"
+                    className="bg-card text-card-foreground hover:bg-amber-50 inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors"
+                >
+                    <ArrowLeft className="size-4" />
+                    <span>Back to Privacy & Data</span>
+                </Link>
+            </div>
             <h1 className="mb-4 text-xl font-bold">Frequently Asked Questions</h1>
             <div className="space-y-3">
                 {QA.map((row) => (

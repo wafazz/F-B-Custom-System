@@ -2,6 +2,7 @@
 
 namespace App\Services\Loyalty;
 
+use App\Enums\PaymentStatus;
 use App\Models\CustomerTier;
 use App\Models\MembershipTier;
 use App\Models\Order;
@@ -34,6 +35,11 @@ class LoyaltyService
     public function earnFromOrder(Order $order): ?PointTransaction
     {
         if ($order->user_id === null || (float) $order->subtotal <= 0) {
+            return null;
+        }
+
+        // Points only accrue on orders that were actually paid for.
+        if ($order->payment_status !== PaymentStatus::Paid) {
             return null;
         }
 

@@ -112,7 +112,12 @@ class OrderPagesController extends Controller
         // re-query Billplz directly so the page reflects the real status.
         $this->reconcileOrderPayment($order, $gateway, $service);
 
-        $order->load(['items.modifiers', 'branch']);
+        // Auto-cancel any stale unpaid orders for this customer (from prior days).
+        if ($order->user_id !== null) {
+            $this->cancelStaleUnpaidOrders((int) $order->user_id, $service);
+        }
+
+        $order->refresh()->load(['items.modifiers', 'branch']);
 
         return Inertia::render('storefront/order', [
             'order' => $this->presentOrder($order),
@@ -121,6 +126,34 @@ class OrderPagesController extends Controller
                 'event' => 'order.status.changed',
             ],
         ]);
+    }
+
+    /**
+     * Re-create a Billplz bill for a same-day unpaid/failed order and
+     * redirect the customer to the hosted payment page.
+     */
+    public function payAgain(Order $order, BillplzGateway $gateway): \Symfony\Component\HttpFoundation\Response
+    {
+        abort_unless($this->canPayAgain($order), 422, 'This order is not eligible for payment.');
+
+        try {
+            $bill = $gateway->createBill($order->fresh() ?? $order);
+        } catch (Throwable $e) {
+            Log::warning('Pay again — Billplz createBill failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withErrors(['payment' => $e->getMessage()]);
+        }
+
+        $order->forceFill([
+            'payment_method' => 'billplz',
+            'payment_reference' => $bill->reference,
+            'payment_status' => PaymentStatus::Unpaid,
+        ])->save();
+
+        return Inertia::location($bill->url);
     }
 
     /** Dev-only: simulate Billplz callback marking the bill paid + auto-advance to Preparing. */
@@ -140,10 +173,15 @@ class OrderPagesController extends Controller
         return redirect()->route('orders.show', ['order' => $order]);
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request, OrderService $service): Response
     {
+        $userId = $request->user()?->getKey();
+        if ($userId !== null) {
+            $this->cancelStaleUnpaidOrders((int) $userId, $service);
+        }
+
         $orders = Order::query()
-            ->where('user_id', $request->user()?->getKey())
+            ->where('user_id', $userId)
             ->latest()
             ->limit(30)
             ->get();
@@ -155,9 +193,73 @@ class OrderPagesController extends Controller
                 'status' => $o->status->value,
                 'status_label' => $o->status->label(),
                 'total' => (float) $o->total,
+                'payment_status' => $o->payment_status->value,
+                'can_pay_again' => $this->canPayAgain($o),
                 'created_at' => $o->created_at?->toIso8601String(),
             ])->values(),
         ]);
+    }
+
+    /**
+     * Whether a still-unpaid online order is eligible for a "Pay Now" retry.
+     * Same-day only — stale orders are auto-cancelled instead.
+     */
+    protected function canPayAgain(Order $order): bool
+    {
+        if ($order->user_id === null) {
+            return false;
+        }
+        if ($order->status !== OrderStatus::Pending) {
+            return false;
+        }
+        if (! in_array($order->payment_status, [PaymentStatus::Unpaid, PaymentStatus::Failed], true)) {
+            return false;
+        }
+        if (! $this->isOnlineOrder($order)) {
+            return false;
+        }
+
+        return $order->created_at instanceof \Illuminate\Support\Carbon
+            && $order->created_at->isToday();
+    }
+
+    /** Walk-in POS orders aren't paid via gateway and shouldn't get the retry button. */
+    protected function isOnlineOrder(Order $order): bool
+    {
+        $snapshot = $order->customer_snapshot ?? [];
+
+        return ($snapshot['source'] ?? null) !== 'walk-in';
+    }
+
+    /**
+     * Cancel pending+unpaid online orders placed before today.
+     * Defensive — if anything throws, log it and move on so the page still renders.
+     */
+    protected function cancelStaleUnpaidOrders(int $userId, OrderService $service): void
+    {
+        $stale = Order::query()
+            ->where('user_id', $userId)
+            ->where('status', OrderStatus::Pending->value)
+            ->whereIn('payment_status', [PaymentStatus::Unpaid->value, PaymentStatus::Failed->value])
+            ->whereDate('created_at', '<', now()->toDateString())
+            ->get();
+
+        foreach ($stale as $order) {
+            if (! $this->isOnlineOrder($order)) {
+                continue;
+            }
+            try {
+                $order->forceFill([
+                    'cancellation_reason' => 'Auto-cancelled — payment not completed by end of day.',
+                ])->save();
+                $service->transition($order->fresh() ?? $order, OrderStatus::Cancelled);
+            } catch (Throwable $e) {
+                Log::warning('Auto-cancel stale unpaid order failed', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**
@@ -261,6 +363,7 @@ class OrderPagesController extends Controller
             'payment_method' => $order->payment_method,
             'notes' => $order->notes,
             'created_at' => $order->created_at?->toIso8601String(),
+            'can_pay_again' => $this->canPayAgain($order),
             'items' => $items,
         ];
     }

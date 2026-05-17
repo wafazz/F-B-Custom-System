@@ -1,5 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ChevronRight, Package } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft, ChevronRight, CreditCard, Package } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import StorefrontLayout from '@/layouts/storefront-layout';
 
@@ -9,6 +10,8 @@ interface OrderRow {
     status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'refunded';
     status_label: string;
     total: number;
+    payment_status: 'unpaid' | 'paid' | 'failed' | 'refunded';
+    can_pay_again: boolean;
     created_at: string | null;
 }
 
@@ -17,6 +20,20 @@ interface Props {
 }
 
 export default function OrdersHistory({ orders }: Props) {
+    const [payingId, setPayingId] = useState<number | null>(null);
+
+    function payAgain(id: number) {
+        setPayingId(id);
+        router.post(
+            `/orders/${id}/pay`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setPayingId(null),
+            },
+        );
+    }
+
     return (
         <StorefrontLayout>
             <Head title="Your Orders" />
@@ -40,10 +57,13 @@ export default function OrdersHistory({ orders }: Props) {
             ) : (
                 <ul className="space-y-2">
                     {orders.map((order) => (
-                        <li key={order.id}>
+                        <li
+                            key={order.id}
+                            className="border-border bg-card overflow-hidden rounded-xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                        >
                             <Link
                                 href={`/orders/${order.id}`}
-                                className="border-border bg-card flex items-center justify-between gap-3 rounded-xl border p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                                className="flex items-center justify-between gap-3 p-4"
                             >
                                 <div className="flex-1">
                                     <p className="text-sm font-semibold">{order.number}</p>
@@ -61,6 +81,19 @@ export default function OrdersHistory({ orders }: Props) {
                                 </span>
                                 <ChevronRight className="text-muted-foreground size-4" />
                             </Link>
+                            {order.can_pay_again && (
+                                <button
+                                    type="button"
+                                    onClick={() => payAgain(order.id)}
+                                    disabled={payingId === order.id}
+                                    className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-60"
+                                >
+                                    <CreditCard className="size-4" />
+                                    {payingId === order.id
+                                        ? 'Redirecting…'
+                                        : `Pay now — RM${order.total.toFixed(2)}`}
+                                </button>
+                            )}
                         </li>
                     ))}
                 </ul>

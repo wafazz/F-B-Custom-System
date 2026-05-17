@@ -32,6 +32,9 @@ Route::get('/branches/{branch}/checkout', [OrderPagesController::class, 'checkou
 
 Route::get('/orders', [OrderPagesController::class, 'index'])->middleware('auth')->name('orders.index');
 Route::get('/orders/{order}', [OrderPagesController::class, 'show'])->middleware('can:view,order')->name('orders.show');
+Route::post('/orders/{order}/pay', [OrderPagesController::class, 'payAgain'])
+    ->middleware(['auth', 'can:view,order', 'throttle:10,1'])
+    ->name('orders.pay-again');
 Route::get('/orders/{order}/simulate-paid', [OrderPagesController::class, 'simulatePaid'])->name('orders.simulate-paid');
 
 // Billplz hosted-page redirect (customer's browser, not server-to-server)

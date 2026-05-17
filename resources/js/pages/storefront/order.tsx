@@ -1,5 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Check, Clock, Package, X } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft, Check, Clock, CreditCard, Package, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -30,6 +30,7 @@ interface OrderProp {
     payment_method: string | null;
     notes: string | null;
     created_at: string | null;
+    can_pay_again: boolean;
     items: OrderItem[];
 }
 
@@ -43,7 +44,20 @@ const STAGES: OrderProp['status'][] = ['pending', 'preparing', 'ready', 'complet
 export default function Order({ order, reverb }: Props) {
     const [status, setStatus] = useState<OrderProp['status']>(order.status);
     const [statusLabel, setStatusLabel] = useState(order.status_label);
+    const [paying, setPaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    function payAgain() {
+        setPaying(true);
+        router.post(
+            `/orders/${order.id}/pay`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setPaying(false),
+            },
+        );
+    }
 
     useEffect(() => {
         const echo = getEcho();
@@ -130,6 +144,29 @@ export default function Order({ order, reverb }: Props) {
                     </p>
                 )}
             </div>
+
+            {order.can_pay_again && (
+                <section className="border-amber-200 bg-amber-50 mb-4 rounded-xl border p-4 shadow-sm">
+                    <div className="mb-3">
+                        <p className="text-amber-900 text-sm font-bold">
+                            Payment pending — finish it now
+                        </p>
+                        <p className="text-amber-800/80 mt-0.5 text-[11px]">
+                            This order is still waiting for payment. If it isn't paid by end of
+                            today it will be automatically cancelled.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={payAgain}
+                        disabled={paying}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold uppercase tracking-wider shadow-sm transition-colors disabled:opacity-60"
+                    >
+                        <CreditCard className="size-4" />
+                        {paying ? 'Redirecting…' : `Pay now — RM${order.total.toFixed(2)}`}
+                    </button>
+                </section>
+            )}
 
             <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
                 <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">

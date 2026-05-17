@@ -221,30 +221,84 @@ function SheetBody({
                     </div>
 
                     <div className="mt-3 border-t pt-3">
-                        <div className="mb-3 flex items-center justify-between">
-                            <span className="text-sm font-medium">Quantity</span>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                                    className="flex size-8 items-center justify-center rounded-full bg-black text-white hover:bg-black/80"
-                                    aria-label="Decrease"
-                                >
-                                    <Minus className="size-3.5" />
-                                </button>
-                                <span className="w-6 text-center text-sm font-semibold">
-                                    {quantity}
+                        <div className="bg-amber-50 border-amber-200 mb-3 rounded-lg border p-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="text-card-foreground flex-1 text-sm font-semibold leading-tight">
+                                    {product.name}
                                 </span>
-                                <button
-                                    type="button"
-                                    onClick={() => setQuantity((q) => q + 1)}
-                                    className="flex size-8 items-center justify-center rounded-full bg-black text-white hover:bg-black/80"
-                                    aria-label="Increase"
-                                >
-                                    <Plus className="size-3.5" />
-                                </button>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                                        className="flex size-7 items-center justify-center rounded-full bg-black text-white hover:bg-black/80"
+                                        aria-label="Decrease"
+                                    >
+                                        <Minus className="size-3" />
+                                    </button>
+                                    <span className="w-5 text-center text-sm font-semibold">
+                                        {quantity}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuantity((q) => q + 1)}
+                                        className="flex size-7 items-center justify-center rounded-full bg-black text-white hover:bg-black/80"
+                                        aria-label="Increase"
+                                    >
+                                        <Plus className="size-3" />
+                                    </button>
+                                </div>
+                            </div>
+                            {(() => {
+                                const selected: { group: string; option: string; delta: number }[] = [];
+                                for (const group of product.modifier_groups) {
+                                    const picked = selection[group.id] ?? [];
+                                    for (const option of group.options.filter((o) =>
+                                        picked.includes(o.id),
+                                    )) {
+                                        selected.push({
+                                            group: group.name,
+                                            option: option.name,
+                                            delta: Number(option.price_delta),
+                                        });
+                                    }
+                                }
+                                if (selected.length === 0) {
+                                    return (
+                                        <p className="text-muted-foreground mt-2 text-[11px] italic">
+                                            No modifiers selected.
+                                        </p>
+                                    );
+                                }
+                                return (
+                                    <p className="text-muted-foreground mt-2 text-xs leading-snug capitalize">
+                                        {selected.map((s, i) => (
+                                            <span key={`${s.group}-${s.option}-${i}`}>
+                                                <span className="text-card-foreground font-medium">
+                                                    {s.option}
+                                                </span>
+                                                {s.delta > 0 && (
+                                                    <span className="text-amber-700">
+                                                        {' '}
+                                                        (+RM{s.delta.toFixed(2)})
+                                                    </span>
+                                                )}
+                                                {i < selected.length - 1 && ', '}
+                                            </span>
+                                        ))}
+                                    </p>
+                                );
+                            })()}
+
+                            <div className="border-amber-200/70 mt-3 flex items-center justify-between border-t pt-2">
+                                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                                    Total
+                                </span>
+                                <span className="text-card-foreground text-base font-bold">
+                                    RM{totalPrice.toFixed(2)}
+                                </span>
                             </div>
                         </div>
+
                         {!valid && validationMessage && (
                             <p className="mb-2 text-xs text-red-600">{validationMessage}</p>
                         )}

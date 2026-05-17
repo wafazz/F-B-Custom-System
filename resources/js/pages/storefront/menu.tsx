@@ -391,7 +391,7 @@ export default function Menu({ branch }: Props) {
 
             {data && data.categories.length > 0 && (
                 <div className="-mx-4 flex items-start gap-0">
-                    <aside className="bg-muted/40 border-border sticky top-16 max-h-[calc(100vh-4rem)] w-24 shrink-0 self-start overflow-y-auto border-r">
+                    <aside className="bg-muted/40 border-border sticky top-16 max-h-[calc(100vh-4rem)] w-20 shrink-0 self-start overflow-y-auto border-r">
                         <ul className="flex flex-col">
                             {sections.map((sec) => {
                                 const Icon = iconFor(sec.slug);
@@ -406,15 +406,15 @@ export default function Menu({ branch }: Props) {
                                             type="button"
                                             onClick={() => scrollToCategory(sec.id)}
                                             className={cn(
-                                                'flex w-full flex-col items-center gap-1.5 px-2 py-3 text-center transition-colors',
+                                                'flex w-full flex-col items-center gap-1 px-1.5 py-2.5 text-center transition-colors',
                                                 active
-                                                    ? 'bg-card border-primary border-l-4 pl-1'
+                                                    ? 'bg-card border-primary border-l-[3px] pl-1'
                                                     : 'hover:bg-card/60',
                                             )}
                                         >
                                             <span
                                                 className={cn(
-                                                    'flex size-14 items-center justify-center overflow-hidden rounded-full transition-all',
+                                                    'flex size-11 items-center justify-center overflow-hidden rounded-full transition-all',
                                                     active
                                                         ? 'ring-primary ring-2 ring-offset-2'
                                                         : 'bg-secondary',
@@ -433,7 +433,7 @@ export default function Menu({ branch }: Props) {
                                                 ) : (
                                                     <Icon
                                                         className={cn(
-                                                            'size-6',
+                                                            'size-5',
                                                             active
                                                                 ? 'text-primary'
                                                                 : 'text-secondary-foreground/70',

@@ -309,7 +309,7 @@ export default function Menu({ branch }: Props) {
     }
 
     return (
-        <StorefrontLayout>
+        <StorefrontLayout hideStats>
             <Head title={`${branch.name} — Menu`} />
 
             <div className="mb-4 flex items-start justify-between gap-3">

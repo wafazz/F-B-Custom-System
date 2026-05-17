@@ -352,6 +352,11 @@ export default function BranchSelect({ branches }: Props) {
                                             Star Coffee
                                         </p>
                                         <span
+                                            title={
+                                                !branch.is_open_now && branch.closed_reason
+                                                    ? branch.closed_reason
+                                                    : undefined
+                                            }
                                             className={cn(
                                                 'flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider',
                                                 branch.is_open_now
@@ -367,7 +372,9 @@ export default function BranchSelect({ branches }: Props) {
                                                         : 'bg-red-500',
                                                 )}
                                             />
-                                            {branch.is_open_now ? 'Open' : 'Closed'}
+                                            {branch.is_open_now
+                                                ? 'Open'
+                                                : (branch.closed_reason ?? 'Closed')}
                                         </span>
                                     </div>
                                     <h3 className="text-card-foreground mt-0.5 truncate text-base font-bold leading-tight">

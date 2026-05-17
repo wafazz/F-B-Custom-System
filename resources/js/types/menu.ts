@@ -94,6 +94,7 @@ export interface BranchSummary {
     logo: string | null;
     cover_image?: string | null;
     is_open_now: boolean;
+    closed_reason?: string | null;
     debug_status?: string;
     debug_accepts_orders?: boolean;
     debug_today?: string;

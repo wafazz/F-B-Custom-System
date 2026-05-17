@@ -94,32 +94,59 @@ class Branch extends Model
 
     public function isOpenNow(?Carbon $time = null): bool
     {
-        if ($this->status !== 'active' || ! $this->accepts_orders) {
-            return false;
+        return $this->closedReason($time) === null;
+    }
+
+    /**
+     * Returns null when the branch is open right now, otherwise a short
+     * human-readable reason ("Paused by admin", "Closed Sunday", "Opens 08:00", etc.).
+     */
+    public function closedReason(?Carbon $time = null): ?string
+    {
+        if ($this->status !== 'active') {
+            return 'Paused by admin';
+        }
+        if (! $this->accepts_orders) {
+            return 'Not accepting orders';
         }
 
         $time = $time ?? now();
         $day = strtolower($time->englishDayOfWeek);
+        $dayLabel = ucfirst($day);
 
         /** @var array<string, array{enabled?: bool, open?: string, close?: string}>|null $allHours */
         $allHours = $this->operating_hours;
         $hours = is_array($allHours) ? ($allHours[$day] ?? null) : null;
 
-        if (! is_array($hours) || empty($hours['enabled'])) {
-            return false;
+        if (! is_array($hours)) {
+            return "No hours set for {$dayLabel}";
+        }
+        if (empty($hours['enabled'])) {
+            return "Closed on {$dayLabel}";
         }
 
         $currentMinutes = $time->hour * 60 + $time->minute;
         $openMinutes = $this->parseTimeToMinutes($hours['open'] ?? '00:00');
         $closeMinutes = $this->parseTimeToMinutes($hours['close'] ?? '23:59');
+        $openText = $hours['open'] ?? '00:00';
+        $closeText = $hours['close'] ?? '23:59';
 
         // Close <= open means the branch closes after midnight
         // (e.g. open 08:00, close 00:00 or 02:00). Wrap around to next day.
         if ($closeMinutes <= $openMinutes) {
-            return $currentMinutes >= $openMinutes || $currentMinutes < $closeMinutes;
+            return $currentMinutes >= $openMinutes || $currentMinutes < $closeMinutes
+                ? null
+                : "Opens {$openText}";
         }
 
-        return $currentMinutes >= $openMinutes && $currentMinutes <= $closeMinutes;
+        if ($currentMinutes < $openMinutes) {
+            return "Opens {$openText}";
+        }
+        if ($currentMinutes > $closeMinutes) {
+            return "Closed since {$closeText}";
+        }
+
+        return null;
     }
 
     protected function parseTimeToMinutes(string $time): int

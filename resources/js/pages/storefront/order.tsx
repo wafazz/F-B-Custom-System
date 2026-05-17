@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react';
-import { Check, Clock, Package, X } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Check, Clock, Package, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -68,9 +68,19 @@ export default function Order({ order, reverb }: Props) {
     const isCancelled = status === 'cancelled' || status === 'refunded';
 
     return (
-        <StorefrontLayout>
+        <StorefrontLayout hideStats>
             <Head title={`Order ${order.number}`} />
             <audio ref={audioRef} preload="auto" src="/sounds/sc7.mp3" />
+
+            <div className="mb-2 flex items-center gap-3">
+                <Link
+                    href="/orders"
+                    className="bg-card text-card-foreground hover:bg-amber-50 inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors"
+                >
+                    <ArrowLeft className="size-4" />
+                    <span>Back to My Orders</span>
+                </Link>
+            </div>
 
             <div className="mb-4">
                 <h1 className="text-2xl font-bold">{order.number}</h1>

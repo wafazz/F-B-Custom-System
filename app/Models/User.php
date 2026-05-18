@@ -89,8 +89,11 @@ class User extends Authenticatable implements FilamentUser
     /** @return BelongsToMany<Product, $this> */
     public function favouriteProducts(): BelongsToMany
     {
+        // Pivot has only created_at (no updated_at), so withTimestamps()
+        // would write a column that doesn't exist. We let MySQL default
+        // the created_at via useCurrent() on insert.
         return $this->belongsToMany(Product::class, 'user_favourites')
-            ->withTimestamps()
+            ->withPivot('created_at')
             ->orderByDesc('user_favourites.created_at');
     }
 

@@ -93,7 +93,7 @@ function Body({
                 <div className="min-w-0 flex-1">
                     <p className="text-lg font-bold leading-tight">{voucher.name}</p>
                     {voucher.description && (
-                        <p className="text-muted-foreground mt-1 text-sm leading-snug">
+                        <p className="text-muted-foreground mt-1 whitespace-pre-line text-sm leading-snug">
                             {voucher.description}
                         </p>
                     )}

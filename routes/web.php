@@ -112,9 +112,9 @@ Route::middleware('auth')->group(function () {
         ->name('favourites.toggle');
 
     Route::get('rewards', [PointRewardController::class, 'index'])->name('point-rewards.index');
-    Route::post('rewards/{pointReward}/claim', [PointRewardController::class, 'claim'])
+    Route::post('rewards/{pointReward}/redeem', [PointRewardController::class, 'redeem'])
         ->middleware('throttle:20,1')
-        ->name('point-rewards.claim');
+        ->name('point-rewards.redeem');
 
     Route::get('wallet', [WalletController::class, 'show'])->name('wallet');
     Route::post('wallet/topup', [WalletController::class, 'topup'])

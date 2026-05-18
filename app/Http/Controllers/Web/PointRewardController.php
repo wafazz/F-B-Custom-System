@@ -19,13 +19,35 @@ class PointRewardController extends Controller
     {
         $userId = (int) $request->user()->getKey();
 
-        $rewards = PointReward::active()->latest()->get();
+        $rewards = PointReward::active()
+            ->with('product:id,name')
+            ->orderBy('points_cost')
+            ->get();
 
-        $claimedCounts = PointRewardClaim::query()
+        $userClaimCounts = PointRewardClaim::query()
             ->where('user_id', $userId)
             ->selectRaw('point_reward_id, COUNT(*) as c')
             ->groupBy('point_reward_id')
             ->pluck('c', 'point_reward_id');
+
+        $pending = PointRewardClaim::query()
+            ->where('user_id', $userId)
+            ->whereNull('fulfilled_at')
+            ->with('pointReward:id,name,banner_image,kind')
+            ->latest('claimed_at')
+            ->get()
+            ->map(fn (PointRewardClaim $c) => [
+                'id' => $c->id,
+                'pickup_code' => $c->pickup_code,
+                'points_spent' => $c->points_spent,
+                'claimed_at' => $c->claimed_at->toIso8601String(),
+                'reward' => $c->pointReward ? [
+                    'name' => $c->pointReward->name,
+                    'banner_image' => $c->pointReward->banner_image,
+                    'kind' => $c->pointReward->kind,
+                ] : null,
+            ])
+            ->values();
 
         return Inertia::render('storefront/point-rewards', [
             'rewards' => $rewards->map(fn (PointReward $r) => [
@@ -33,23 +55,28 @@ class PointRewardController extends Controller
                 'name' => $r->name,
                 'description' => $r->description,
                 'banner_image' => $r->banner_image,
-                'points' => $r->points,
+                'points_cost' => $r->points_cost,
+                'kind' => $r->kind,
+                'product_name' => $r->product?->name,
                 'max_claims_per_user' => $r->max_claims_per_user,
-                'user_claims' => (int) ($claimedCounts[$r->id] ?? 0),
+                'user_claims' => (int) ($userClaimCounts[$r->id] ?? 0),
+                'stock' => $r->stock,
+                'claimed_count' => $r->claimed_count,
                 'valid_until' => $r->valid_until?->toIso8601String(),
             ])->values(),
+            'pending' => $pending,
             'points_balance' => (int) $loyalty->balance($userId),
         ]);
     }
 
-    public function claim(Request $request, PointReward $pointReward, PointRewardService $service): RedirectResponse
+    public function redeem(Request $request, PointReward $pointReward, PointRewardService $service): RedirectResponse
     {
         try {
-            $service->claim($pointReward, (int) $request->user()->getKey());
+            $claim = $service->redeem($pointReward, (int) $request->user()->getKey());
         } catch (Throwable $e) {
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', "+{$pointReward->points} pts credited.");
+        return back()->with('success', "Redeemed! Show pickup code {$claim->pickup_code} at the counter.");
     }
 }

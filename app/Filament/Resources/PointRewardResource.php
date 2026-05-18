@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PointRewardResource\Pages;
 use App\Models\PointReward;
+use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -20,7 +21,7 @@ class PointRewardResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    protected static ?string $navigationLabel = 'Point Rewards';
+    protected static ?string $navigationLabel = 'Reward Catalogue';
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -40,12 +41,25 @@ class PointRewardResource extends Resource
                         ->directory('point-rewards/banners')
                         ->maxSize(2048)
                         ->columnSpanFull(),
-                    Forms\Components\TextInput::make('points')
+                    Forms\Components\TextInput::make('points_cost')
                         ->numeric()
                         ->minValue(1)
                         ->suffix('pts')
                         ->required()
-                        ->helperText('Points credited to the customer when they tap Claim.'),
+                        ->helperText('Points the customer spends to redeem this item.'),
+                    Forms\Components\Select::make('kind')
+                        ->options(['product' => 'Menu item', 'merchandise' => 'Merchandise'])
+                        ->default('merchandise')
+                        ->live()
+                        ->required(),
+                    Forms\Components\Select::make('product_id')
+                        ->label('Menu item')
+                        ->searchable()
+                        ->preload()
+                        ->options(fn () => Product::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->visible(fn (Forms\Get $get) => $get('kind') === 'product')
+                        ->helperText('Link this reward to a specific menu product so staff know what to prepare.')
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
 
@@ -56,11 +70,11 @@ class PointRewardResource extends Resource
                         ->minValue(1)
                         ->default(1)
                         ->required()
-                        ->helperText('How many times each customer can claim.'),
-                    Forms\Components\TextInput::make('max_total_claims')
+                        ->helperText('How many times each customer can redeem.'),
+                    Forms\Components\TextInput::make('stock')
                         ->numeric()
                         ->minValue(1)
-                        ->helperText('Optional global cap across all customers. Leave blank for unlimited.'),
+                        ->helperText('Optional global stock cap. Leave blank for unlimited.'),
                     Forms\Components\DateTimePicker::make('valid_from'),
                     Forms\Components\DateTimePicker::make('valid_until'),
                     Forms\Components\Select::make('status')
@@ -78,9 +92,11 @@ class PointRewardResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('banner_image')->label('Banner')->size(56)->square(),
                 Tables\Columns\TextColumn::make('name')->searchable(),
-                Tables\Columns\TextColumn::make('points')->suffix(' pts')->sortable(),
-                Tables\Columns\TextColumn::make('claimed_count')->label('Claimed')->sortable(),
-                Tables\Columns\TextColumn::make('max_total_claims')->label('Cap')->placeholder('∞'),
+                Tables\Columns\TextColumn::make('kind')->badge(),
+                Tables\Columns\TextColumn::make('product.name')->label('Linked item')->placeholder('—'),
+                Tables\Columns\TextColumn::make('points_cost')->suffix(' pts')->sortable(),
+                Tables\Columns\TextColumn::make('claimed_count')->label('Redeemed')->sortable(),
+                Tables\Columns\TextColumn::make('stock')->placeholder('∞'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state) => match ($state) {
@@ -89,7 +105,6 @@ class PointRewardResource extends Resource
                         'expired' => 'danger',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('valid_until')->dateTime()->placeholder('—'),
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()]);

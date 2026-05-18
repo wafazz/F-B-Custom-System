@@ -10,22 +10,27 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $point_reward_id
  * @property int $user_id
- * @property int $points
+ * @property int $points_spent
+ * @property string|null $pickup_code
  * @property Carbon $claimed_at
+ * @property Carbon|null $fulfilled_at
  */
 class PointRewardClaim extends Model
 {
     protected $fillable = [
         'point_reward_id',
         'user_id',
-        'points',
+        'points_spent',
+        'pickup_code',
         'claimed_at',
+        'fulfilled_at',
     ];
 
     protected function casts(): array
     {
         return [
             'claimed_at' => 'datetime',
+            'fulfilled_at' => 'datetime',
         ];
     }
 

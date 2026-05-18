@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -12,9 +13,11 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string|null $description
  * @property string|null $banner_image
- * @property int $points
+ * @property int $points_cost
+ * @property int|null $product_id
+ * @property string $kind
  * @property int $max_claims_per_user
- * @property int|null $max_total_claims
+ * @property int|null $stock
  * @property int $claimed_count
  * @property Carbon|null $valid_from
  * @property Carbon|null $valid_until
@@ -26,9 +29,11 @@ class PointReward extends Model
         'name',
         'description',
         'banner_image',
-        'points',
+        'points_cost',
+        'product_id',
+        'kind',
         'max_claims_per_user',
-        'max_total_claims',
+        'stock',
         'claimed_count',
         'valid_from',
         'valid_until',
@@ -47,6 +52,12 @@ class PointReward extends Model
     public function claims(): HasMany
     {
         return $this->hasMany(PointRewardClaim::class);
+    }
+
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function scopeActive(Builder $query): Builder

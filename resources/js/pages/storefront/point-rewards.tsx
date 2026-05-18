@@ -1,50 +1,69 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Gift, Sparkles, TimerReset } from 'lucide-react';
+import { Coffee, Gift, Package, Sparkles, TimerReset } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import type { Flash } from '@/types';
 
-interface PointReward {
+interface CatalogReward {
     id: number;
     name: string;
     description: string | null;
     banner_image: string | null;
-    points: number;
+    points_cost: number;
+    kind: 'product' | 'merchandise';
+    product_name: string | null;
     max_claims_per_user: number;
     user_claims: number;
+    stock: number | null;
+    claimed_count: number;
     valid_until: string | null;
 }
 
+interface PendingClaim {
+    id: number;
+    pickup_code: string | null;
+    points_spent: number;
+    claimed_at: string;
+    reward: {
+        name: string;
+        banner_image: string | null;
+        kind: 'product' | 'merchandise';
+    } | null;
+}
+
 interface Props {
-    rewards: PointReward[];
+    rewards: CatalogReward[];
+    pending: PendingClaim[];
     points_balance: number;
 }
 
-export default function PointRewards({ rewards, points_balance }: Props) {
+export default function PointRewards({ rewards, pending, points_balance }: Props) {
     const flash = usePage<{ flash: Flash }>().props.flash;
-    const [claiming, setClaiming] = useState<number | null>(null);
+    const [redeeming, setRedeeming] = useState<number | null>(null);
 
-    function handleClaim(reward: PointReward) {
-        setClaiming(reward.id);
+    function handleRedeem(reward: CatalogReward) {
+        const confirmMsg = `Redeem "${reward.name}" for ${reward.points_cost.toLocaleString()} pts?`;
+        if (!window.confirm(confirmMsg)) return;
+        setRedeeming(reward.id);
         router.post(
-            `/rewards/${reward.id}/claim`,
+            `/rewards/${reward.id}/redeem`,
             {},
-            { preserveScroll: true, onFinish: () => setClaiming(null) },
+            { preserveScroll: true, onFinish: () => setRedeeming(null) },
         );
     }
 
     return (
         <StorefrontLayout hideStats>
-            <Head title="Reward Points" />
+            <Head title="Reward Catalogue" />
 
             <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                     <h1 className="text-xl font-bold flex items-center gap-2">
-                        <Gift className="text-amber-600 size-5" /> Claim points
+                        <Gift className="text-amber-600 size-5" /> Reward catalogue
                     </h1>
                     <p className="text-muted-foreground text-xs">
-                        Tap to grab bonus points and stack them toward rewards.
+                        Spend your loyalty points on free drinks, food &amp; merch.
                     </p>
                 </div>
                 <div className="bg-amber-100 text-amber-900 flex shrink-0 flex-col items-end rounded-xl px-3 py-2 text-right">
@@ -69,21 +88,77 @@ export default function PointRewards({ rewards, points_balance }: Props) {
                 </div>
             )}
 
+            {pending.length > 0 && (
+                <section className="mb-5">
+                    <h2 className="mb-2 text-sm font-semibold">
+                        Show this at the counter
+                    </h2>
+                    <ul className="space-y-2">
+                        {pending.map((p) => (
+                            <li
+                                key={p.id}
+                                className="border-amber-300 bg-amber-50 flex items-center gap-3 rounded-xl border p-3"
+                            >
+                                {p.reward?.banner_image ? (
+                                    <img
+                                        src={`/storage/${p.reward.banner_image}`}
+                                        alt=""
+                                        className="size-14 shrink-0 rounded-lg object-cover"
+                                    />
+                                ) : (
+                                    <div className="bg-amber-200 text-amber-700 flex size-14 shrink-0 items-center justify-center rounded-lg">
+                                        {p.reward?.kind === 'product' ? (
+                                            <Coffee className="size-6" />
+                                        ) : (
+                                            <Package className="size-6" />
+                                        )}
+                                    </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-card-foreground text-sm font-bold">
+                                        {p.reward?.name ?? 'Reward'}
+                                    </p>
+                                    <p className="text-amber-700 mt-0.5 font-mono text-lg font-extrabold tracking-wider">
+                                        {p.pickup_code}
+                                    </p>
+                                    <p className="text-muted-foreground text-[10px]">
+                                        Redeemed {new Date(p.claimed_at).toLocaleDateString()} ·{' '}
+                                        {p.points_spent.toLocaleString()} pts
+                                    </p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+
             {rewards.length === 0 ? (
                 <div className="border-border bg-card rounded-2xl border border-dashed py-12 text-center">
                     <Sparkles className="text-muted-foreground mx-auto mb-3 size-10" />
                     <p className="text-card-foreground text-sm font-semibold">
-                        No point rewards right now
+                        No rewards yet
                     </p>
                     <p className="text-muted-foreground mt-1 text-xs">
-                        Check back later — new rewards drop regularly.
+                        Catalogue is empty — check back later.
                     </p>
                 </div>
             ) : (
                 <ul className="space-y-3">
                     {rewards.map((r) => {
                         const remaining = r.max_claims_per_user - r.user_claims;
-                        const exhausted = remaining <= 0;
+                        const userExhausted = remaining <= 0;
+                        const outOfStock = r.stock !== null && r.claimed_count >= r.stock;
+                        const canAfford = points_balance >= r.points_cost;
+                        const disabled =
+                            redeeming === r.id || userExhausted || outOfStock || !canAfford;
+                        let label = `Redeem · ${r.points_cost.toLocaleString()} pts`;
+                        if (redeeming === r.id) label = 'Redeeming…';
+                        else if (userExhausted) label = 'Already redeemed';
+                        else if (outOfStock) label = 'Out of stock';
+                        else if (!canAfford) {
+                            const need = r.points_cost - points_balance;
+                            label = `Need ${need.toLocaleString()} more pts`;
+                        }
                         return (
                             <li
                                 key={r.id}
@@ -105,20 +180,35 @@ export default function PointRewards({ rewards, points_balance }: Props) {
                                             <p className="text-sm font-bold leading-tight">
                                                 {r.name}
                                             </p>
+                                            <p className="text-muted-foreground mt-0.5 text-[11px] flex items-center gap-1">
+                                                {r.kind === 'product' ? (
+                                                    <Coffee className="size-3" />
+                                                ) : (
+                                                    <Package className="size-3" />
+                                                )}
+                                                {r.kind === 'product'
+                                                    ? r.product_name ?? 'Menu item'
+                                                    : 'Merchandise'}
+                                            </p>
                                             {r.description && (
-                                                <p className="text-muted-foreground mt-1 whitespace-pre-line text-xs leading-snug">
+                                                <p className="text-muted-foreground mt-1.5 whitespace-pre-line text-xs leading-snug">
                                                     {r.description}
                                                 </p>
                                             )}
                                         </div>
                                         <span className="bg-amber-100 text-amber-700 flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold">
-                                            +{r.points.toLocaleString()} pts
+                                            {r.points_cost.toLocaleString()} pts
                                         </span>
                                     </div>
                                     <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
                                         {r.max_claims_per_user > 1 && (
                                             <span>
-                                                {r.user_claims}/{r.max_claims_per_user} claimed
+                                                {r.user_claims}/{r.max_claims_per_user} redeemed
+                                            </span>
+                                        )}
+                                        {r.stock !== null && (
+                                            <span>
+                                                {Math.max(0, r.stock - r.claimed_count)} left
                                             </span>
                                         )}
                                         {r.valid_until && (
@@ -129,15 +219,11 @@ export default function PointRewards({ rewards, points_balance }: Props) {
                                         )}
                                     </div>
                                     <Button
-                                        onClick={() => handleClaim(r)}
-                                        disabled={claiming === r.id || exhausted}
+                                        onClick={() => handleRedeem(r)}
+                                        disabled={disabled}
                                         className="mt-3 w-full"
                                     >
-                                        {claiming === r.id
-                                            ? 'Claiming…'
-                                            : exhausted
-                                              ? 'Already claimed'
-                                              : `Claim +${r.points.toLocaleString()} pts`}
+                                        {label}
                                     </Button>
                                 </div>
                             </li>

@@ -389,13 +389,21 @@ export default function Checkout({
                 </section>
             )}
 
-            {suggestions.length > 0 && (
+            {(() => {
+                const inCart = new Set(
+                    lines
+                        .map((l) => l.product_id)
+                        .filter((id): id is number => id !== null),
+                );
+                const remaining = suggestions.filter((s) => !inCart.has(s.id));
+                if (remaining.length === 0) return null;
+                return (
                 <section className="mb-4">
                     <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
                         <Sparkles className="size-3.5 text-amber-500" /> You might also want
                     </h2>
                     <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
-                        {suggestions.map((s) => (
+                        {remaining.map((s) => (
                             <Link
                                 key={s.id}
                                 href={`/branches/${branch.id}/menu?product=${s.id}`}
@@ -424,7 +432,8 @@ export default function Checkout({
                         ))}
                     </div>
                 </section>
-            )}
+                );
+            })()}
 
             <section className="border-border bg-card mb-4 space-y-2 rounded-xl border p-4 text-sm shadow-sm">
                 <div className="text-muted-foreground flex justify-between">

@@ -36,7 +36,7 @@ interface Props {
 
 export default function StorefrontLayout({ children, headerSlot, hideStats = false }: Props) {
     const { auth, url, customer_stats } = usePage().props as unknown as {
-        auth: { user: { name: string } | null };
+        auth: { user: { name: string } | null; unread_notifications: number };
         url: string;
         customer_stats: CustomerStats | null;
     };
@@ -53,6 +53,7 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
                 ) : (
                     <DefaultGreetingHeader
                         userName={auth.user?.name ?? null}
+                        unreadCount={auth.unread_notifications ?? 0}
                         branchName={branch?.name ?? null}
                         branchLogo={branch?.logo ?? null}
                         branchId={branch?.id ?? null}
@@ -128,12 +129,14 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
 
 function DefaultGreetingHeader({
     userName,
+    unreadCount,
     branchName,
     branchLogo,
     branchId,
     branchIsOpen,
 }: {
     userName: string | null;
+    unreadCount: number;
     branchName: string | null;
     branchLogo: string | null;
     branchId: number | null;
@@ -196,12 +199,20 @@ function DefaultGreetingHeader({
             </div>
             <div className="flex shrink-0 items-center gap-2">
                 <Link
-                    href={userName ? '/orders' : '/login?redirect=/orders'}
+                    href={userName ? '/notifications' : '/login?redirect=/notifications'}
                     className="relative flex size-10 items-center justify-center rounded-full bg-amber-50 text-amber-800 transition-colors hover:bg-amber-100"
-                    aria-label="Notifications"
+                    aria-label={
+                        unreadCount > 0
+                            ? `Notifications (${unreadCount} unread)`
+                            : 'Notifications'
+                    }
                 >
                     <Bell className="size-4" />
-                    <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" />
+                    {userName && unreadCount > 0 && (
+                        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white shadow ring-2 ring-amber-50">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                    )}
                 </Link>
                 <Link
                     href={userName ? '/profile' : '/login'}

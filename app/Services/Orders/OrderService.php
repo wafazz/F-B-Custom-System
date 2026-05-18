@@ -14,7 +14,10 @@ use App\Models\ModifierOption;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\User;
 use App\Enums\PaymentStatus;
+use App\Notifications\OrderCancelledNotification;
+use App\Notifications\OrderReadyNotification;
 use App\Services\Loyalty\LoyaltyService;
 use App\Services\Push\PushService;
 use App\Services\Referrals\ReferralService;
@@ -381,7 +384,7 @@ class OrderService
             $this->loyalty->refundFromOrder($fresh);
         }
 
-        // Customer push: pickup-path order ready, or any cancellation.
+        // Customer push + in-app notification: pickup-path order ready, or any cancellation.
         if ($fresh->user_id !== null) {
             if ($next === OrderStatus::Ready && $order->order_type === OrderType::Pickup) {
                 $this->push->sendToUser($fresh->user_id, [
@@ -390,6 +393,8 @@ class OrderService
                     'url' => route('orders.show', ['order' => $fresh->id]),
                     'tag' => "order-{$fresh->id}",
                 ]);
+                $user = User::query()->find($fresh->user_id);
+                $user?->notify(new OrderReadyNotification($fresh));
             }
             if ($next === OrderStatus::Cancelled) {
                 $this->push->sendToUser($fresh->user_id, [
@@ -398,6 +403,8 @@ class OrderService
                     'url' => route('orders.show', ['order' => $fresh->id]),
                     'tag' => "order-{$fresh->id}",
                 ]);
+                $user = User::query()->find($fresh->user_id);
+                $user?->notify(new OrderCancelledNotification($fresh));
             }
         }
 

@@ -14,6 +14,7 @@ use App\Http\Controllers\Web\AccountController;
 use App\Http\Controllers\Web\DisplayController;
 use App\Http\Controllers\Web\InfoPagesController;
 use App\Http\Controllers\Web\LoyaltyController;
+use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\OrderPagesController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReferralController;
@@ -98,6 +99,10 @@ Route::middleware('auth')->group(function () {
         ->name('profile.password');
     Route::get('account/data-export', [AccountController::class, 'dataExport'])->name('account.data-export');
     Route::delete('account', [AccountController::class, 'destroy'])->middleware('throttle:3,60')->name('account.destroy');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     Route::get('wallet', [WalletController::class, 'show'])->name('wallet');
     Route::post('wallet/topup', [WalletController::class, 'topup'])

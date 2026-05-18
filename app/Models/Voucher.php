@@ -82,7 +82,7 @@ class Voucher extends Model
         if (! empty($this->tier_ids)) {
             $tierRow = CustomerTier::query()->where('user_id', $user->getKey())->first();
             $userTierId = $tierRow?->membership_tier_id;
-            if ($userTierId === null || ! in_array((int) $userTierId, $this->tier_ids, true)) {
+            if ($userTierId === null || ! in_array((int) $userTierId, $this->intArray($this->tier_ids), true)) {
                 return false;
             }
         }
@@ -93,12 +93,25 @@ class Voucher extends Model
                 return false;
             }
             $month = (int) Carbon::parse($dob)->format('n');
-            if (! in_array($month, $this->birthday_months, true)) {
+            if (! in_array($month, $this->intArray($this->birthday_months), true)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Filament's multi-select serialises picked values as strings inside the
+     * JSON column; SQL whereIn coerces fine but PHP strict comparisons don't.
+     * Normalise so all in_array() checks line up.
+     *
+     * @param  array<int|string, mixed>  $values
+     * @return list<int>
+     */
+    protected function intArray(array $values): array
+    {
+        return array_values(array_map(static fn ($v): int => (int) $v, $values));
     }
 
     /** @return HasMany<VoucherRedemption, $this> */

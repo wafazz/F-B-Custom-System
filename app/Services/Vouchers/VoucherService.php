@@ -59,8 +59,9 @@ class VoucherService
         }
 
         $eligibleSubtotal = $subtotal;
-        $productScope = $voucher->product_ids;
-        $comboScope = $voucher->combo_ids;
+        // Filament multi-selects serialise picked ids as strings; normalise.
+        $productScope = array_map(static fn ($v): int => (int) $v, $voucher->product_ids ?? []);
+        $comboScope = array_map(static fn ($v): int => (int) $v, $voucher->combo_ids ?? []);
         $hasScope = ! empty($productScope) || ! empty($comboScope);
 
         if ($hasScope) {

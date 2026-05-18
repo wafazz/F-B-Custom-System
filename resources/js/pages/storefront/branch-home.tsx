@@ -1,6 +1,7 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowRight, Coffee } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { NotificationPrompt } from '@/components/storefront/notification-prompt';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { useBranchStore } from '@/stores/branch-store';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,7 @@ function resolveCtaUrl(url: string, branchId: number): string {
 
 export default function BranchHome({ branch, slides, rewards_slides, categories }: Props) {
     const setBranch = useBranchStore((s) => s.setBranch);
+    const { auth } = usePage().props as unknown as { auth: { user: { name: string } | null } };
     const [active, setActive] = useState(0);
     const [rewardsActive, setRewardsActive] = useState(0);
 
@@ -86,6 +88,8 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
     return (
         <StorefrontLayout>
             <Head title={branch.name} />
+
+            <NotificationPrompt isAuthenticated={auth.user !== null} />
 
             {/* Hero carousel */}
             {slide && (

@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Ticket, Trophy } from 'lucide-react';
+import { PushToggle } from '@/components/storefront/push-toggle';
 import StorefrontLayout from '@/layouts/storefront-layout';
 
 interface PointRow {
@@ -36,12 +37,15 @@ export default function Loyalty({
 
             <div className="mb-3 flex items-center justify-between gap-2">
                 <h1 className="text-xl font-bold">Your Rewards</h1>
-                <Link
-                    href="/vouchers"
-                    className="bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-                >
-                    <Ticket className="size-3.5" /> Vouchers
-                </Link>
+                <div className="flex items-center gap-2">
+                    <PushToggle />
+                    <Link
+                        href="/vouchers"
+                        className="bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                    >
+                        <Ticket className="size-3.5" /> Vouchers
+                    </Link>
+                </div>
             </div>
 
             <section className="border-border mb-4 rounded-2xl border bg-gradient-to-br from-amber-50 to-orange-100 p-5 shadow-sm">

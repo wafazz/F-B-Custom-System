@@ -358,7 +358,7 @@ export default function Menu({ branch }: Props) {
         <StorefrontLayout hideStats>
             <Head title={`${branch.name} — Menu`} />
 
-            <div className="-my-4 flex h-[calc(100dvh-72px-96px-env(safe-area-inset-bottom))] flex-col">
+            <div className="-my-4 flex h-[calc(100vh-72px-96px-env(safe-area-inset-bottom))] flex-col">
             <div className="shrink-0 pt-4">
             {isLoading && <MenuSkeleton />}
             {isError && (

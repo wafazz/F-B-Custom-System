@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Vouchers\VoucherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ class RegisterController extends Controller
         return Inertia::render('auth/register');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, VoucherService $vouchers): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -42,6 +43,10 @@ class RegisterController extends Controller
         ]);
 
         $user->assignRole('customer');
+
+        // Welcome vouchers — any active voucher with new_users_only=true
+        // that the new user qualifies for is auto-claimed on their behalf.
+        $vouchers->autoIssueWelcomeVouchers($user);
 
         Auth::login($user);
 

@@ -178,6 +178,38 @@ class VoucherService
     }
 
     /**
+     * Auto-claim every active voucher flagged "new_users_only" that this
+     * user qualifies for. Fired from RegisterController so welcome offers
+     * land in /vouchers immediately. Returns the number issued.
+     */
+    public function autoIssueWelcomeVouchers(User $user): int
+    {
+        $candidates = Voucher::active()
+            ->where('new_users_only', true)
+            ->get()
+            ->filter(fn (Voucher $v) => $v->isEligibleFor($user));
+
+        if ($candidates->isEmpty()) {
+            return 0;
+        }
+
+        $issued = 0;
+        foreach ($candidates as $voucher) {
+            try {
+                $this->claim($voucher, (int) $user->getKey());
+                $issued++;
+                $user->notify(new VoucherAvailableNotification($voucher));
+            } catch (\Throwable) {
+                // Per-user / per-voucher max_uses hits — silently skip so a
+                // single misconfigured voucher doesn't abort the signup.
+                continue;
+            }
+        }
+
+        return $issued;
+    }
+
+    /**
      * Broadcast a "new voucher" announcement to every eligible customer:
      * inbox row via VoucherAvailableNotification, plus a Web Push for
      * anyone who's subscribed. Customers with admin roles are skipped so

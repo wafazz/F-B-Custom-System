@@ -4,9 +4,12 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers\BranchesRelationManager;
+use App\Models\PushSubscription;
 use App\Models\User;
+use App\Services\Push\PushService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -145,6 +148,57 @@ class UserResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\Action::make('sendTestPush')
+                    ->label('Send test push')
+                    ->icon('heroicon-o-bell-alert')
+                    ->color('warning')
+                    ->modalHeading(fn (User $r) => "Send test push to {$r->name}")
+                    ->modalSubmitActionLabel('Send')
+                    ->visible(fn (User $r) => PushSubscription::query()->where('user_id', $r->getKey())->exists())
+                    ->form([
+                        Forms\Components\Placeholder::make('subscriptions_hint')
+                            ->label('Active devices')
+                            ->content(fn (User $r) => (string) PushSubscription::query()->where('user_id', $r->getKey())->count()),
+                        Forms\Components\TextInput::make('title')
+                            ->required()
+                            ->maxLength(80)
+                            ->default('Test from Star Coffee'),
+                        Forms\Components\Textarea::make('body')
+                            ->required()
+                            ->maxLength(160)
+                            ->rows(2)
+                            ->default('This is a test notification. If you can read this, your push setup works.'),
+                        Forms\Components\TextInput::make('url')
+                            ->label('Deep-link URL')
+                            ->default('/orders')
+                            ->helperText('Where the user lands when they tap the notification.'),
+                    ])
+                    ->action(function (User $r, array $data, PushService $push): void {
+                        if (! $push->isConfigured()) {
+                            Notification::make()
+                                ->title('Web push is not configured')
+                                ->body('Set VAPID keys in Settings → Web Push (or .env), then retry.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $sent = $push->sendToUser($r->getKey(), [
+                            'title' => $data['title'],
+                            'body' => $data['body'],
+                            'url' => $data['url'] ?: '/',
+                            'tag' => 'admin-test-'.$r->getKey(),
+                        ]);
+
+                        Notification::make()
+                            ->title($sent > 0 ? "Sent to {$sent} device(s)" : 'No devices reached')
+                            ->body($sent > 0
+                                ? 'Notification delivered to push service. Dead endpoints (if any) were pruned.'
+                                : 'All endpoints expired or rejected delivery. Subscriptions pruned.')
+                            ->{$sent > 0 ? 'success' : 'warning'}()
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('toggleBan')
                     ->label(fn (User $r) => $r->trashed() ? 'Unban' : 'Ban')
                     ->icon(fn (User $r) => $r->trashed() ? 'heroicon-o-lock-open' : 'heroicon-o-no-symbol')

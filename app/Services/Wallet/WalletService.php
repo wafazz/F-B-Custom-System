@@ -2,9 +2,11 @@
 
 namespace App\Services\Wallet;
 
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\WalletTopup;
+use App\Notifications\WalletTopupPaidNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -90,6 +92,9 @@ class WalletService
                 reference: $topup,
                 description: "Top-up #{$topup->id}",
             );
+
+            $user = User::query()->find($topup->user_id);
+            $user?->notify(new WalletTopupPaidNotification($topup));
         });
     }
 

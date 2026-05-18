@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\ReferralReward;
 use App\Models\User;
+use App\Notifications\ReferralBonusNotification;
 use App\Services\Loyalty\LoyaltyService;
 use Illuminate\Support\Facades\DB;
 
@@ -77,6 +78,13 @@ class ReferralService
                     'order_id' => $order->id,
                     'reason' => "welcome bonus — referred by {$referrer->name}",
                 ]);
+            }
+
+            if ($referrerPoints > 0) {
+                $referrer->notify(new ReferralBonusNotification('referrer', $referee->name, $referrerPoints));
+            }
+            if ($refereePoints > 0) {
+                $referee->notify(new ReferralBonusNotification('referee', $referrer->name, $refereePoints));
             }
 
             return $reward;

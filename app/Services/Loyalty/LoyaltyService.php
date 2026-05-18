@@ -7,6 +7,8 @@ use App\Models\CustomerTier;
 use App\Models\MembershipTier;
 use App\Models\Order;
 use App\Models\PointTransaction;
+use App\Models\User;
+use App\Notifications\TierUpgradedNotification;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -107,6 +109,11 @@ class LoyaltyService
                 'membership_tier_id' => $next instanceof MembershipTier ? $next->id : $row->membership_tier_id,
                 'achieved_at' => $changed ? now() : $row->achieved_at,
             ])->save();
+
+            if ($changed) {
+                $user = User::query()->find($userId);
+                $user?->notify(new TierUpgradedNotification($next));
+            }
 
             return $changed ? $next : null;
         });

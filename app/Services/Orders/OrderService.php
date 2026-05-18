@@ -279,10 +279,18 @@ class OrderService
                     reference: $order,
                     description: "Order {$order->number}",
                 );
+                // Wallet pays instantly, so the order is already paid before
+                // we leave place(). Mirror the Billplz webhook flow and
+                // auto-advance Pending → Preparing so kitchens see it
+                // immediately on /pos/queue without staff having to tap
+                // "mark paid" themselves.
                 $order->forceFill([
                     'payment_status' => PaymentStatus::Paid,
                     'paid_at' => now(),
+                    'status' => OrderStatus::Preparing,
+                    'preparing_at' => now(),
                 ])->save();
+                event(new OrderStatusChanged($order->fresh() ?? $order, OrderStatus::Pending->value));
             }
 
             foreach ($itemsToInsert as $row) {

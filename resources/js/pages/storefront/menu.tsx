@@ -411,7 +411,7 @@ export default function Menu({ branch }: Props) {
 
             {data && data.categories.length > 0 && (
                 <div className="-mx-4 flex items-start gap-0">
-                    <aside className="bg-muted/40 border-border sticky top-16 h-[calc(100dvh-13rem)] w-20 shrink-0 self-start overflow-y-auto overscroll-contain border-r pb-4 [-webkit-overflow-scrolling:touch]">
+                    <aside className="bg-muted/40 border-border sticky top-[72px] h-[calc(100dvh-72px-76px-env(safe-area-inset-bottom))] w-20 shrink-0 self-start overflow-y-auto overscroll-contain border-r [-webkit-overflow-scrolling:touch]">
                         <ul className="flex flex-col">
                             {sections.map((sec) => {
                                 const Icon = iconFor(sec.slug);

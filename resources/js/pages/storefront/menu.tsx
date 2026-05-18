@@ -5,9 +5,11 @@ import {
     Croissant,
     Flame,
     Leaf,
+    Search,
     Snowflake,
     Sparkles,
     Sun,
+    X,
     type LucideIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -128,6 +130,9 @@ export default function Menu({ branch }: Props) {
     const [initialDismissed, setInitialDismissed] = useState(false);
     const [userPicked, setUserPicked] = useState<number | null>(null);
     const [userPickedProduct, setUserPickedProduct] = useState<MenuProduct | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const normalisedQuery = searchQuery.trim().toLowerCase();
+    const isSearching = normalisedQuery.length > 0;
 
     const initialProductMatch: MenuProduct | null =
         data && initialProductId !== null && !initialDismissed
@@ -214,6 +219,21 @@ export default function Menu({ branch }: Props) {
               image: categoryThumb(c),
               products: c.products,
           }));
+
+    const displayedSections: Section[] = isSearching
+        ? sections
+              .map((s) => ({
+                  ...s,
+                  products: s.products.filter((p) =>
+                      p.name.toLowerCase().includes(normalisedQuery),
+                  ),
+              }))
+              .filter((s) => s.products.length > 0)
+        : sections;
+
+    const searchMatchCount = isSearching
+        ? displayedSections.reduce((sum, s) => sum + s.products.length, 0)
+        : 0;
 
     // ?category=foo can match a section directly, or a child whose parent
     // owns the section in hierarchical mode.
@@ -373,6 +393,27 @@ export default function Menu({ branch }: Props) {
             <Head title={`${branch.name} — Menu`} />
 
             <div className="-my-4 flex h-[calc(100vh-72px-96px-env(safe-area-inset-bottom))] flex-col">
+            <div className="border-border focus-within:border-amber-500 focus-within:ring-amber-500/20 mb-3 mt-3 flex shrink-0 items-center gap-2 rounded-full border bg-white px-3 py-2 shadow-sm focus-within:ring-2">
+                <Search className="text-muted-foreground size-4" />
+                <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search the menu…"
+                    aria-label="Search menu"
+                    className="placeholder:text-muted-foreground flex-1 bg-transparent text-sm outline-none"
+                />
+                {isSearching && (
+                    <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        aria-label="Clear search"
+                        className="text-muted-foreground -mr-1 rounded-full p-1 hover:text-amber-700"
+                    >
+                        <X className="size-3.5" />
+                    </button>
+                )}
+            </div>
             {isLoading && <MenuSkeleton />}
             {isError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -507,7 +548,17 @@ export default function Menu({ branch }: Props) {
                         }}
                         className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 [-webkit-overflow-scrolling:touch]"
                     >
-                        {sections.map((sec) => (
+                        {isSearching && displayedSections.length === 0 && (
+                            <div className="border-border bg-card text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
+                                No items match &ldquo;{searchQuery}&rdquo;.
+                            </div>
+                        )}
+                        {isSearching && displayedSections.length > 0 && (
+                            <p className="text-muted-foreground mb-3 text-xs">
+                                {searchMatchCount} match{searchMatchCount === 1 ? '' : 'es'} for &ldquo;{searchQuery}&rdquo;
+                            </p>
+                        )}
+                        {displayedSections.map((sec) => (
                             <section
                                 key={sec.id}
                                 ref={setSectionRef(sec.id)}

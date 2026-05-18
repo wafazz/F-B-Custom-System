@@ -359,7 +359,6 @@ export default function Menu({ branch }: Props) {
             <Head title={`${branch.name} — Menu`} />
 
             <div className="-my-4 flex h-[calc(100vh-72px-96px-env(safe-area-inset-bottom))] flex-col">
-            <div className="shrink-0 pt-4">
             {isLoading && <MenuSkeleton />}
             {isError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -373,7 +372,7 @@ export default function Menu({ branch }: Props) {
             )}
 
             {data && (data.combos?.length ?? 0) > 0 && (
-                <section className="mb-4">
+                <section className="shrink-0 mb-4">
                     <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
                         <Sparkles className="size-3.5 text-amber-500" /> Combos
                     </h2>
@@ -412,8 +411,6 @@ export default function Menu({ branch }: Props) {
                     </div>
                 </section>
             )}
-
-            </div>
 
             {data && data.categories.length > 0 && (
                 <div className="-mx-4 flex min-h-0 flex-1 gap-0">

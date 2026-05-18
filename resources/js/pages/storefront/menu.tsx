@@ -245,12 +245,27 @@ export default function Menu({ branch }: Props) {
         else sectionRefs.current.delete(id);
     };
 
+    /**
+     * Scroll the menu's right-column container only — scrollIntoView would
+     * also scroll the document body (visible because the body has natural
+     * overflow on mobile), leaving an empty pocket above the bottom nav.
+     */
+    const scrollSectionIntoColumn = (id: number, behavior: ScrollBehavior) => {
+        const el = sectionRefs.current.get(id);
+        const container = menuScrollRef.current;
+        if (!el || !container) return;
+        const top =
+            el.getBoundingClientRect().top -
+            container.getBoundingClientRect().top +
+            container.scrollTop;
+        container.scrollTo({ top, behavior });
+    };
+
     const scrollToCategory = (id: number) => {
         setUserPicked(id);
-        const el = sectionRefs.current.get(id);
-        if (!el) return;
+        if (!sectionRefs.current.get(id)) return;
         scrollingToRef.current = id;
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollSectionIntoColumn(id, 'smooth');
         window.setTimeout(() => {
             scrollingToRef.current = null;
         }, 700);
@@ -263,10 +278,9 @@ export default function Menu({ branch }: Props) {
         didInitialScrollRef.current = true;
         const id = slugSection.id;
         requestAnimationFrame(() => {
-            const el = sectionRefs.current.get(id);
-            if (!el) return;
+            if (!sectionRefs.current.get(id)) return;
             scrollingToRef.current = id;
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            scrollSectionIntoColumn(id, 'smooth');
             setUserPicked(id);
             window.setTimeout(() => {
                 scrollingToRef.current = null;

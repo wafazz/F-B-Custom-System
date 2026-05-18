@@ -1,23 +1,13 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Check, Copy, Tag, Ticket, TimerReset } from 'lucide-react';
+import { Check, Copy, Info, Tag, Ticket, TimerReset } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { VoucherDetailsSheet, type VoucherDetail } from '@/components/storefront/voucher-details-sheet';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cn } from '@/lib/utils';
 import type { Flash } from '@/types';
 
-interface Voucher {
-    id: number;
-    code: string;
-    name: string;
-    description: string | null;
-    banner_image: string | null;
-    discount_type: 'percentage' | 'fixed';
-    discount_value: number;
-    min_subtotal: number;
-    max_discount: number | null;
-    valid_until: string | null;
-}
+type Voucher = VoucherDetail;
 
 interface ClaimedVoucher {
     id: number;
@@ -36,6 +26,7 @@ export default function Vouchers({ available, claimed }: Props) {
     const flash = usePage<{ flash: Flash }>().props.flash;
     const [claiming, setClaiming] = useState<number | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
+    const [detailsVoucher, setDetailsVoucher] = useState<Voucher | null>(null);
 
     function handleClaim(voucher: Voucher) {
         setClaiming(voucher.id);
@@ -96,9 +87,15 @@ export default function Vouchers({ available, claimed }: Props) {
                                     key={c.id}
                                     className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
                                 >
-                                    <VoucherBanner image={c.voucher.banner_image} />
+                                    <VoucherBanner
+                                        image={c.voucher.banner_image}
+                                        onOpenDetails={() => setDetailsVoucher(c.voucher!)}
+                                    />
                                     <div className="p-4">
-                                    <VoucherBody voucher={c.voucher} />
+                                    <VoucherBody
+                                        voucher={c.voucher}
+                                        onOpenDetails={() => setDetailsVoucher(c.voucher!)}
+                                    />
                                     <button
                                         type="button"
                                         onClick={() => handleCopy(c.voucher!.code)}
@@ -140,9 +137,12 @@ export default function Vouchers({ available, claimed }: Props) {
                                 key={v.id}
                                 className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
                             >
-                                <VoucherBanner image={v.banner_image} />
+                                <VoucherBanner
+                                    image={v.banner_image}
+                                    onOpenDetails={() => setDetailsVoucher(v)}
+                                />
                                 <div className="p-4">
-                                    <VoucherBody voucher={v} />
+                                    <VoucherBody voucher={v} onOpenDetails={() => setDetailsVoucher(v)} />
                                     <Button
                                         onClick={() => handleClaim(v)}
                                         disabled={claiming === v.id}
@@ -180,25 +180,51 @@ export default function Vouchers({ available, claimed }: Props) {
                     </ul>
                 </section>
             )}
+
+            <VoucherDetailsSheet
+                voucher={detailsVoucher}
+                open={detailsVoucher !== null}
+                onOpenChange={(open) => !open && setDetailsVoucher(null)}
+            />
         </StorefrontLayout>
     );
 }
 
-function VoucherBanner({ image }: { image: string | null }) {
+function VoucherBanner({
+    image,
+    onOpenDetails,
+}: {
+    image: string | null;
+    onOpenDetails: () => void;
+}) {
     if (!image) return null;
     return (
-        <div className="bg-amber-100 aspect-[16/9] w-full overflow-hidden">
+        <button
+            type="button"
+            onClick={onOpenDetails}
+            aria-label="View voucher details"
+            className="bg-amber-100 group relative block aspect-[16/9] w-full overflow-hidden"
+        >
             <img
                 src={`/storage/${image}`}
                 alt=""
                 aria-hidden
-                className="size-full object-cover"
+                className="size-full object-cover transition-transform group-hover:scale-105"
             />
-        </div>
+            <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                <Info className="size-3" /> Details
+            </span>
+        </button>
     );
 }
 
-function VoucherBody({ voucher }: { voucher: Voucher }) {
+function VoucherBody({
+    voucher,
+    onOpenDetails,
+}: {
+    voucher: Voucher;
+    onOpenDetails?: () => void;
+}) {
     const discountLabel =
         voucher.discount_type === 'percentage'
             ? `${voucher.discount_value.toFixed(0)}% off`
@@ -219,7 +245,7 @@ function VoucherBody({ voucher }: { voucher: Voucher }) {
                     <Tag className="size-3" /> {discountLabel}
                 </div>
             </div>
-            <div className="text-muted-foreground mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+            <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
                 {voucher.min_subtotal > 0 && (
                     <span>Min RM{voucher.min_subtotal.toFixed(2)}</span>
                 )}
@@ -231,6 +257,15 @@ function VoucherBody({ voucher }: { voucher: Voucher }) {
                         <TimerReset className="size-3" />
                         Until {new Date(voucher.valid_until).toLocaleDateString()}
                     </span>
+                )}
+                {onOpenDetails && (
+                    <button
+                        type="button"
+                        onClick={onOpenDetails}
+                        className="ml-auto flex items-center gap-1 font-semibold text-amber-700 hover:underline"
+                    >
+                        <Info className="size-3" /> Details
+                    </button>
                 )}
             </div>
         </div>

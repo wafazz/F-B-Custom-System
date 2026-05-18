@@ -73,7 +73,55 @@ class VoucherClaimController extends Controller
             'discount_value' => (float) $voucher->discount_value,
             'min_subtotal' => (float) $voucher->min_subtotal,
             'max_discount' => $voucher->max_discount !== null ? (float) $voucher->max_discount : null,
+            'valid_from' => $voucher->valid_from?->toIso8601String(),
             'valid_until' => $voucher->valid_until?->toIso8601String(),
+            'max_uses_per_user' => $voucher->max_uses_per_user,
+            'tier_names' => $this->tierNames($voucher),
+            'birthday_months' => $voucher->birthday_months,
+            'product_names' => $this->productNames($voucher),
+            'combo_names' => $this->comboNames($voucher),
         ];
+    }
+
+    /** @return list<string> */
+    protected function tierNames(Voucher $voucher): array
+    {
+        if (empty($voucher->tier_ids)) {
+            return [];
+        }
+
+        return \App\Models\MembershipTier::query()
+            ->whereIn('id', $voucher->tier_ids)
+            ->orderBy('min_lifetime_spend')
+            ->pluck('name')
+            ->all();
+    }
+
+    /** @return list<string> */
+    protected function productNames(Voucher $voucher): array
+    {
+        if (empty($voucher->product_ids)) {
+            return [];
+        }
+
+        return \App\Models\Product::query()
+            ->whereIn('id', $voucher->product_ids)
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
+    }
+
+    /** @return list<string> */
+    protected function comboNames(Voucher $voucher): array
+    {
+        if (empty($voucher->combo_ids)) {
+            return [];
+        }
+
+        return \App\Models\Combo::query()
+            ->whereIn('id', $voucher->combo_ids)
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
     }
 }

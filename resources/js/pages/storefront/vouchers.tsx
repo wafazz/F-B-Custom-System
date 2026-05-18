@@ -235,11 +235,6 @@ function VoucherBody({
             <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                     <p className="text-sm font-semibold">{voucher.name}</p>
-                    {voucher.description && (
-                        <p className="text-muted-foreground mt-0.5 text-xs">
-                            {voucher.description}
-                        </p>
-                    )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
                     <Tag className="size-3" /> {discountLabel}

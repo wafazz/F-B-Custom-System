@@ -50,6 +50,9 @@ class PaymentServiceProvider extends ServiceProvider
                 'services.webpush.subject' => $repo->get('webpush.subject', config('services.webpush.subject')),
                 'services.webpush.public_key' => $repo->get('webpush.public_key', config('services.webpush.public_key')),
                 'services.webpush.private_key' => $repo->get('webpush.private_key', config('services.webpush.private_key')),
+                'services.brevo.api_key' => $repo->get('brevo.api_key', config('services.brevo.api_key')),
+                'services.brevo.sender_email' => $repo->get('brevo.sender_email', config('services.brevo.sender_email')),
+                'services.brevo.sender_name' => $repo->get('brevo.sender_name', config('services.brevo.sender_name')),
             ]);
         } catch (Throwable) {
             // Settings table may not exist yet (during initial migrate); fall back to env.

@@ -120,6 +120,38 @@ class Product extends Model
             });
     }
 
+    /**
+     * Products visible on a branch menu regardless of current stock level.
+     * The "Out of stock" watermark on the storefront depends on this — the
+     * card needs to render so the customer sees what's coming back, just
+     * with the order button disabled.
+     */
+    public function scopeVisibleAtBranch(Builder $query, int $branchId): Builder
+    {
+        return $query->where('status', 'active')
+            ->whereHas('branches', fn ($q) => $q
+                ->where('branches.id', $branchId)
+                ->where('branch_product.is_available', true));
+    }
+
+    /** True if the product is orderable at the branch right now (stock-aware). */
+    public function inStockAtBranch(int $branchId): bool
+    {
+        /** @var BranchStock|null $stock */
+        $stock = $this->stocks->firstWhere('branch_id', $branchId);
+        if ($stock === null) {
+            return true;
+        }
+        if (! $stock->is_available) {
+            return false;
+        }
+        if (! $stock->track_quantity) {
+            return true;
+        }
+
+        return $stock->quantity > 0;
+    }
+
     public function priceForBranch(int $branchId): float
     {
         $override = $this->branches

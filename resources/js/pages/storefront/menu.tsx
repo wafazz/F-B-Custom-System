@@ -89,6 +89,20 @@ export default function Menu({ branch }: Props) {
     const { data, isLoading, isError } = useBranchMenu(branch.id);
     const [unavailable, setUnavailable] = useState<Set<number>>(new Set());
 
+    // Seed the unavailable set from the API's in_stock flag every time the
+    // menu payload changes. Live broadcasts (BranchStockChanged) then update
+    // this in place via onStockChange.
+    useEffect(() => {
+        if (!data) return;
+        const next = new Set<number>();
+        for (const cat of data.categories) {
+            for (const p of cat.products) {
+                if (!p.in_stock) next.add(p.id);
+            }
+        }
+        setUnavailable(next);
+    }, [data]);
+
     const onStockChange = useCallback((event: StockChangedEvent) => {
         setUnavailable((prev) => {
             const next = new Set(prev);

@@ -27,7 +27,7 @@ class BranchMenuController extends Controller
         $channel = RequestChannel::detect($request);
         $channelColumn = RequestChannel::availableColumn($channel);
 
-        $products = Product::availableAtBranch($branch->id)
+        $products = Product::visibleAtBranch($branch->id)
             ->where($channelColumn, true)
             ->whereHas('category', fn ($q) => $q->where(Category::channelColumn($channel), true))
             ->with([
@@ -154,6 +154,7 @@ class BranchMenuController extends Controller
             'prep_time_minutes' => $product->prep_time_minutes,
             'is_featured' => $product->is_featured,
             'sst_applicable' => $product->sst_applicable,
+            'in_stock' => $product->inStockAtBranch($branchId),
             'modifier_groups' => $modifierGroups,
         ];
     }

@@ -30,6 +30,7 @@ export interface MenuProduct {
     prep_time_minutes: number;
     is_featured: boolean;
     sst_applicable: boolean;
+    in_stock: boolean;
     modifier_groups: MenuModifierGroup[];
 }
 

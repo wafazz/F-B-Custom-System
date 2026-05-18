@@ -376,6 +376,13 @@ class OrderService
                 );
                 $order->forceFill(['payment_status' => PaymentStatus::Refunded])->save();
             }
+            // Reverse any loyalty activity tied to this order — points earned
+            // on Completed get debited back, and any points the customer
+            // redeemed at checkout get credited back. No-op when neither
+            // happened (e.g. cancelled while still Pending).
+            if ($order->user_id !== null) {
+                $this->loyalty->refundFromOrder($order);
+            }
         }
 
         $fresh = $order->fresh() ?? $order;

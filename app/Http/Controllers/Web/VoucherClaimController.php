@@ -80,6 +80,7 @@ class VoucherClaimController extends Controller
             'birthday_months' => $voucher->birthday_months,
             'product_names' => $this->productNames($voucher),
             'combo_names' => $this->comboNames($voucher),
+            'new_users_only' => (bool) $voucher->new_users_only,
         ];
     }
 

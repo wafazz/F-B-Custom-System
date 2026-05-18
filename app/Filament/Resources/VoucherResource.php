@@ -86,6 +86,10 @@ class VoucherResource extends Resource
             Forms\Components\Section::make('Eligibility')
                 ->description('Restrict who can claim this voucher. Leave a field empty to allow everyone on that dimension.')
                 ->schema([
+                    Forms\Components\Toggle::make('new_users_only')
+                        ->label('New customers only')
+                        ->helperText('Only customers who have not placed any orders yet can claim. Great for welcome offers.')
+                        ->columnSpanFull(),
                     Forms\Components\Select::make('tier_ids')
                         ->label('Member tiers')
                         ->multiple()

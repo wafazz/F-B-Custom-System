@@ -204,6 +204,14 @@ class VoucherService
                 ->whereIn(DB::raw('MONTH(date_of_birth)'), $voucher->birthday_months);
         }
 
+        if ($voucher->new_users_only) {
+            $usersWithOrders = Order::query()
+                ->whereNotNull('user_id')
+                ->distinct()
+                ->pluck('user_id');
+            $query->whereNotIn('id', $usersWithOrders);
+        }
+
         $users = $query->get();
         if ($users->isEmpty()) {
             return 0;

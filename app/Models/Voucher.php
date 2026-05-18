@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property array<int, int>|null $birthday_months
  * @property array<int, int>|null $product_ids
  * @property array<int, int>|null $combo_ids
+ * @property bool $new_users_only
  * @property string $status
  */
 class Voucher extends Model
@@ -55,6 +56,7 @@ class Voucher extends Model
         'birthday_months',
         'product_ids',
         'combo_ids',
+        'new_users_only',
         'status',
     ];
 
@@ -71,6 +73,7 @@ class Voucher extends Model
             'birthday_months' => 'array',
             'product_ids' => 'array',
             'combo_ids' => 'array',
+            'new_users_only' => 'boolean',
         ];
     }
 
@@ -81,6 +84,13 @@ class Voucher extends Model
      */
     public function isEligibleFor(User $user): bool
     {
+        if ($this->new_users_only) {
+            $hasOrders = Order::query()->where('user_id', $user->getKey())->exists();
+            if ($hasOrders) {
+                return false;
+            }
+        }
+
         if (! empty($this->tier_ids)) {
             $tierRow = CustomerTier::query()->where('user_id', $user->getKey())->first();
             $userTierId = $tierRow?->membership_tier_id;

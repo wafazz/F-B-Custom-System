@@ -1,4 +1,4 @@
-import { CalendarDays, Cake, Coffee, Crown, Package, Tag, Ticket } from 'lucide-react';
+import { CalendarDays, Cake, Coffee, Crown, Package, Sparkles, Tag, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
@@ -24,6 +24,7 @@ export interface VoucherDetail {
     birthday_months: number[] | null;
     product_names: string[];
     combo_names: string[];
+    new_users_only: boolean;
 }
 
 interface Props {
@@ -148,6 +149,13 @@ function Body({
                         icon={<Package className="size-3.5" />}
                         label="Eligible combos"
                         value={voucher.combo_names.join(', ')}
+                    />
+                )}
+                {voucher.new_users_only && (
+                    <Row
+                        icon={<Sparkles className="size-3.5" />}
+                        label="Customer type"
+                        value="New customers only"
                     />
                 )}
             </dl>

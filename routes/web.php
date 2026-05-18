@@ -16,6 +16,7 @@ use App\Http\Controllers\Web\FavouriteController;
 use App\Http\Controllers\Web\InfoPagesController;
 use App\Http\Controllers\Web\LoyaltyController;
 use App\Http\Controllers\Web\NotificationController;
+use App\Http\Controllers\Web\PointRewardController;
 use App\Http\Controllers\Web\OrderPagesController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReferralController;
@@ -109,6 +110,11 @@ Route::middleware('auth')->group(function () {
     Route::post('favourites/{product}/toggle', [FavouriteController::class, 'toggle'])
         ->middleware('throttle:60,1')
         ->name('favourites.toggle');
+
+    Route::get('rewards', [PointRewardController::class, 'index'])->name('point-rewards.index');
+    Route::post('rewards/{pointReward}/claim', [PointRewardController::class, 'claim'])
+        ->middleware('throttle:20,1')
+        ->name('point-rewards.claim');
 
     Route::get('wallet', [WalletController::class, 'show'])->name('wallet');
     Route::post('wallet/topup', [WalletController::class, 'topup'])

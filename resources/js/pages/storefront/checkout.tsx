@@ -14,6 +14,7 @@ interface VoucherChip {
     discount_value: number;
     min_subtotal: number;
     max_discount: number | null;
+    product_ids: number[] | null;
 }
 
 interface SuggestionProduct {
@@ -63,7 +64,7 @@ export default function Checkout({
         : 0;
     const activeVoucher = voucherCode ? vouchers.find((v) => v.code === voucherCode) : null;
     const voucherDiscount = activeVoucher
-        ? computeVoucherDiscount(activeVoucher, subtotal)
+        ? computeVoucherDiscount(activeVoucher, subtotal, lines)
         : 0;
     const discountedSubtotal = Math.max(0, subtotal - voucherDiscount - tumblerSaving);
     const sst = branch.sst_enabled ? discountedSubtotal * (branch.sst_rate / 100) : 0;
@@ -468,14 +469,31 @@ export default function Checkout({
     );
 }
 
-function computeVoucherDiscount(voucher: VoucherChip, subtotal: number): number {
+function computeVoucherDiscount(
+    voucher: VoucherChip,
+    subtotal: number,
+    lines: Array<{ product_id: number | null; unit_price: number; quantity: number }>,
+): number {
     if (subtotal < voucher.min_subtotal) return 0;
+
+    let eligibleSubtotal = subtotal;
+    if (voucher.product_ids && voucher.product_ids.length > 0) {
+        const allowed = new Set(voucher.product_ids);
+        eligibleSubtotal = lines.reduce((sum, l) => {
+            if (l.product_id !== null && allowed.has(l.product_id)) {
+                return sum + l.unit_price * l.quantity;
+            }
+            return sum;
+        }, 0);
+        if (eligibleSubtotal <= 0) return 0;
+    }
+
     const raw =
         voucher.discount_type === 'percentage'
-            ? subtotal * (voucher.discount_value / 100)
+            ? eligibleSubtotal * (voucher.discount_value / 100)
             : voucher.discount_value;
     const capped = voucher.max_discount !== null ? Math.min(raw, voucher.max_discount) : raw;
-    return Math.min(Math.round(capped * 100) / 100, subtotal);
+    return Math.min(Math.round(capped * 100) / 100, eligibleSubtotal, subtotal);
 }
 
 function TypeCard({

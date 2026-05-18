@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\VoucherResource\Pages;
 use App\Models\Branch;
 use App\Models\MembershipTier;
+use App\Models\Product;
 use App\Models\Voucher;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -98,6 +99,14 @@ class VoucherResource extends Resource
                             12 => 'December',
                         ])
                         ->helperText('Only customers whose birthday falls in these months can claim.'),
+                    Forms\Components\Select::make('product_ids')
+                        ->label('Specific menu items')
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->options(fn () => Product::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->helperText('When set, the discount applies only to the subtotal of these items in the cart. Leave empty to apply to the whole order.')
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
         ]);

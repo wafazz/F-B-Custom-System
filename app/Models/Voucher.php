@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
  * @property array<int, int>|null $branch_ids
  * @property array<int, int>|null $tier_ids
  * @property array<int, int>|null $birthday_months
+ * @property array<int, int>|null $product_ids
  * @property string $status
  */
 class Voucher extends Model
@@ -49,6 +50,7 @@ class Voucher extends Model
         'branch_ids',
         'tier_ids',
         'birthday_months',
+        'product_ids',
         'status',
     ];
 
@@ -63,6 +65,7 @@ class Voucher extends Model
             'branch_ids' => 'array',
             'tier_ids' => 'array',
             'birthday_months' => 'array',
+            'product_ids' => 'array',
         ];
     }
 

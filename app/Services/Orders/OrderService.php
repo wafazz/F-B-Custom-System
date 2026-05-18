@@ -193,7 +193,14 @@ class OrderService
             $voucherDiscount = 0.0;
             if (! empty($payload->voucherCode)) {
                 $voucher = $this->vouchers->find($payload->voucherCode, $branch->id, $payload->userId);
-                $voucherDiscount = $this->vouchers->discountFor($voucher, $subtotal);
+                $voucherItems = array_map(
+                    fn (array $row) => [
+                        'product_id' => (int) $row['product']->getKey(),
+                        'line_total' => (float) $row['line_total'],
+                    ],
+                    $itemsToInsert,
+                );
+                $voucherDiscount = $this->vouchers->discountFor($voucher, $subtotal, $voucherItems);
             }
 
             // Loyalty redemption

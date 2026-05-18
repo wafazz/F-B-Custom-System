@@ -43,21 +43,48 @@ class VoucherService
         return $voucher;
     }
 
-    public function discountFor(Voucher $voucher, float $subtotal): float
+    /**
+     * Compute the discount amount this voucher gives against a cart.
+     *
+     * @param  list<array{product_id: int, line_total: float}>|null  $items
+     *         When set + voucher has product_ids, the discount applies only
+     *         to the subtotal of matching items. Otherwise it applies to
+     *         the full subtotal (current behaviour preserved).
+     */
+    public function discountFor(Voucher $voucher, float $subtotal, ?array $items = null): float
     {
         if ($subtotal < (float) $voucher->min_subtotal) {
             throw new RuntimeException(sprintf('Minimum subtotal RM%.2f required.', (float) $voucher->min_subtotal));
         }
 
+        $eligibleSubtotal = $subtotal;
+        if (! empty($voucher->product_ids)) {
+            if ($items === null) {
+                throw new RuntimeException('This voucher only applies to specific items.');
+            }
+            $allowed = $voucher->product_ids;
+            $eligibleSubtotal = 0.0;
+            foreach ($items as $row) {
+                if (in_array((int) $row['product_id'], $allowed, true)) {
+                    $eligibleSubtotal += (float) $row['line_total'];
+                }
+            }
+            if ($eligibleSubtotal <= 0) {
+                throw new RuntimeException('This voucher needs at least one of its eligible items in your cart.');
+            }
+        }
+
         $raw = $voucher->discount_type === 'percentage'
-            ? $subtotal * ((float) $voucher->discount_value / 100)
+            ? $eligibleSubtotal * ((float) $voucher->discount_value / 100)
             : (float) $voucher->discount_value;
 
         if ($voucher->max_discount !== null) {
             $raw = min($raw, (float) $voucher->max_discount);
         }
 
-        return min(round($raw, 2), $subtotal);
+        // Cap by eligible subtotal so a fixed-amount voucher can't exceed it,
+        // and by the overall subtotal so it can't exceed the order total.
+        return min(round($raw, 2), $eligibleSubtotal, $subtotal);
     }
 
     public function commit(Voucher $voucher, Order $order, float $discount): VoucherRedemption

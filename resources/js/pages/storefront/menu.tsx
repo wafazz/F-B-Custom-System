@@ -224,7 +224,6 @@ export default function Menu({ branch }: Props) {
 
     const sectionRefs = useRef<Map<number, HTMLElement>>(new Map());
     const scrollingToRef = useRef<number | null>(null);
-    const menuScrollRef = useRef<HTMLElement | null>(null);
 
     const setSectionRef = (id: number) => (el: HTMLElement | null) => {
         if (el) sectionRefs.current.set(id, el);
@@ -275,11 +274,7 @@ export default function Menu({ branch }: Props) {
                 const id = Number((top.target as HTMLElement).dataset.catId);
                 if (Number.isFinite(id)) setUserPicked(id);
             },
-            {
-                root: menuScrollRef.current,
-                rootMargin: '-30% 0px -60% 0px',
-                threshold: 0,
-            },
+            { rootMargin: '-30% 0px -60% 0px', threshold: 0 },
         );
         sectionRefs.current.forEach((el) => observer.observe(el));
         return () => observer.disconnect();
@@ -337,8 +332,6 @@ export default function Menu({ branch }: Props) {
         <StorefrontLayout hideStats>
             <Head title={`${branch.name} — Menu`} />
 
-            <div className="flex h-[calc(100dvh-200px-env(safe-area-inset-bottom))] flex-col">
-            <div className="shrink-0">
             <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                     <h1 className="text-xl font-bold">{branch.name}</h1>
@@ -416,11 +409,9 @@ export default function Menu({ branch }: Props) {
                 </section>
             )}
 
-            </div>
-
             {data && data.categories.length > 0 && (
-                <div className="-mx-4 flex min-h-0 flex-1 gap-0">
-                    <aside className="bg-muted/40 border-border w-20 shrink-0 overflow-y-auto overscroll-contain border-r pb-2 [-webkit-overflow-scrolling:touch]">
+                <div className="-mx-4 flex items-start gap-0">
+                    <aside className="bg-muted/40 border-border sticky top-[72px] h-[calc(100dvh-72px-96px-env(safe-area-inset-bottom))] w-20 shrink-0 self-start overflow-y-auto overscroll-contain border-r pb-2 [-webkit-overflow-scrolling:touch]">
                         <ul className="flex flex-col">
                             {sections.map((sec) => {
                                 const Icon = iconFor(sec.slug);
@@ -487,18 +478,13 @@ export default function Menu({ branch }: Props) {
                         </ul>
                     </aside>
 
-                    <main
-                        ref={(el) => {
-                            menuScrollRef.current = el;
-                        }}
-                        className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 [-webkit-overflow-scrolling:touch]"
-                    >
+                    <main className="min-w-0 flex-1 px-3 py-2">
                         {sections.map((sec) => (
                             <section
                                 key={sec.id}
                                 ref={setSectionRef(sec.id)}
                                 data-cat-id={sec.id}
-                                className="scroll-mt-2 mb-8 last:mb-4"
+                                className="scroll-mt-20 mb-8 last:mb-4"
                             >
                                 <div className="mb-3 flex items-center gap-2">
                                     <Coffee className="text-primary size-4" />
@@ -529,7 +515,6 @@ export default function Menu({ branch }: Props) {
                     </main>
                 </div>
             )}
-            </div>
 
             <ModifierSheet
                 product={selectedProduct}

@@ -71,6 +71,14 @@ export async function subscribe(vapidPublicKey: string): Promise<SubscribeResult
     }
 
     const json = sub.toJSON();
+    // Refresh XSRF-TOKEN cookie. In a freshly installed PWA the meta-tag
+    // CSRF can be stale and the cookie may never have been issued.
+    try {
+        await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
+    } catch {
+        /* non-fatal — we'll fall through and surface any 419 below */
+    }
+
     let res: Response;
     try {
         res = await fetch('/api/push/subscribe', {

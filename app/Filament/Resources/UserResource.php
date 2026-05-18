@@ -127,6 +127,11 @@ class UserResource extends Resource
                     ->counts('branches')
                     ->label('Branches')
                     ->badge(),
+                Tables\Columns\TextColumn::make('push_devices_count')
+                    ->label('Push devices')
+                    ->badge()
+                    ->color(fn ($state) => $state > 0 ? 'success' : 'gray')
+                    ->state(fn (User $r) => PushSubscription::query()->where('user_id', $r->getKey())->count()),
                 Tables\Columns\TextColumn::make('referral_code')
                     ->badge()
                     ->color('warning')
@@ -212,7 +217,11 @@ class UserResource extends Resource
                             ->implode("\n");
 
                         if ($report['failures'] === []) {
-                            $body = 'User has no push subscriptions yet. Ask them to tap "Enable" on the storefront banner first.';
+                            $globalCount = PushSubscription::query()->count();
+                            $body = "User has no push subscriptions yet. (System-wide total: {$globalCount}.) ";
+                            $body .= $globalCount > 0
+                                ? 'Someone has subscribed — toggle the "Push devices" column to find which account.'
+                                : 'Ask the customer to tap "Enable" on the storefront banner from inside the installed PWA.';
                         } else {
                             $allExpired = collect($report['failures'])->every(fn (array $f) => \in_array($f['status'], [404, 410], true));
                             $body = $reasons."\n\nCurrent VAPID public key: {$vapidHint}";

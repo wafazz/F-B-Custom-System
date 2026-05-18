@@ -393,7 +393,7 @@ export default function Menu({ branch }: Props) {
             )}
 
             {data && data.categories.length > 0 && (
-                <div className="-mx-4 flex items-start gap-0">
+                <div className="-mx-4 flex min-h-[calc(100dvh-184px-env(safe-area-inset-bottom))] items-start gap-0">
                     <aside className="bg-muted/40 border-border sticky top-[72px] h-[calc(100dvh-72px-96px-env(safe-area-inset-bottom))] w-20 shrink-0 self-start overflow-y-auto overscroll-contain border-r pb-2 [-webkit-overflow-scrolling:touch]">
                         <ul className="flex flex-col">
                             {sections.map((sec) => {

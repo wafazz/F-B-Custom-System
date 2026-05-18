@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Banknote, LogOut, ShoppingBag, Store, Tv } from 'lucide-react';
+import { Banknote, Gift, LogOut, ShoppingBag, Store, Tv } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +56,12 @@ export default function PosLayout({ children }: { children: ReactNode }) {
                         label="Stock"
                         icon={<Tv className="size-4" />}
                         active={path.startsWith('/pos/stock')}
+                    />
+                    <NavLink
+                        href="/pos/reward-pickups"
+                        label="Rewards"
+                        icon={<Gift className="size-4" />}
+                        active={path.startsWith('/pos/reward-pickups')}
                     />
                     <NavLink
                         href="/pos/shift"

@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Pos\PinLoginController;
 use App\Http\Controllers\Pos\QueueController as PosQueueController;
+use App\Http\Controllers\Pos\RewardPickupController as PosRewardPickupController;
 use App\Http\Controllers\Pos\ShiftController as PosShiftController;
 use App\Http\Controllers\Pos\StockController as PosStockController;
 use App\Http\Controllers\Pos\WalkInController;
@@ -144,6 +145,10 @@ Route::prefix('pos')->name('pos.')->group(function () {
         Route::post('walk-in', [WalkInController::class, 'store'])->name('walk-in.store');
         Route::get('customers/search', [WalkInController::class, 'searchCustomers'])->name('customers.search');
         Route::get('customer-display', [WalkInController::class, 'customerDisplay'])->name('customer-display');
+
+        Route::get('reward-pickups', [PosRewardPickupController::class, 'index'])->name('reward-pickups');
+        Route::get('reward-pickups/lookup', [PosRewardPickupController::class, 'lookup'])->name('reward-pickups.lookup');
+        Route::post('reward-pickups/{pickup}/fulfil', [PosRewardPickupController::class, 'fulfil'])->name('reward-pickups.fulfil');
 
         Route::get('shift', [PosShiftController::class, 'index'])->name('shift');
         Route::post('shift/open', [PosShiftController::class, 'open'])->name('shift.open');

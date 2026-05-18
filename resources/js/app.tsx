@@ -5,11 +5,16 @@ import { createInertiaApp, router, type ResolvedComponent } from '@inertiajs/rea
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { registerSW } from 'virtual:pwa-register';
 import { queryClient } from '@/lib/query-client';
 
 if ('serviceWorker' in navigator) {
-    registerSW({ immediate: true });
+    // Register from origin root so the SW scope is `/`, not `/build/`.
+    // The Laravel route at /sw.js streams public/build/sw.js with
+    // Service-Worker-Allowed: / so this works even though the source
+    // physically lives under /build/.
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
+        console.error('SW registration failed', err);
+    });
 }
 
 const isPwa =

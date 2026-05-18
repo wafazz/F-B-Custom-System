@@ -21,6 +21,28 @@ use App\Http\Controllers\Web\VoucherClaimController;
 use App\Http\Controllers\Web\WalletController;
 use Illuminate\Support\Facades\Route;
 
+// PWA assets at origin root so the service worker scope is `/`, not `/build/`.
+Route::get('/sw.js', function () {
+    $path = public_path('build/sw.js');
+    abort_unless(is_file($path), 404);
+
+    return response()->file($path, [
+        'Content-Type' => 'application/javascript',
+        'Service-Worker-Allowed' => '/',
+        'Cache-Control' => 'no-cache, must-revalidate',
+    ]);
+})->name('pwa.sw');
+
+Route::get('/manifest.webmanifest', function () {
+    $path = public_path('build/manifest.webmanifest');
+    abort_unless(is_file($path), 404);
+
+    return response()->file($path, [
+        'Content-Type' => 'application/manifest+json',
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->name('pwa.manifest');
+
 Route::get('/', [StorefrontController::class, 'splash'])->name('home');
 Route::get('/branches', [StorefrontController::class, 'selectBranch'])->name('branches.select');
 Route::get('/branches/{branch}', [StorefrontController::class, 'branchHome'])->name('branches.home');

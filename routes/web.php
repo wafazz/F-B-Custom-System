@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\BillplzWebhookController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Pos\PinLoginController;
 use App\Http\Controllers\Pos\QueueController as PosQueueController;
@@ -76,6 +77,16 @@ Route::middleware('guest')->group(function () {
 
     Route::get('register', [RegisterController::class, 'create'])->name('register');
     Route::post('register', [RegisterController::class, 'store'])->middleware('throttle:6,1');
+
+    // Password reset
+    Route::get('forgot-password', [PasswordResetController::class, 'requestForm'])->name('password.request');
+    Route::post('forgot-password', [PasswordResetController::class, 'sendLink'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+    Route::get('reset-password/{token}', [PasswordResetController::class, 'resetForm'])->name('password.reset');
+    Route::post('reset-password', [PasswordResetController::class, 'reset'])
+        ->middleware('throttle:6,1')
+        ->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {

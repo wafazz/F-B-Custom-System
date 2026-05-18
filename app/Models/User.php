@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Mail\BrevoMailer;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
@@ -95,5 +97,42 @@ class User extends Authenticatable implements FilamentUser
             'cashier',
             'barista',
         ]);
+    }
+
+    /**
+     * Send the password reset link via Brevo (HTTP API) instead of the default
+     * Laravel Notification mail driver. Falls back to logging if Brevo isn't
+     * configured so the flow doesn't crash in dev.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $url = url(route('password.reset', [
+            'token' => $token,
+            'email' => $this->getEmailForPasswordReset(),
+        ], false));
+
+        $mailer = app(BrevoMailer::class);
+        if (! $mailer->isConfigured()) {
+            Log::warning('Password reset email not sent — Brevo not configured.', [
+                'user_id' => $this->getKey(),
+                'url' => $url,
+            ]);
+
+            return;
+        }
+
+        $minutes = (int) config('auth.passwords.users.expire', 60);
+        $html = view('emails.password-reset', [
+            'name' => $this->name,
+            'url' => $url,
+            'minutes' => $minutes,
+        ])->render();
+
+        $mailer->send(
+            $this->getEmailForPasswordReset(),
+            'Reset your Star Coffee password',
+            $html,
+            "Reset your password: {$url}\n\nThis link expires in {$minutes} minutes.",
+        );
     }
 }

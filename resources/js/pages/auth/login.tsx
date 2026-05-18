@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import AuthLayout from '@/layouts/auth-layout';
 
@@ -7,6 +7,10 @@ export default function Login() {
         identifier: '',
         password: '',
     });
+
+    const { flash } = usePage().props as unknown as {
+        flash: { success?: string; error?: string };
+    };
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
@@ -18,6 +22,11 @@ export default function Login() {
     return (
         <AuthLayout title="Welcome back" description="Sign in to continue your coffee journey">
             <Head title="Login" />
+            {flash?.success && (
+                <div className="mb-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+                    {flash.success}
+                </div>
+            )}
             <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-1.5">
                     <label htmlFor="identifier" className="text-xs font-medium text-white/70">
@@ -37,9 +46,17 @@ export default function Login() {
                     )}
                 </div>
                 <div className="space-y-1.5">
-                    <label htmlFor="password" className="text-xs font-medium text-white/70">
-                        Password
-                    </label>
+                    <div className="flex items-center justify-between">
+                        <label htmlFor="password" className="text-xs font-medium text-white/70">
+                            Password
+                        </label>
+                        <Link
+                            href="/forgot-password"
+                            className="text-xs font-medium text-amber-400 hover:underline"
+                        >
+                            Forgot password?
+                        </Link>
+                    </div>
                     <input
                         id="password"
                         type="password"

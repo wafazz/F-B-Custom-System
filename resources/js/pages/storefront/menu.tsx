@@ -223,6 +223,7 @@ export default function Menu({ branch }: Props) {
 
     const sectionRefs = useRef<Map<number, HTMLElement>>(new Map());
     const scrollingToRef = useRef<number | null>(null);
+    const asideItemRefs = useRef<Map<number, HTMLElement>>(new Map());
 
     const setSectionRef = (id: number) => (el: HTMLElement | null) => {
         if (el) sectionRefs.current.set(id, el);
@@ -278,6 +279,13 @@ export default function Menu({ branch }: Props) {
         sectionRefs.current.forEach((el) => observer.observe(el));
         return () => observer.disconnect();
     }, [data, sidebarKey]);
+
+    useEffect(() => {
+        if (activeCategory === null) return;
+        const el = asideItemRefs.current.get(activeCategory);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, [activeCategory]);
 
     const { auth } = usePage().props as unknown as { auth: { user: { id: number } | null } };
 
@@ -396,7 +404,13 @@ export default function Menu({ branch }: Props) {
                                     null;
                                 const active = sec.id === activeCategory;
                                 return (
-                                    <li key={sec.id}>
+                                    <li
+                                        key={sec.id}
+                                        ref={(el) => {
+                                            if (el) asideItemRefs.current.set(sec.id, el);
+                                            else asideItemRefs.current.delete(sec.id);
+                                        }}
+                                    >
                                         <button
                                             type="button"
                                             onClick={() => scrollToCategory(sec.id)}

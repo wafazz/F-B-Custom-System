@@ -70,26 +70,36 @@ export async function subscribe(vapidPublicKey: string): Promise<SubscribeResult
         };
     }
 
-    const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
     const json = sub.toJSON();
-    const res = await fetch('/api/push/subscribe', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            'X-CSRF-TOKEN': csrf,
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-            endpoint: json.endpoint,
-            keys: json.keys,
-            content_encoding: 'aesgcm',
-        }),
-    });
+    let res: Response;
+    try {
+        res = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            credentials: 'same-origin',
+            redirect: 'error',
+            headers: csrfHeaders(),
+            body: JSON.stringify({
+                endpoint: json.endpoint,
+                keys: json.keys,
+                content_encoding: 'aesgcm',
+            }),
+        });
+    } catch (err) {
+        // redirect:'error' throws TypeError on unexpected 3xx (the pre-fix
+        // 419→back() path used to land here). Treat as api-error.
+        try {
+            await sub.unsubscribe();
+        } catch {
+            /* ignore */
+        }
+        return {
+            ok: false,
+            reason: 'api-error',
+            message: err instanceof Error ? err.message : String(err),
+        };
+    }
 
     if (!res.ok) {
-        // Roll back the browser-side subscription so the user can retry cleanly.
         try {
             await sub.unsubscribe();
         } catch {
@@ -105,16 +115,41 @@ export async function subscribe(vapidPublicKey: string): Promise<SubscribeResult
 export async function unsubscribe(): Promise<void> {
     const sub = await getCurrentSubscription();
     if (!sub) return;
-    const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
     await fetch('/api/push/subscribe', {
         method: 'DELETE',
         credentials: 'same-origin',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrf,
-            'X-Requested-With': 'XMLHttpRequest',
-        },
+        redirect: 'error',
+        headers: csrfHeaders(),
         body: JSON.stringify({ endpoint: sub.endpoint }),
     });
     await sub.unsubscribe();
+}
+
+function csrfHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+    };
+    // Laravel rotates XSRF-TOKEN on every response, so reading the cookie
+    // gives us the live token. Fall back to the meta tag which can be
+    // stale in a long-running PWA.
+    const cookieToken = readCookie('XSRF-TOKEN');
+    if (cookieToken) {
+        headers['X-XSRF-TOKEN'] = decodeURIComponent(cookieToken);
+    }
+    const metaToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+    if (metaToken) {
+        headers['X-CSRF-TOKEN'] = metaToken;
+    }
+    return headers;
+}
+
+function readCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const target = `${name}=`;
+    for (const part of document.cookie.split('; ')) {
+        if (part.startsWith(target)) return part.substring(target.length);
+    }
+    return null;
 }

@@ -32,6 +32,13 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($response->getStatusCode() === 419) {
+                // JSON / XHR clients (PWA fetch, mobile API) can't follow the
+                // back() redirect and end up reporting a false 200. Return a
+                // real 419 JSON so the client can surface the failure.
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['message' => 'CSRF token mismatch.'], 419);
+                }
+
                 return back()->with(['error' => 'The page expired, please try again.']);
             }
 

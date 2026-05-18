@@ -46,8 +46,8 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
     const path = typeof window !== 'undefined' ? window.location.pathname : url;
 
     return (
-        <div className="bg-background text-card-foreground flex min-h-screen flex-col pt-[72px] pb-24">
-            <header className="bg-background fixed inset-x-0 top-0 z-30">
+        <div className="bg-background text-card-foreground flex min-h-screen flex-col pb-24">
+            <header className="bg-background sticky top-0 z-30">
                 {headerSlot ? (
                     <div className="mx-auto w-full max-w-3xl px-4 py-3">{headerSlot}</div>
                 ) : (

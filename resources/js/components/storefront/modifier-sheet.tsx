@@ -204,14 +204,19 @@ function SheetBody({
                                                     )
                                                 }
                                                 className={cn(
-                                                    'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors',
+                                                    'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
                                                     checked
-                                                        ? 'border-primary bg-primary/5 text-primary'
+                                                        ? 'border-[#3D1F1A] bg-[#3D1F1A] text-white shadow-sm'
                                                         : 'border-border hover:bg-secondary/50',
                                                 )}
                                             >
                                                 <span>{option.name}</span>
-                                                <span className="text-muted-foreground text-xs">
+                                                <span
+                                                    className={cn(
+                                                        'text-xs',
+                                                        checked ? 'text-white/80' : 'text-muted-foreground',
+                                                    )}
+                                                >
                                                     {Number(option.price_delta) > 0
                                                         ? `+RM${Number(option.price_delta).toFixed(2)}`
                                                         : '—'}

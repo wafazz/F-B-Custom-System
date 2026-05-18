@@ -24,20 +24,41 @@ export function PushToggle() {
                 window.alert('Push notifications are not configured on this server yet.');
                 return;
             }
-            const sub = await subscribe(public_key);
-            if (sub === null) {
-                if (Notification.permission === 'denied') {
+            const result = await subscribe(public_key);
+            if (result.ok) {
+                setActive(true);
+                return;
+            }
+            switch (result.reason) {
+                case 'permission-denied':
                     window.alert(
                         "Notifications are blocked. Click the 🔒 padlock in the URL bar → Site settings → Notifications → Allow, then try again.",
                     );
-                } else {
+                    break;
+                case 'permission-default':
                     window.alert(
                         "Notification permission wasn't granted. Look for a small bell icon near the URL bar and click 'Allow', then try again.",
                     );
-                }
-                return;
+                    break;
+                case 'api-error':
+                    if (result.status === 401) {
+                        window.alert('Please log in first, then enable notifications.');
+                    } else {
+                        window.alert(
+                            `Couldn't save your subscription (HTTP ${result.status ?? '?'}). ${result.message ?? ''}`.trim(),
+                        );
+                    }
+                    break;
+                case 'browser-subscribe-failed':
+                    window.alert(`Browser refused the subscription: ${result.message ?? 'unknown error'}`);
+                    break;
+                case 'unsupported':
+                case 'no-registration':
+                    window.alert(
+                        'This browser/device does not support web push. On iPhone, install the app to your Home Screen first (Share → Add to Home Screen).',
+                    );
+                    break;
             }
-            setActive(true);
         } finally {
             setBusy(false);
         }

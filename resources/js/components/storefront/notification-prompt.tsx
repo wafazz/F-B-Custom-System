@@ -55,14 +55,41 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
                 dismiss();
                 return;
             }
-            const sub = await subscribe(public_key);
-            if (sub === null && Notification.permission === 'denied') {
-                window.alert(
-                    "Notifications are blocked. Open Site settings → Notifications → Allow, then try again.",
-                );
+            const result = await subscribe(public_key);
+            if (result.ok) {
+                dismiss();
+                return;
             }
-            // Whether granted, denied, or dismissed-in-OS-prompt, hide the banner.
-            dismiss();
+            switch (result.reason) {
+                case 'permission-denied':
+                    window.alert(
+                        "Notifications are blocked. Open Site settings → Notifications → Allow, then try again.",
+                    );
+                    dismiss();
+                    break;
+                case 'permission-default':
+                    // User dismissed the OS prompt without choosing — leave banner so they can try again.
+                    break;
+                case 'api-error':
+                    if (result.status === 401) {
+                        window.alert('Please log in first, then enable notifications.');
+                    } else {
+                        window.alert(
+                            `Couldn't save your subscription (HTTP ${result.status ?? '?'}). ${result.message ?? ''}`.trim(),
+                        );
+                    }
+                    break;
+                case 'browser-subscribe-failed':
+                    window.alert(`Browser refused the subscription: ${result.message ?? 'unknown error'}`);
+                    break;
+                case 'unsupported':
+                case 'no-registration':
+                    window.alert(
+                        'This browser/device does not support web push. On iPhone, install the app to your Home Screen first (Share → Add to Home Screen).',
+                    );
+                    dismiss();
+                    break;
+            }
         } finally {
             setBusy(false);
         }

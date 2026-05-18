@@ -40,6 +40,16 @@ class VoucherResource extends Resource
                         ->afterStateUpdated(fn ($state, callable $set) => $set('code', strtoupper((string) $state))),
                     Forms\Components\TextInput::make('name')->required(),
                     Forms\Components\Textarea::make('description')->columnSpanFull()->rows(2),
+                    Forms\Components\FileUpload::make('banner_image')
+                        ->label('Banner image')
+                        ->image()
+                        ->imageEditor()
+                        ->imageResizeMode('cover')
+                        ->imageCropAspectRatio('16:9')
+                        ->directory('vouchers/banners')
+                        ->maxSize(2048)
+                        ->helperText('Shown above the voucher card on the storefront. 16:9 works best (e.g. 1280×720). Max 2 MB.')
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
 
@@ -125,6 +135,7 @@ class VoucherResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('banner_image')->label('Banner')->size(56)->square(),
                 Tables\Columns\TextColumn::make('code')->searchable()->copyable()->badge()->color('primary'),
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('discount_type')->badge(),

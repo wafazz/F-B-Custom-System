@@ -68,6 +68,7 @@ class VoucherClaimController extends Controller
             'code' => $voucher->code,
             'name' => $voucher->name,
             'description' => $voucher->description,
+            'banner_image' => $voucher->banner_image,
             'discount_type' => $voucher->discount_type,
             'discount_value' => (float) $voucher->discount_value,
             'min_subtotal' => (float) $voucher->min_subtotal,

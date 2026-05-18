@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  * @property string $code
  * @property string $name
  * @property string|null $description
+ * @property string|null $banner_image
  * @property string $discount_type
  * @property string $discount_value
  * @property string $min_subtotal
@@ -39,6 +40,7 @@ class Voucher extends Model
         'code',
         'name',
         'description',
+        'banner_image',
         'discount_type',
         'discount_value',
         'min_subtotal',

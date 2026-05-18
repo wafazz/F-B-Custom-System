@@ -11,6 +11,7 @@ interface Voucher {
     code: string;
     name: string;
     description: string | null;
+    banner_image: string | null;
     discount_type: 'percentage' | 'fixed';
     discount_value: number;
     min_subtotal: number;
@@ -93,8 +94,10 @@ export default function Vouchers({ available, claimed }: Props) {
                             c.voucher ? (
                                 <li
                                     key={c.id}
-                                    className="border-border bg-card rounded-xl border p-4 shadow-sm"
+                                    className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
                                 >
+                                    <VoucherBanner image={c.voucher.banner_image} />
+                                    <div className="p-4">
                                     <VoucherBody voucher={c.voucher} />
                                     <button
                                         type="button"
@@ -116,6 +119,7 @@ export default function Vouchers({ available, claimed }: Props) {
                                             </>
                                         )}
                                     </button>
+                                    </div>
                                 </li>
                             ) : null,
                         )}
@@ -134,16 +138,19 @@ export default function Vouchers({ available, claimed }: Props) {
                         {available.map((v) => (
                             <li
                                 key={v.id}
-                                className="border-border bg-card rounded-xl border p-4 shadow-sm"
+                                className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
                             >
-                                <VoucherBody voucher={v} />
-                                <Button
-                                    onClick={() => handleClaim(v)}
-                                    disabled={claiming === v.id}
-                                    className="mt-3 w-full"
-                                >
-                                    {claiming === v.id ? 'Claiming…' : 'Claim'}
-                                </Button>
+                                <VoucherBanner image={v.banner_image} />
+                                <div className="p-4">
+                                    <VoucherBody voucher={v} />
+                                    <Button
+                                        onClick={() => handleClaim(v)}
+                                        disabled={claiming === v.id}
+                                        className="mt-3 w-full"
+                                    >
+                                        {claiming === v.id ? 'Claiming…' : 'Claim'}
+                                    </Button>
+                                </div>
                             </li>
                         ))}
                     </ul>
@@ -174,6 +181,20 @@ export default function Vouchers({ available, claimed }: Props) {
                 </section>
             )}
         </StorefrontLayout>
+    );
+}
+
+function VoucherBanner({ image }: { image: string | null }) {
+    if (!image) return null;
+    return (
+        <div className="bg-amber-100 aspect-[16/9] w-full overflow-hidden">
+            <img
+                src={`/storage/${image}`}
+                alt=""
+                aria-hidden
+                className="size-full object-cover"
+            />
+        </div>
     );
 }
 

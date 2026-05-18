@@ -177,11 +177,18 @@ function DefaultGreetingHeader({
                             <span
                                 aria-label={branchIsOpen ? 'Open now' : 'Closed'}
                                 title={branchIsOpen ? 'Open now' : 'Closed'}
-                                className={cn(
-                                    'inline-block size-2 shrink-0 rounded-full ring-2 ring-white/80',
-                                    branchIsOpen ? 'bg-emerald-500' : 'bg-red-500',
+                                className="relative inline-flex size-2 shrink-0"
+                            >
+                                {branchIsOpen && (
+                                    <span className="absolute inset-0 inline-flex animate-ping rounded-full bg-emerald-500 opacity-75" />
                                 )}
-                            />
+                                <span
+                                    className={cn(
+                                        'relative inline-flex size-2 rounded-full ring-2 ring-white/80',
+                                        branchIsOpen ? 'animate-pulse bg-emerald-500' : 'bg-red-500',
+                                    )}
+                                />
+                            </span>
                         )}
                         <ChevronDown className="text-muted-foreground size-3 shrink-0" />
                     </Link>

@@ -1,4 +1,6 @@
-import { Coffee } from 'lucide-react';
+import { router, usePage } from '@inertiajs/react';
+import { Coffee, Heart } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { MenuProduct } from '@/types/menu';
 import { cn } from '@/lib/utils';
@@ -10,6 +12,49 @@ interface Props {
 }
 
 export function ProductCard({ product, onSelect, isAvailable = true }: Props) {
+    const { auth } = usePage().props as unknown as {
+        auth: { user: { name: string } | null; favourite_product_ids: number[] };
+    };
+    const initial = auth.user !== null && (auth.favourite_product_ids ?? []).includes(product.id);
+    const [favourited, setFavourited] = useState(initial);
+    const [pending, setPending] = useState(false);
+
+    async function handleFavouriteToggle(e: React.MouseEvent) {
+        e.stopPropagation();
+        if (!auth.user) {
+            router.visit(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+        }
+        if (pending) return;
+        setPending(true);
+        // Optimistic flip
+        setFavourited((f) => !f);
+        try {
+            const csrf =
+                document.cookie
+                    .split('; ')
+                    .find((c) => c.startsWith('XSRF-TOKEN='))
+                    ?.substring('XSRF-TOKEN='.length) ?? '';
+            const res = await fetch(`/favourites/${product.id}/toggle`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                redirect: 'error',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': decodeURIComponent(csrf),
+                },
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = (await res.json()) as { favourited: boolean };
+            setFavourited(data.favourited);
+        } catch {
+            setFavourited((f) => !f); // revert
+        } finally {
+            setPending(false);
+        }
+    }
     return (
         <button
             type="button"
@@ -51,6 +96,29 @@ export function ProductCard({ product, onSelect, isAvailable = true }: Props) {
                         Featured
                     </Badge>
                 )}
+                <span
+                    role="button"
+                    tabIndex={isAvailable ? 0 : -1}
+                    aria-label={favourited ? 'Remove from favourites' : 'Add to favourites'}
+                    onClick={handleFavouriteToggle}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleFavouriteToggle(e as unknown as React.MouseEvent);
+                        }
+                    }}
+                    className={cn(
+                        'absolute right-1.5 top-1.5 flex size-7 cursor-pointer items-center justify-center rounded-full bg-white/85 shadow backdrop-blur-sm transition-all',
+                        favourited
+                            ? 'text-rose-500 hover:bg-white'
+                            : 'text-neutral-500 hover:text-rose-500 hover:bg-white',
+                        pending && 'opacity-60',
+                    )}
+                >
+                    <Heart
+                        className={cn('size-3.5', favourited && 'fill-rose-500')}
+                    />
+                </span>
                 {!isAvailable && (
                     <>
                         <div

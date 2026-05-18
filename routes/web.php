@@ -12,6 +12,7 @@ use App\Http\Controllers\Pos\StockController as PosStockController;
 use App\Http\Controllers\Pos\WalkInController;
 use App\Http\Controllers\Web\AccountController;
 use App\Http\Controllers\Web\DisplayController;
+use App\Http\Controllers\Web\FavouriteController;
 use App\Http\Controllers\Web\InfoPagesController;
 use App\Http\Controllers\Web\LoyaltyController;
 use App\Http\Controllers\Web\NotificationController;
@@ -103,6 +104,11 @@ Route::middleware('auth')->group(function () {
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
+    Route::get('favourites', [FavouriteController::class, 'index'])->name('favourites.index');
+    Route::post('favourites/{product}/toggle', [FavouriteController::class, 'toggle'])
+        ->middleware('throttle:60,1')
+        ->name('favourites.toggle');
 
     Route::get('wallet', [WalletController::class, 'show'])->name('wallet');
     Route::post('wallet/topup', [WalletController::class, 'topup'])

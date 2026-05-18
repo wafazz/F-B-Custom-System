@@ -31,6 +31,13 @@ class HandleInertiaRequests extends Middleware
 
                     return $user !== null ? (int) $user->unreadNotifications()->count() : 0;
                 },
+                'favourite_product_ids' => function () use ($request) {
+                    $user = $request->user();
+
+                    return $user !== null
+                        ? $user->favouriteProducts()->pluck('products.id')->map(fn ($id) => (int) $id)->all()
+                        : [];
+                },
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

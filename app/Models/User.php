@@ -86,6 +86,14 @@ class User extends Authenticatable implements FilamentUser
             ->withTimestamps();
     }
 
+    /** @return BelongsToMany<Product, $this> */
+    public function favouriteProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'user_favourites')
+            ->withTimestamps()
+            ->orderByDesc('user_favourites.created_at');
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasAnyRole([

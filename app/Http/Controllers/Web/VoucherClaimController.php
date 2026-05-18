@@ -16,7 +16,8 @@ class VoucherClaimController extends Controller
 {
     public function index(Request $request): Response
     {
-        $userId = (int) $request->user()->getKey();
+        $user = $request->user();
+        $userId = (int) $user->getKey();
 
         $claims = VoucherClaim::query()
             ->where('user_id', $userId)
@@ -29,7 +30,8 @@ class VoucherClaimController extends Controller
         $available = Voucher::active()
             ->whereNotIn('id', $claimedIds)
             ->orderBy('valid_until')
-            ->get();
+            ->get()
+            ->filter(fn (Voucher $v) => $v->isEligibleFor($user));
 
         return Inertia::render('storefront/vouchers', [
             'available' => $available->map(fn (Voucher $v) => $this->presentVoucher($v))->values(),

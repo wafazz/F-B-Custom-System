@@ -99,6 +99,11 @@ class VoucherService
             throw new RuntimeException('Voucher has reached its usage cap.');
         }
 
+        $user = \App\Models\User::query()->find($userId);
+        if ($user === null || ! $voucher->isEligibleFor($user)) {
+            throw new RuntimeException('This voucher is not available for your account.');
+        }
+
         return DB::transaction(function () use ($voucher, $userId) {
             $existing = VoucherClaim::query()
                 ->where('voucher_id', $voucher->id)

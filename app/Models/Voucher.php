@@ -24,6 +24,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $valid_from
  * @property Carbon|null $valid_until
  * @property array<int, int>|null $branch_ids
+ * @property array<int, int>|null $tier_ids
+ * @property array<int, int>|null $birthday_months
  * @property string $status
  */
 class Voucher extends Model
@@ -45,6 +47,8 @@ class Voucher extends Model
         'valid_from',
         'valid_until',
         'branch_ids',
+        'tier_ids',
+        'birthday_months',
         'status',
     ];
 
@@ -57,7 +61,38 @@ class Voucher extends Model
             'valid_from' => 'datetime',
             'valid_until' => 'datetime',
             'branch_ids' => 'array',
+            'tier_ids' => 'array',
+            'birthday_months' => 'array',
         ];
+    }
+
+    /**
+     * Is this voucher targeted to the given customer? Returns true when all
+     * configured eligibility rules pass (tier_ids + birthday_months). null
+     * arrays mean "no restriction on this dimension."
+     */
+    public function isEligibleFor(User $user): bool
+    {
+        if (! empty($this->tier_ids)) {
+            $tierRow = CustomerTier::query()->where('user_id', $user->getKey())->first();
+            $userTierId = $tierRow?->membership_tier_id;
+            if ($userTierId === null || ! in_array((int) $userTierId, $this->tier_ids, true)) {
+                return false;
+            }
+        }
+
+        if (! empty($this->birthday_months)) {
+            $dob = $user->date_of_birth;
+            if ($dob === null) {
+                return false;
+            }
+            $month = (int) Carbon::parse($dob)->format('n');
+            if (! in_array($month, $this->birthday_months, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** @return HasMany<VoucherRedemption, $this> */

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\VoucherResource\Pages;
 use App\Models\Branch;
+use App\Models\MembershipTier;
 use App\Models\Voucher;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -67,6 +68,36 @@ class VoucherResource extends Resource
                         ->options(['active' => 'Active', 'paused' => 'Paused', 'expired' => 'Expired'])
                         ->default('active')
                         ->required(),
+                ])
+                ->columns(2),
+
+            Forms\Components\Section::make('Eligibility')
+                ->description('Restrict who can claim this voucher. Leave a field empty to allow everyone on that dimension.')
+                ->schema([
+                    Forms\Components\Select::make('tier_ids')
+                        ->label('Member tiers')
+                        ->multiple()
+                        ->preload()
+                        ->options(fn () => MembershipTier::query()->orderBy('min_lifetime_spend')->pluck('name', 'id')->all())
+                        ->helperText('Only members of these tiers can claim this voucher.'),
+                    Forms\Components\Select::make('birthday_months')
+                        ->label('Birthday months')
+                        ->multiple()
+                        ->options([
+                            1 => 'January',
+                            2 => 'February',
+                            3 => 'March',
+                            4 => 'April',
+                            5 => 'May',
+                            6 => 'June',
+                            7 => 'July',
+                            8 => 'August',
+                            9 => 'September',
+                            10 => 'October',
+                            11 => 'November',
+                            12 => 'December',
+                        ])
+                        ->helperText('Only customers whose birthday falls in these months can claim.'),
                 ])
                 ->columns(2),
         ]);

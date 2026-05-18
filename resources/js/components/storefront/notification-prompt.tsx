@@ -1,5 +1,6 @@
-import { Bell, X } from 'lucide-react';
+import { Bell, Share, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { isIOS, isStandalone } from '@/lib/platform';
 import { pushSupported, subscribe } from '@/lib/push';
 
 const DISMISS_KEY = 'sc.notif-prompt.dismissed-at';
@@ -19,22 +20,30 @@ interface Props {
     isAuthenticated: boolean;
 }
 
+type Mode = 'enable' | 'ios-install';
+
 export function NotificationPrompt({ isAuthenticated }: Props) {
-    const [show, setShow] = useState(false);
+    const [mode, setMode] = useState<Mode | null>(null);
     const [busy, setBusy] = useState(false);
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        if (!pushSupported()) return;
         if (recentlyDismissed()) return;
+
+        // iOS Safari outside of standalone PWA can't actually subscribe even
+        // though PushManager appears defined. Surface install instructions.
+        if (isIOS() && !isStandalone()) {
+            setMode('ios-install');
+            return;
+        }
+
+        if (!pushSupported()) return;
         if (typeof Notification === 'undefined') return;
-        // Only prompt when the user has never decided. If they've denied we
-        // can't re-prompt from JS; if they've already granted we don't need to.
         if (Notification.permission !== 'default') return;
-        setShow(true);
+        setMode('enable');
     }, [isAuthenticated]);
 
-    if (!show) return null;
+    if (mode === null) return null;
 
     function dismiss() {
         try {
@@ -42,7 +51,7 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
         } catch {
             // private mode / quota — ignore
         }
-        setShow(false);
+        setMode(null);
     }
 
     async function handleEnable() {
@@ -68,7 +77,6 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
                     dismiss();
                     break;
                 case 'permission-default':
-                    // User dismissed the OS prompt without choosing — leave banner so they can try again.
                     break;
                 case 'api-error':
                     if (result.status === 401) {
@@ -93,6 +101,36 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
         } finally {
             setBusy(false);
         }
+    }
+
+    if (mode === 'ios-install') {
+        return (
+            <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3.5 shadow-sm">
+                <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+                    <Share className="size-4" />
+                </div>
+                <div className="flex-1">
+                    <p className="text-card-foreground text-sm font-bold leading-tight">
+                        Install Star Coffee to get order alerts
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs leading-snug">
+                        On iPhone, push notifications only work after adding the app to your Home
+                        Screen. Tap the <span className="font-semibold">Share</span> icon{' '}
+                        <Share className="inline size-3 translate-y-0.5" /> in Safari, then{' '}
+                        <span className="font-semibold">Add to Home Screen</span>, and reopen from
+                        there.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={dismiss}
+                    aria-label="Dismiss"
+                    className="text-muted-foreground -m-1 rounded-full p-1 hover:text-amber-900"
+                >
+                    <X className="size-4" />
+                </button>
+            </div>
+        );
     }
 
     return (

@@ -154,7 +154,6 @@ class UserResource extends Resource
                     ->color('warning')
                     ->modalHeading(fn (User $r) => "Send test push to {$r->name}")
                     ->modalSubmitActionLabel('Send')
-                    ->visible(fn (User $r) => PushSubscription::query()->where('user_id', $r->getKey())->exists())
                     ->form([
                         Forms\Components\Placeholder::make('subscriptions_hint')
                             ->label('Active devices')

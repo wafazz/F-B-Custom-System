@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property array<int, int>|null $product_ids
  * @property array<int, int>|null $combo_ids
  * @property bool $new_users_only
+ * @property int|null $points_cost
  * @property string $status
  */
 class Voucher extends Model
@@ -57,6 +58,7 @@ class Voucher extends Model
         'product_ids',
         'combo_ids',
         'new_users_only',
+        'points_cost',
         'status',
     ];
 

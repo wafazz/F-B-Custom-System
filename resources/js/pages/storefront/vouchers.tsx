@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Check, Copy, Info, Tag, Ticket, TimerReset } from 'lucide-react';
+import { Check, Copy, Info, Sparkles, Tag, Ticket, TimerReset } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { VoucherDetailsSheet, type VoucherDetail } from '@/components/storefront/voucher-details-sheet';
@@ -20,9 +20,10 @@ interface ClaimedVoucher {
 interface Props {
     available: Voucher[];
     claimed: ClaimedVoucher[];
+    points_balance: number;
 }
 
-export default function Vouchers({ available, claimed }: Props) {
+export default function Vouchers({ available, claimed, points_balance }: Props) {
     const flash = usePage<{ flash: Flash }>().props.flash;
     const [claiming, setClaiming] = useState<number | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
@@ -124,37 +125,91 @@ export default function Vouchers({ available, claimed }: Props) {
                 )}
             </section>
 
+            {(() => {
+                const rewards = available.filter((v) => v.points_cost !== null && v.points_cost > 0);
+                if (rewards.length === 0) return null;
+                return (
+                    <section className="mb-6">
+                        <div className="mb-2 flex items-baseline justify-between gap-2">
+                            <h2 className="text-sm font-semibold flex items-center gap-1.5">
+                                <Sparkles className="size-3.5 text-amber-500" /> Redeem rewards
+                            </h2>
+                            <span className="text-muted-foreground text-[11px]">
+                                Balance: <strong className="text-amber-700">{points_balance.toLocaleString()} pts</strong>
+                            </span>
+                        </div>
+                        <ul className="space-y-2">
+                            {rewards.map((v) => {
+                                const cost = v.points_cost ?? 0;
+                                const canAfford = points_balance >= cost;
+                                return (
+                                    <li
+                                        key={v.id}
+                                        className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
+                                    >
+                                        <VoucherBanner
+                                            image={v.banner_image}
+                                            onOpenDetails={() => setDetailsVoucher(v)}
+                                        />
+                                        <div className="p-4">
+                                            <VoucherBody voucher={v} onOpenDetails={() => setDetailsVoucher(v)} />
+                                            <Button
+                                                onClick={() => handleClaim(v)}
+                                                disabled={claiming === v.id || !canAfford}
+                                                className="mt-3 w-full"
+                                            >
+                                                {claiming === v.id
+                                                    ? 'Redeeming…'
+                                                    : canAfford
+                                                      ? `Redeem · ${cost.toLocaleString()} pts`
+                                                      : `Need ${(cost - points_balance).toLocaleString()} more pts`}
+                                            </Button>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </section>
+                );
+            })()}
+
             <section className="mb-6">
                 <h2 className="mb-2 text-sm font-semibold">Available to claim</h2>
-                {available.length === 0 ? (
-                    <div className="border-border bg-card text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
-                        No active promos right now. Check back soon!
-                    </div>
-                ) : (
-                    <ul className="space-y-2">
-                        {available.map((v) => (
-                            <li
-                                key={v.id}
-                                className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
-                            >
-                                <VoucherBanner
-                                    image={v.banner_image}
-                                    onOpenDetails={() => setDetailsVoucher(v)}
-                                />
-                                <div className="p-4">
-                                    <VoucherBody voucher={v} onOpenDetails={() => setDetailsVoucher(v)} />
-                                    <Button
-                                        onClick={() => handleClaim(v)}
-                                        disabled={claiming === v.id}
-                                        className="mt-3 w-full"
-                                    >
-                                        {claiming === v.id ? 'Claiming…' : 'Claim'}
-                                    </Button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
+                {(() => {
+                    const free = available.filter((v) => v.points_cost === null || v.points_cost === 0);
+                    if (free.length === 0) {
+                        return (
+                            <div className="border-border bg-card text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
+                                No active promos right now. Check back soon!
+                            </div>
+                        );
+                    }
+                    return (
+                        <ul className="space-y-2">
+                            {free.map((v) => (
+                                <li
+                                    key={v.id}
+                                    className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
+                                >
+                                    <VoucherBanner
+                                        image={v.banner_image}
+                                        onOpenDetails={() => setDetailsVoucher(v)}
+                                    />
+                                    <div className="p-4">
+                                        <VoucherBody voucher={v} onOpenDetails={() => setDetailsVoucher(v)} />
+                                        <Button
+                                            onClick={() => handleClaim(v)}
+                                            disabled={claiming === v.id}
+                                            className="mt-3 w-full"
+                                        >
+                                            {claiming === v.id ? 'Claiming…' : 'Claim'}
+                                        </Button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    );
+                })()}
             </section>
 
             {used.length > 0 && (

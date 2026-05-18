@@ -25,6 +25,7 @@ export interface VoucherDetail {
     product_names: string[];
     combo_names: string[];
     new_users_only: boolean;
+    points_cost: number | null;
 }
 
 interface Props {

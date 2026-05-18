@@ -62,6 +62,13 @@ class VoucherResource extends Resource
                     Forms\Components\TextInput::make('discount_value')->numeric()->required()->step(0.01),
                     Forms\Components\TextInput::make('min_subtotal')->numeric()->prefix('RM')->default(0),
                     Forms\Components\TextInput::make('max_discount')->numeric()->prefix('RM')->helperText('Cap for percentage vouchers'),
+                    Forms\Components\TextInput::make('points_cost')
+                        ->label('Points cost (rewards catalogue)')
+                        ->numeric()
+                        ->minValue(1)
+                        ->suffix('pts')
+                        ->helperText('Set to make this a rewards-catalogue redemption — customers pay this many loyalty points to claim. Leave blank for a free voucher.')
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
 

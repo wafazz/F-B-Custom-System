@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Voucher;
 use App\Models\VoucherClaim;
+use App\Services\Loyalty\LoyaltyService;
 use App\Services\Vouchers\VoucherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ class VoucherClaimController extends Controller
                     'voucher' => $voucher ? $this->presentVoucher($voucher) : null,
                 ];
             })->values(),
+            'points_balance' => (int) app(LoyaltyService::class)->balance($userId),
         ]);
     }
 
@@ -81,6 +83,7 @@ class VoucherClaimController extends Controller
             'product_names' => $this->productNames($voucher),
             'combo_names' => $this->comboNames($voucher),
             'new_users_only' => (bool) $voucher->new_users_only,
+            'points_cost' => $voucher->points_cost,
         ];
     }
 

@@ -9,6 +9,7 @@ use App\Models\Voucher;
 use App\Models\VoucherClaim;
 use App\Models\VoucherRedemption;
 use App\Notifications\VoucherAvailableNotification;
+use App\Services\Loyalty\LoyaltyService;
 use App\Services\Push\PushService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -16,6 +17,10 @@ use RuntimeException;
 
 class VoucherService
 {
+    public function __construct(protected LoyaltyService $loyalty)
+    {
+    }
+
     /** Resolve and validate a voucher; throws if invalid. */
     public function find(string $code, int $branchId, ?int $userId = null): Voucher
     {
@@ -147,6 +152,15 @@ class VoucherService
             throw new RuntimeException('This voucher is not available for your account.');
         }
 
+        // Points-cost vouchers behave like a rewards catalogue: customer
+        // pays in loyalty points instead of getting it for free.
+        if ($voucher->points_cost !== null && $voucher->points_cost > 0) {
+            $balance = $this->loyalty->balance($userId);
+            if ($balance < $voucher->points_cost) {
+                throw new RuntimeException("You need {$voucher->points_cost} pts to redeem this reward. (Current balance: {$balance})");
+            }
+        }
+
         return DB::transaction(function () use ($voucher, $userId) {
             $existing = VoucherClaim::query()
                 ->where('voucher_id', $voucher->id)
@@ -167,6 +181,22 @@ class VoucherService
                 ->count();
             if ($userUses >= $voucher->max_uses_per_user) {
                 throw new RuntimeException('You have already used this voucher.');
+            }
+
+            // Burn the loyalty points for a rewards-catalogue voucher. We
+            // re-check the balance inside the transaction so two simultaneous
+            // taps can't drain the same balance twice.
+            if ($voucher->points_cost !== null && $voucher->points_cost > 0) {
+                $balanceNow = $this->loyalty->balance($userId);
+                if ($balanceNow < $voucher->points_cost) {
+                    throw new RuntimeException('Insufficient points to redeem this reward.');
+                }
+                $this->loyalty->redeem(
+                    $userId,
+                    (int) $voucher->points_cost,
+                    null,
+                    "redeem reward {$voucher->code}",
+                );
             }
 
             return VoucherClaim::create([

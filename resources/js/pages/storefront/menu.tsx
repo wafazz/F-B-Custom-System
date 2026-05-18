@@ -14,7 +14,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ComboSheet } from '@/components/storefront/combo-sheet';
 import { ModifierSheet } from '@/components/storefront/modifier-sheet';
 import { ProductCard } from '@/components/storefront/product-card';
-import { Badge } from '@/components/ui/badge';
 import { useBranchMenu, useStockSubscription } from '@/hooks/use-branch-menu';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { useBranchStore } from '@/stores/branch-store';
@@ -331,30 +330,6 @@ export default function Menu({ branch }: Props) {
     return (
         <StorefrontLayout hideStats>
             <Head title={`${branch.name} — Menu`} />
-
-            <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                    <h1 className="text-xl font-bold">{branch.name}</h1>
-                    <p className="text-muted-foreground text-xs">{branch.code}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1 text-xs">
-                    <Badge variant={branch.is_open_now ? 'success' : 'danger'}>
-                        {branch.is_open_now ? 'Open now' : 'Closed'}
-                    </Badge>
-                    {branch.sst_enabled && (
-                        <span className="text-muted-foreground">
-                            +{branch.sst_rate.toFixed(0)}% SST
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            {!branch.is_open_now && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-                    ⏰ <strong>This branch is currently closed.</strong> Feel free to browse the
-                    menu — online ordering will resume during operating hours.
-                </div>
-            )}
 
             {isLoading && <MenuSkeleton />}
             {isError && (

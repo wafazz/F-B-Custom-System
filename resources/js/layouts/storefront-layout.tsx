@@ -56,6 +56,7 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
                         branchName={branch?.name ?? null}
                         branchLogo={branch?.logo ?? null}
                         branchId={branch?.id ?? null}
+                        branchIsOpen={branch?.is_open_now ?? null}
                     />
                 )}
             </header>
@@ -130,11 +131,13 @@ function DefaultGreetingHeader({
     branchName,
     branchLogo,
     branchId,
+    branchIsOpen,
 }: {
     userName: string | null;
     branchName: string | null;
     branchLogo: string | null;
     branchId: number | null;
+    branchIsOpen: boolean | null;
 }) {
     const greeting = greetingFor(new Date().getHours());
     const name = firstName(userName);
@@ -170,6 +173,16 @@ function DefaultGreetingHeader({
                                 ? `Star Coffee — ${branchName.replace(/^star coffee[\s—-]*/i, '')}`
                                 : 'Choose a branch'}
                         </span>
+                        {branchName && branchIsOpen !== null && (
+                            <span
+                                aria-label={branchIsOpen ? 'Open now' : 'Closed'}
+                                title={branchIsOpen ? 'Open now' : 'Closed'}
+                                className={cn(
+                                    'inline-block size-2 shrink-0 rounded-full ring-2 ring-white/80',
+                                    branchIsOpen ? 'bg-emerald-500' : 'bg-red-500',
+                                )}
+                            />
+                        )}
                         <ChevronDown className="text-muted-foreground size-3 shrink-0" />
                     </Link>
                 </div>

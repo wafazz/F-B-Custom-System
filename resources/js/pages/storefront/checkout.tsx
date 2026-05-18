@@ -1,5 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { Coffee, CreditCard, Hash, MessageSquare, Package, ShoppingBag, Sparkles, Store, Tag, Wallet as WalletIcon, X } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Coffee, CreditCard, Hash, MessageSquare, Package, ShoppingBag, Sparkles, Star, Store, Tag, Wallet as WalletIcon, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -50,6 +50,12 @@ export default function Checkout({
     const cartBranchId = useCartStore((s) => s.branchId);
     const NOTES_LIMIT = 200;
 
+    const { customer_stats } = usePage().props as unknown as {
+        customer_stats: { tier: { name: string; multiplier: number } | null } | null;
+    };
+    const earnMultiplier = customer_stats?.tier?.multiplier ?? 1;
+    const tierName = customer_stats?.tier?.name ?? null;
+
     const [orderType, setOrderType] = useState<OrderType>('pickup');
     const [tableNumber, setTableNumber] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gateway');
@@ -74,6 +80,10 @@ export default function Checkout({
         : 0;
     const total = discountedSubtotal + sst + serviceCharge;
     const hasTumblerEligibleItem = lines.some((l) => (l.tumbler_discount ?? 0) > 0);
+    // Loyalty math mirrors LoyaltyService::earnFromOrder — 1pt per RM of the
+    // (pre-discount) subtotal, multiplied by tier, floored. Only previewed
+    // for authenticated customers because guests don't accrue points.
+    const estimatedPoints = is_authenticated ? Math.floor(subtotal * earnMultiplier) : 0;
 
     function togglePackaging(key: string) {
         setPackaging((current) =>
@@ -449,6 +459,25 @@ export default function Checkout({
                     <span>Total</span>
                     <span className="text-primary">RM{total.toFixed(2)}</span>
                 </div>
+                {estimatedPoints > 0 && (
+                    <div className="-mx-4 -mb-4 mt-1 flex items-center justify-between gap-3 rounded-b-xl bg-amber-50 px-4 py-2.5 text-xs">
+                        <span className="flex items-center gap-1.5 text-amber-900">
+                            <Star className="size-3.5 fill-amber-400 text-amber-500" />
+                            <span>
+                                You'll earn <strong>{estimatedPoints.toLocaleString()} pts</strong>
+                                {tierName && earnMultiplier > 1 && (
+                                    <span className="text-amber-700/80">
+                                        {' '}
+                                        ({earnMultiplier}× {tierName})
+                                    </span>
+                                )}
+                            </span>
+                        </span>
+                        <span className="text-amber-700/70 text-[10px]">
+                            on payment
+                        </span>
+                    </div>
+                )}
             </section>
 
             {!branch.is_open_now && (

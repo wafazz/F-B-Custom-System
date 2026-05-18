@@ -80,6 +80,7 @@ class OrderPagesController extends Controller
                     'min_subtotal' => (float) $v->min_subtotal,
                     'max_discount' => $v->max_discount !== null ? (float) $v->max_discount : null,
                     'product_ids' => $v->product_ids,
+                    'combo_ids' => $v->combo_ids,
                 ];
             }
         }

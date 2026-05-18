@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\VoucherResource\Pages;
 use App\Models\Branch;
+use App\Models\Combo;
 use App\Models\MembershipTier;
 use App\Models\Product;
 use App\Models\Voucher;
@@ -105,7 +106,15 @@ class VoucherResource extends Resource
                         ->searchable()
                         ->preload()
                         ->options(fn () => Product::query()->orderBy('name')->pluck('name', 'id')->all())
-                        ->helperText('When set, the discount applies only to the subtotal of these items in the cart. Leave empty to apply to the whole order.')
+                        ->helperText('When set, the discount applies only to the subtotal of these items in the cart.')
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('combo_ids')
+                        ->label('Specific combos')
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->options(fn () => Combo::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->helperText('Combine with menu items above (matching is OR) or use alone. Leave both empty to apply to the whole order.')
                         ->columnSpanFull(),
                 ])
                 ->columns(2),

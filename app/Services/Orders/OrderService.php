@@ -195,7 +195,10 @@ class OrderService
                 $voucher = $this->vouchers->find($payload->voucherCode, $branch->id, $payload->userId);
                 $voucherItems = array_map(
                     fn (array $row) => [
-                        'product_id' => (int) $row['product']->getKey(),
+                        'product_id' => isset($row['product'])
+                            ? (int) $row['product']->getKey() : null,
+                        'combo_id' => isset($row['combo'])
+                            ? (int) $row['combo']->getKey() : null,
                         'line_total' => (float) $row['line_total'],
                     ],
                     $itemsToInsert,

@@ -15,6 +15,7 @@ interface VoucherChip {
     min_subtotal: number;
     max_discount: number | null;
     product_ids: number[] | null;
+    combo_ids: number[] | null;
 }
 
 interface SuggestionProduct {
@@ -472,18 +473,28 @@ export default function Checkout({
 function computeVoucherDiscount(
     voucher: VoucherChip,
     subtotal: number,
-    lines: Array<{ product_id: number | null; unit_price: number; quantity: number }>,
+    lines: Array<{
+        product_id: number | null;
+        combo_id?: number | null;
+        unit_price: number;
+        quantity: number;
+    }>,
 ): number {
     if (subtotal < voucher.min_subtotal) return 0;
 
+    const productScope = voucher.product_ids ?? [];
+    const comboScope = voucher.combo_ids ?? [];
+    const hasScope = productScope.length > 0 || comboScope.length > 0;
+
     let eligibleSubtotal = subtotal;
-    if (voucher.product_ids && voucher.product_ids.length > 0) {
-        const allowed = new Set(voucher.product_ids);
+    if (hasScope) {
+        const allowedProducts = new Set(productScope);
+        const allowedCombos = new Set(comboScope);
         eligibleSubtotal = lines.reduce((sum, l) => {
-            if (l.product_id !== null && allowed.has(l.product_id)) {
-                return sum + l.unit_price * l.quantity;
-            }
-            return sum;
+            const productHit = l.product_id !== null && allowedProducts.has(l.product_id);
+            const comboHit =
+                l.combo_id !== null && l.combo_id !== undefined && allowedCombos.has(l.combo_id);
+            return productHit || comboHit ? sum + l.unit_price * l.quantity : sum;
         }, 0);
         if (eligibleSubtotal <= 0) return 0;
     }

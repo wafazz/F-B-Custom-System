@@ -46,10 +46,11 @@ class VoucherService
     /**
      * Compute the discount amount this voucher gives against a cart.
      *
-     * @param  list<array{product_id: int, line_total: float}>|null  $items
-     *         When set + voucher has product_ids, the discount applies only
-     *         to the subtotal of matching items. Otherwise it applies to
-     *         the full subtotal (current behaviour preserved).
+     * @param  list<array{product_id: int|null, combo_id: int|null, line_total: float}>|null  $items
+     *         When set + voucher has product_ids or combo_ids, the discount
+     *         applies only to the subtotal of matching lines (a line matches
+     *         when its product_id is in voucher.product_ids OR its combo_id
+     *         is in voucher.combo_ids). Otherwise applies to full subtotal.
      */
     public function discountFor(Voucher $voucher, float $subtotal, ?array $items = null): float
     {
@@ -58,14 +59,23 @@ class VoucherService
         }
 
         $eligibleSubtotal = $subtotal;
-        if (! empty($voucher->product_ids)) {
+        $productScope = $voucher->product_ids;
+        $comboScope = $voucher->combo_ids;
+        $hasScope = ! empty($productScope) || ! empty($comboScope);
+
+        if ($hasScope) {
             if ($items === null) {
                 throw new RuntimeException('This voucher only applies to specific items.');
             }
-            $allowed = $voucher->product_ids;
             $eligibleSubtotal = 0.0;
             foreach ($items as $row) {
-                if (in_array((int) $row['product_id'], $allowed, true)) {
+                $productHit = ! empty($productScope)
+                    && $row['product_id'] !== null
+                    && in_array((int) $row['product_id'], $productScope, true);
+                $comboHit = ! empty($comboScope)
+                    && $row['combo_id'] !== null
+                    && in_array((int) $row['combo_id'], $comboScope, true);
+                if ($productHit || $comboHit) {
                     $eligibleSubtotal += (float) $row['line_total'];
                 }
             }

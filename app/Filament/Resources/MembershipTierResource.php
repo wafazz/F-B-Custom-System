@@ -42,7 +42,19 @@ class MembershipTierResource extends Resource
                 Tables\Columns\TextColumn::make('earn_multiplier')
                     ->formatStateUsing(fn ($state) => $state.'×')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('memberships_count')->counts('memberships')->label('Members')->badge(),
+                Tables\Columns\TextColumn::make('memberships_count')
+                    ->counts('memberships')
+                    ->label('Members')
+                    ->badge()
+                    ->tooltip('Click to view members')
+                    ->action(
+                        Tables\Actions\Action::make('viewMembers')
+                            ->modalHeading(fn (MembershipTier $record) => "{$record->name} members")
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Close')
+                            ->modalContent(fn (MembershipTier $record) => view('filament.tier-members', ['tier' => $record]))
+                            ->modalWidth('3xl')
+                    ),
                 Tables\Columns\TextColumn::make('sort_order')->sortable(),
             ])
             ->defaultSort('min_lifetime_spend')

@@ -183,19 +183,49 @@ class UserResource extends Resource
                             return;
                         }
 
-                        $sent = $push->sendToUser($r->getKey(), [
+                        $report = $push->sendToUser($r->getKey(), [
                             'title' => $data['title'],
                             'body' => $data['body'],
                             'url' => $data['url'] ?: '/',
                             'tag' => 'admin-test-'.$r->getKey(),
                         ]);
 
+                        if ($report['sent'] > 0) {
+                            Notification::make()
+                                ->title("Sent to {$report['sent']} device(s)")
+                                ->body($report['pruned'] > 0
+                                    ? "{$report['pruned']} dead endpoint(s) were pruned along the way."
+                                    : 'Notification handed off to the push service.')
+                                ->success()
+                                ->send();
+
+                            return;
+                        }
+
+                        // No deliveries — surface why so admin can debug.
+                        $vapid = (string) config('services.webpush.public_key');
+                        $vapidHint = $vapid !== '' ? substr($vapid, 0, 12).'…'.substr($vapid, -6) : '(empty)';
+                        $reasons = collect($report['failures'])
+                            ->map(fn (array $f) => '['.($f['status'] ?? '—').'] '.$f['reason'])
+                            ->unique()
+                            ->take(3)
+                            ->implode("\n");
+
+                        if ($report['failures'] === []) {
+                            $body = 'User has no push subscriptions yet. Ask them to tap "Enable" on the storefront banner first.';
+                        } else {
+                            $allExpired = collect($report['failures'])->every(fn (array $f) => \in_array($f['status'], [404, 410], true));
+                            $body = $reasons."\n\nCurrent VAPID public key: {$vapidHint}";
+                            if ($allExpired) {
+                                $body .= "\n\nAll endpoints returned 410/404. Common cause: VAPID keys changed after the customer subscribed. They need to re-enable notifications on their device.";
+                            }
+                        }
+
                         Notification::make()
-                            ->title($sent > 0 ? "Sent to {$sent} device(s)" : 'No devices reached')
-                            ->body($sent > 0
-                                ? 'Notification delivered to push service. Dead endpoints (if any) were pruned.'
-                                : 'All endpoints expired or rejected delivery. Subscriptions pruned.')
-                            ->{$sent > 0 ? 'success' : 'warning'}()
+                            ->title('No devices reached ('.\count($report['failures']).' failed)')
+                            ->body($body)
+                            ->warning()
+                            ->persistent()
                             ->send();
                     }),
                 Tables\Actions\Action::make('toggleBan')

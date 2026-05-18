@@ -14,7 +14,12 @@ export function pushSupported(): boolean {
 
 export async function getActiveRegistration(): Promise<ServiceWorkerRegistration | null> {
     if (!pushSupported()) return null;
-    return (await navigator.serviceWorker.getRegistration()) ?? null;
+    // Race navigator.serviceWorker.ready (waits for activation) against a 5s
+    // timeout so the UI doesn't hang if the SW never installs.
+    return Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+    ]);
 }
 
 export async function getCurrentSubscription(): Promise<PushSubscription | null> {

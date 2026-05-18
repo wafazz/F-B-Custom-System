@@ -1,6 +1,7 @@
 import { Bell, BellOff } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { isIOS } from '@/lib/platform';
 import { pushSupported, subscribe, unsubscribe } from '@/lib/push';
 
 /**
@@ -53,9 +54,15 @@ export function PushToggle() {
                     window.alert(`Browser refused the subscription: ${result.message ?? 'unknown error'}`);
                     break;
                 case 'unsupported':
+                    window.alert(
+                        isIOS()
+                            ? 'Push notifications require iOS 16.4 or newer. Please update iOS in Settings → General → Software Update.'
+                            : 'This browser does not support web push notifications.',
+                    );
+                    break;
                 case 'no-registration':
                     window.alert(
-                        'This browser/device does not support web push. On iPhone, install the app to your Home Screen first (Share → Add to Home Screen).',
+                        'The app is still starting up — please close and reopen Star Coffee from your Home Screen, then try again.',
                     );
                     break;
             }

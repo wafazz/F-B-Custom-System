@@ -91,11 +91,17 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
                     window.alert(`Browser refused the subscription: ${result.message ?? 'unknown error'}`);
                     break;
                 case 'unsupported':
-                case 'no-registration':
                     window.alert(
-                        'This browser/device does not support web push. On iPhone, install the app to your Home Screen first (Share → Add to Home Screen).',
+                        isIOS()
+                            ? 'Push notifications require iOS 16.4 or newer. Please update iOS in Settings → General → Software Update.'
+                            : 'This browser does not support web push notifications.',
                     );
                     dismiss();
+                    break;
+                case 'no-registration':
+                    window.alert(
+                        'The app is still starting up — please close and reopen Star Coffee from your Home Screen, then try again.',
+                    );
                     break;
             }
         } finally {

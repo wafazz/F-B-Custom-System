@@ -18,6 +18,7 @@ use App\Http\Controllers\Web\InfoPagesController;
 use App\Http\Controllers\Web\LoyaltyController;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PointRewardController;
+use App\Http\Controllers\Web\SpinController;
 use App\Http\Controllers\Web\OrderPagesController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReferralController;
@@ -116,6 +117,11 @@ Route::middleware('auth')->group(function () {
     Route::post('rewards/{pointReward}/redeem', [PointRewardController::class, 'redeem'])
         ->middleware('throttle:20,1')
         ->name('point-rewards.redeem');
+
+    Route::get('spin', [SpinController::class, 'index'])->name('spin.index');
+    Route::post('spin', [SpinController::class, 'spin'])
+        ->middleware('throttle:10,1')
+        ->name('spin.spin');
 
     Route::get('wallet', [WalletController::class, 'show'])->name('wallet');
     Route::post('wallet/topup', [WalletController::class, 'topup'])

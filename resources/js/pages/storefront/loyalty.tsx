@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Gift, Heart, Ticket, Trophy } from 'lucide-react';
+import { Gift, Heart, Sparkles, Ticket, Trophy } from 'lucide-react';
 import { PushToggle } from '@/components/storefront/push-toggle';
 import StorefrontLayout from '@/layouts/storefront-layout';
 
@@ -46,6 +46,12 @@ export default function Loyalty({
                     <div className="hidden sm:inline-flex">
                         <PushToggle />
                     </div>
+                    <Link
+                        href="/spin"
+                        className="bg-fuchsia-500/10 text-fuchsia-600 hover:bg-fuchsia-500/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                    >
+                        <Sparkles className="size-3.5" /> Spin
+                    </Link>
                     <Link
                         href="/rewards"
                         className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"

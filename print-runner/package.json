@@ -1,0 +1,14 @@
+{
+  "name": "star-coffee-print-runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Subscribes to a Star Coffee branch's print channel via Reverb and forwards receipts to the WiFi thermal printer.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pusher-js": "^8.4.0"
+  }
+}

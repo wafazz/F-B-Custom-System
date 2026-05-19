@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Pos;
 
 use App\Enums\OrderStatus;
+use App\Events\PrintReceiptRequested;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Order;
@@ -49,6 +50,17 @@ class QueueController extends Controller
                 'event' => 'order.status.changed',
             ],
         ]);
+    }
+
+    /** Fire a broadcast that the branch print runner forwards to the WiFi printer. */
+    public function printReceipt(Request $request, Order $order): RedirectResponse
+    {
+        $branchId = (int) $request->session()->get('pos.branch_id');
+        abort_unless($order->branch_id === $branchId, 403);
+
+        PrintReceiptRequested::dispatch($order);
+
+        return back()->with('success', 'Receipt sent to printer');
     }
 
     public function transition(Request $request, Order $order, OrderService $service): RedirectResponse

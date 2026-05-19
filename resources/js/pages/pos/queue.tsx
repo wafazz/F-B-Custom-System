@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Bell, Clock, ChefHat, Check, MapPin, Printer, ShoppingBag } from 'lucide-react';
+import { Bell, Clock, ChefHat, Check, MapPin, Printer, Receipt, ShoppingBag } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import PosLayout from '@/layouts/pos-layout';
 import { getEcho } from '@/lib/echo';
@@ -167,6 +167,14 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
         });
     }
 
+    function printReceipt(orderId: number) {
+        router.post(
+            `/pos/orders/${orderId}/print-receipt`,
+            {},
+            { preserveScroll: true },
+        );
+    }
+
     function cancel(orderId: number) {
         if (!window.confirm('Cancel this order?')) return;
         router.post(
@@ -279,6 +287,14 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
                                             className="rounded-md bg-slate-800 px-2 py-1.5 text-slate-300 hover:bg-slate-700"
                                         >
                                             <Printer className="size-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => printReceipt(order.id)}
+                                            title="Print receipt (WiFi printer)"
+                                            className="rounded-md bg-slate-800 px-2 py-1.5 text-slate-300 hover:bg-slate-700"
+                                        >
+                                            <Receipt className="size-3.5" />
                                         </button>
                                         <button
                                             type="button"

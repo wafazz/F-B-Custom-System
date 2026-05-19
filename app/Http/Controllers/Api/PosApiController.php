@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\OrderStatus;
+use App\Events\PrintReceiptRequested;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\BranchStaff;
@@ -70,6 +71,14 @@ class PosApiController extends Controller
             ->values();
 
         return response()->json(['orders' => $orders]);
+    }
+
+    /** Fire a broadcast that the branch print runner picks up and forwards to the WiFi printer. */
+    public function print(Order $order): JsonResponse
+    {
+        PrintReceiptRequested::dispatch($order);
+
+        return response()->json(['ok' => true]);
     }
 
     public function transition(Request $request, Order $order, OrderService $service): JsonResponse

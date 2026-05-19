@@ -1,6 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Banknote, Gift, LogOut, ShoppingBag, Store, Tv } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface PosShared {
@@ -19,6 +19,19 @@ export default function PosLayout({ children }: { children: ReactNode }) {
     function logout() {
         router.post('/pos/logout');
     }
+
+    // Point the install prompt at the POS-scoped manifest. The customer
+    // manifest is the page default — swap it while on /pos/* so "Add to
+    // Home Screen" creates a POS app icon (start_url=/pos, scope=/pos).
+    useEffect(() => {
+        const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+        if (!link) return;
+        const previous = link.href;
+        link.href = '/pos.webmanifest';
+        return () => {
+            link.href = previous;
+        };
+    }, []);
 
     return (
         <div className="flex h-screen flex-col bg-slate-950 text-slate-100">

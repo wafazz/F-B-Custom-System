@@ -126,4 +126,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pos/logout', [\App\Http\Controllers\Api\PosApiController::class, 'logout'])->name('api.pos.logout');
     Route::get('/pos/branches/{branch}/queue', [\App\Http\Controllers\Api\PosApiController::class, 'queue'])->name('api.pos.queue');
     Route::post('/pos/orders/{order}/transition', [\App\Http\Controllers\Api\PosApiController::class, 'transition'])->name('api.pos.transition');
+    Route::post('/pos/orders/{order}/print', [\App\Http\Controllers\Api\PosApiController::class, 'print'])->name('api.pos.print');
 });

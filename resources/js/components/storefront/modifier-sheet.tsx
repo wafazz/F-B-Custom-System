@@ -31,7 +31,7 @@ export function ModifierSheet({ product, open, onOpenChange, onAdd, onBuyNow }: 
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="bottom"
-                className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50 sm:mx-auto sm:max-w-3xl sm:rounded-xl"
+                className="bg-white text-neutral-900 sm:mx-auto sm:max-w-3xl sm:rounded-xl dark:bg-neutral-950 dark:text-neutral-50"
             >
                 {product && (
                     <SheetBody
@@ -134,8 +134,7 @@ function SheetBody({
         onClose();
     }
 
-    const imageSrc =
-        product.image ?? product.gallery?.[0] ?? null;
+    const imageSrc = product.image ?? product.gallery?.[0] ?? null;
 
     return (
         <>
@@ -143,10 +142,12 @@ function SheetBody({
 
             <div className="flex min-h-0 flex-1 flex-col gap-2 sm:flex-row sm:gap-6">
                 <aside className="flex flex-shrink-0 items-start gap-3 sm:block sm:w-2/5">
-                    <div className="bg-secondary/50 flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl sm:size-auto sm:aspect-[4/3] sm:w-full">
+                    <div className="bg-secondary/50 flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl sm:aspect-[4/3] sm:size-auto sm:w-full">
                         {imageSrc ? (
                             <img
-                                src={imageSrc.startsWith('http') ? imageSrc : `/storage/${imageSrc}`}
+                                src={
+                                    imageSrc.startsWith('http') ? imageSrc : `/storage/${imageSrc}`
+                                }
                                 alt={product.name}
                                 className="size-full object-cover"
                             />
@@ -214,7 +215,9 @@ function SheetBody({
                                                 <span
                                                     className={cn(
                                                         'text-xs',
-                                                        checked ? 'text-white/80' : 'text-muted-foreground',
+                                                        checked
+                                                            ? 'text-white/80'
+                                                            : 'text-muted-foreground',
                                                     )}
                                                 >
                                                     {Number(option.price_delta) > 0
@@ -230,9 +233,9 @@ function SheetBody({
                     </div>
 
                     <div className="mt-3 border-t pt-3">
-                        <div className="bg-amber-50 border-amber-200 mb-3 rounded-lg border p-3">
+                        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
                             <div className="flex items-center justify-between gap-3">
-                                <span className="text-card-foreground flex-1 text-sm font-semibold leading-tight">
+                                <span className="text-card-foreground flex-1 text-sm leading-tight font-semibold">
                                     {product.name}
                                 </span>
                                 <div className="flex shrink-0 items-center gap-2">
@@ -258,7 +261,8 @@ function SheetBody({
                                 </div>
                             </div>
                             {(() => {
-                                const selected: { group: string; option: string; delta: number }[] = [];
+                                const selected: { group: string; option: string; delta: number }[] =
+                                    [];
                                 for (const group of product.modifier_groups) {
                                     const picked = selection[group.id] ?? [];
                                     for (const option of group.options.filter((o) =>
@@ -298,8 +302,8 @@ function SheetBody({
                                 );
                             })()}
 
-                            <div className="border-amber-200/70 mt-3 flex items-center justify-between border-t pt-2">
-                                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                            <div className="mt-3 flex items-center justify-between border-t border-amber-200/70 pt-2">
+                                <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                                     Total
                                 </span>
                                 <span className="text-card-foreground text-base font-bold">

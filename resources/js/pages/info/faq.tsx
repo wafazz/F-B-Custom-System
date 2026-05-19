@@ -17,7 +17,7 @@ export default function Faq({ page }: Props) {
             <div className="mb-2 flex items-center gap-3">
                 <Link
                     href="/profile?tab=data"
-                    className="bg-card text-card-foreground hover:bg-amber-50 inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors"
+                    className="bg-card text-card-foreground inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-amber-50"
                 >
                     <ArrowLeft className="size-4" />
                     <span>Back to Privacy & Data</span>
@@ -30,7 +30,7 @@ export default function Faq({ page }: Props) {
                 </p>
             )}
             <article
-                className="prose prose-sm max-w-none [&_h2]:mb-1 [&_h2]:mt-4 [&_h2]:text-sm [&_h2]:font-semibold [&_p]:text-sm [&_p]:text-muted-foreground"
+                className="prose prose-sm [&_p]:text-muted-foreground max-w-none [&_h2]:mt-4 [&_h2]:mb-1 [&_h2]:text-sm [&_h2]:font-semibold [&_p]:text-sm"
                 dangerouslySetInnerHTML={{ __html: page.body }}
             />
         </StorefrontLayout>

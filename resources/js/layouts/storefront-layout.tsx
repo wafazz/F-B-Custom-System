@@ -1,5 +1,17 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, ChevronDown, Coffee, CreditCard, Crown, Gift, Home, ShoppingBag, Star, User, Wallet } from 'lucide-react';
+import {
+    Bell,
+    ChevronDown,
+    Coffee,
+    CreditCard,
+    Crown,
+    Gift,
+    Home,
+    ShoppingBag,
+    Star,
+    User,
+    Wallet,
+} from 'lucide-react';
 import { type ReactNode } from 'react';
 import { InstallPrompt } from '@/components/storefront/install-prompt';
 import { useBranchStore } from '@/stores/branch-store';
@@ -66,7 +78,9 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
                 <CustomerStatsStrip stats={customer_stats} />
             )}
 
-            <main className="bg-background mx-auto w-full max-w-3xl flex-1 px-4 py-4">{children}</main>
+            <main className="bg-background mx-auto w-full max-w-3xl flex-1 px-4 py-4">
+                {children}
+            </main>
 
             <InstallPrompt />
 
@@ -90,13 +104,19 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
                         href={branch ? `/branches/${branch.id}` : '/'}
                         icon={<Home className="size-7" />}
                         label="Home"
-                        active={path === '/' || (branch ? path === `/branches/${branch.id}` : false)}
+                        active={
+                            path === '/' || (branch ? path === `/branches/${branch.id}` : false)
+                        }
                     />
                     <NavItem
                         href={branch ? `/branches/${branch.id}/menu` : '/branches'}
                         icon={<Coffee className="size-7" />}
                         label="Order"
-                        active={path.includes('/menu') || path.endsWith('/cart') || path.endsWith('/checkout')}
+                        active={
+                            path.includes('/menu') ||
+                            path.endsWith('/cart') ||
+                            path.endsWith('/checkout')
+                        }
                     />
                     <NavItem
                         href={auth.user ? '/vouchers' : '/login?redirect=/vouchers'}
@@ -108,7 +128,9 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
                         href={auth.user ? '/loyalty' : '/login?redirect=/loyalty'}
                         icon={<CreditCard className="size-7" />}
                         label="Membership"
-                        active={path === '/loyalty' || path === '/wallet' || path.startsWith('/wallet')}
+                        active={
+                            path === '/loyalty' || path === '/wallet' || path.startsWith('/wallet')
+                        }
                     />
                     <NavItem
                         href={auth.user ? '/profile' : '/login'}
@@ -162,16 +184,16 @@ function DefaultGreetingHeader({
                         <p className="text-muted-foreground text-[11px] leading-tight">
                             {greeting},
                         </p>
-                        <p className="text-card-foreground truncate text-sm font-bold leading-tight">
+                        <p className="text-card-foreground truncate text-sm leading-tight font-bold">
                             {name} <span aria-hidden>✨</span>
                         </p>
                     </Link>
                     <Link
                         href="/branches"
-                        className="hover:bg-amber-50/70 mt-0.5 -ml-1 inline-flex max-w-full items-center gap-1 rounded-full px-1.5 py-0.5 transition-colors"
+                        className="mt-0.5 -ml-1 inline-flex max-w-full items-center gap-1 rounded-full px-1.5 py-0.5 transition-colors hover:bg-amber-50/70"
                         aria-label="Change branch"
                     >
-                        <span className="text-muted-foreground truncate text-[10px] uppercase tracking-wider">
+                        <span className="text-muted-foreground truncate text-[10px] tracking-wider uppercase">
                             {branchName
                                 ? `Star Coffee — ${branchName.replace(/^star coffee[\s—-]*/i, '')}`
                                 : 'Choose a branch'}
@@ -188,7 +210,9 @@ function DefaultGreetingHeader({
                                 <span
                                     className={cn(
                                         'relative inline-flex size-2 rounded-full ring-2 ring-white/80',
-                                        branchIsOpen ? 'animate-pulse bg-emerald-500' : 'bg-red-500',
+                                        branchIsOpen
+                                            ? 'animate-pulse bg-emerald-500'
+                                            : 'bg-red-500',
                                     )}
                                 />
                             </span>
@@ -202,14 +226,12 @@ function DefaultGreetingHeader({
                     href={userName ? '/notifications' : '/login?redirect=/notifications'}
                     className="relative flex size-10 items-center justify-center rounded-full bg-amber-50 text-amber-800 transition-colors hover:bg-amber-100"
                     aria-label={
-                        unreadCount > 0
-                            ? `Notifications (${unreadCount} unread)`
-                            : 'Notifications'
+                        unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'
                     }
                 >
                     <Bell className="size-4" />
                     {userName && unreadCount > 0 && (
-                        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white shadow ring-2 ring-amber-50">
+                        <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] leading-none font-bold text-white shadow ring-2 ring-amber-50">
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
@@ -296,10 +318,7 @@ function CustomerStatsStrip({ stats }: { stats: CustomerStats }) {
                         line1={tierName}
                         line2={tierProgress}
                         icon={
-                            <Crown
-                                className="size-5"
-                                style={{ color: tierColor, opacity: 0.85 }}
-                            />
+                            <Crown className="size-5" style={{ color: tierColor, opacity: 0.85 }} />
                         }
                     />
                     <StatCard
@@ -338,7 +357,7 @@ function StatCard({
             </span>
             <div className="leading-tight">
                 <p className="text-muted-foreground text-[11px]">{line1}</p>
-                <p className="text-card-foreground text-lg font-extrabold leading-snug">{line2}</p>
+                <p className="text-card-foreground text-lg leading-snug font-extrabold">{line2}</p>
             </div>
             <span className="pointer-events-none absolute right-2.5 bottom-2.5 opacity-90">
                 {icon}

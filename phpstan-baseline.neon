@@ -1,0 +1,103 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Anonymous function should return array\{number\: string, status\: ''cancelled''\|''completed''\|''pending''\|''preparing''\|''ready''\|''refunded'', total\: float, created_at\: string\|null, branch\: string\|null, items\: Illuminate\\Support\\Collection\<int, array\{product\: mixed, quantity\: mixed, unit_price\: float, modifiers\: mixed\}\>\} but returns array\{number\: string, status\: ''cancelled''\|''completed''\|''pending''\|''preparing''\|''ready''\|''refunded'', total\: float, created_at\: string\|null, branch\: string\|null, items\: Illuminate\\Support\\Collection\<int, array\{product\: mixed, quantity\: mixed, unit_price\: float, modifiers\: mixed\}\>\}\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/Api/ProfileController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Pos/ShiftController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Pos/ShiftController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Http/Controllers/Pos/ShiftController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\PosShift\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Pos/ShiftController.php
+
+		-
+			message: '#^Anonymous function should return array\{name\: string, quantity\: int\<0, max\>, unit_price\: float, line_total\: float, modifiers\: Illuminate\\Support\\Collection\<int, array\{option_name\: mixed\}\>\} but returns array\{name\: string, quantity\: int\<0, max\>, unit_price\: float, line_total\: float, modifiers\: Illuminate\\Support\\Collection\<int, array\{option_name\: mixed\}\>\}\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/Pos/WalkInController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>label_size" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Pos/WalkInController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>service_charge_rate" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Pos/WalkInController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>sst_rate" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Pos/WalkInController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$image\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Web/StorefrontController.php
+
+		-
+			message: '#^Call to function is_array\(\) with null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Http/Controllers/Web/StorefrontController.php
+
+		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Http/Controllers/Web/StorefrontController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Category\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Web/StorefrontController.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Web/StorefrontController.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Http/Controllers/Web/StorefrontController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: int, type\: ''cash_in''\|''cash_out'', amount\: float, reason\: string, recorded_at\: string\|null\}, Closure\(App\\Models\\PosCashMovement\)\: array\{id\: int, type\: ''cash_in''\|''cash_out'', amount\: float, reason\: string, recorded_at\: string\|null\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Pos/PosShiftService.php
+
+		-
+			message: '#^Access to constant ATTR_SSL_CA on an unknown class Pdo\\Mysql\.$#'
+			identifier: class.notFound
+			count: 2
+			path: config/database.php

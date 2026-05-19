@@ -4,8 +4,12 @@ namespace App\Filament\Resources\RoleResource\Pages;
 
 use App\Filament\Resources\RoleResource;
 use Filament\Resources\Pages\CreateRecord;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * @property Role $record
+ */
 class CreateRole extends CreateRecord
 {
     protected static string $resource = RoleResource::class;

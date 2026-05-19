@@ -17,7 +17,7 @@ export function ComboSheet({ combo, open, onOpenChange, onAdd, onBuyNow }: Props
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="bottom"
-                className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50 sm:mx-auto sm:max-w-3xl sm:rounded-xl"
+                className="bg-white text-neutral-900 sm:mx-auto sm:max-w-3xl sm:rounded-xl dark:bg-neutral-950 dark:text-neutral-50"
             >
                 {combo && (
                     <ComboBody
@@ -73,7 +73,7 @@ function ComboBody({
                             <Coffee className="text-muted-foreground size-16" />
                         )}
                     </div>
-                    <h3 className="mt-3 flex items-center gap-1.5 text-lg font-bold leading-tight">
+                    <h3 className="mt-3 flex items-center gap-1.5 text-lg leading-tight font-bold">
                         <Sparkles className="size-4 text-amber-500" />
                         {combo.name}
                     </h3>
@@ -108,7 +108,7 @@ function ComboBody({
                                         )}
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium leading-tight">
+                                        <p className="text-sm leading-tight font-medium">
                                             {item.name}
                                         </p>
                                         <p className="text-muted-foreground text-[11px]">
@@ -156,10 +156,7 @@ function ComboBody({
                                     Buy now
                                 </Button>
                             )}
-                            <Button
-                                onClick={handleAdd}
-                                className={onBuyNow ? 'flex-1' : 'w-full'}
-                            >
+                            <Button onClick={handleAdd} className={onBuyNow ? 'flex-1' : 'w-full'}>
                                 Add combo — RM{total.toFixed(2)}
                             </Button>
                         </div>

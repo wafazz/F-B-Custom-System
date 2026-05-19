@@ -5,8 +5,12 @@ namespace App\Filament\Resources\RoleResource\Pages;
 use App\Filament\Resources\RoleResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * @property Role $record
+ */
 class EditRole extends EditRecord
 {
     protected static string $resource = RoleResource::class;

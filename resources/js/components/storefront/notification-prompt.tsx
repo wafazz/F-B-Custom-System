@@ -72,7 +72,7 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
             switch (result.reason) {
                 case 'permission-denied':
                     window.alert(
-                        "Notifications are blocked. Open Site settings → Notifications → Allow, then try again.",
+                        'Notifications are blocked. Open Site settings → Notifications → Allow, then try again.',
                     );
                     dismiss();
                     break;
@@ -88,7 +88,9 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
                     }
                     break;
                 case 'browser-subscribe-failed':
-                    window.alert(`Browser refused the subscription: ${result.message ?? 'unknown error'}`);
+                    window.alert(
+                        `Browser refused the subscription: ${result.message ?? 'unknown error'}`,
+                    );
                     break;
                 case 'unsupported':
                     window.alert(
@@ -116,7 +118,7 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
                     <Share className="size-4" />
                 </div>
                 <div className="flex-1">
-                    <p className="text-card-foreground text-sm font-bold leading-tight">
+                    <p className="text-card-foreground text-sm leading-tight font-bold">
                         Install Star Coffee to get order alerts
                     </p>
                     <p className="text-muted-foreground mt-1 text-xs leading-snug">
@@ -145,7 +147,7 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
                 <Bell className="size-4" />
             </div>
             <div className="flex-1">
-                <p className="text-card-foreground text-sm font-bold leading-tight">
+                <p className="text-card-foreground text-sm leading-tight font-bold">
                     Get notified when your order is ready
                 </p>
                 <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
@@ -156,7 +158,7 @@ export function NotificationPrompt({ isAuthenticated }: Props) {
                         type="button"
                         onClick={handleEnable}
                         disabled={busy}
-                        className="rounded-full bg-amber-800 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-50 transition-colors hover:bg-amber-700 disabled:opacity-60"
+                        className="rounded-full bg-amber-800 px-3.5 py-1.5 text-[11px] font-bold tracking-wider text-amber-50 uppercase transition-colors hover:bg-amber-700 disabled:opacity-60"
                     >
                         {busy ? 'Enabling…' : 'Enable'}
                     </button>

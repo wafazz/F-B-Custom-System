@@ -201,15 +201,8 @@ export default function Menu({ branch }: Props) {
                   id: p.id,
                   name: p.name,
                   slug: p.slug,
-                  image:
-                      p.image ??
-                      self?.image ??
-                      children.find((c) => c.image)?.image ??
-                      null,
-                  products: [
-                      ...(self?.products ?? []),
-                      ...children.flatMap((c) => c.products),
-                  ],
+                  image: p.image ?? self?.image ?? children.find((c) => c.image)?.image ?? null,
+                  products: [...(self?.products ?? []), ...children.flatMap((c) => c.products)],
               };
           })
         : allCategories.map((c) => ({
@@ -239,21 +232,15 @@ export default function Menu({ branch }: Props) {
     // owns the section in hierarchical mode.
     const slugSection = initialSlug
         ? (sections.find((s) => s.slug === initialSlug) ??
-              (() => {
-                  const child = allCategories.find((c) => c.slug === initialSlug);
-                  if (!child) return null;
-                  return (
-                      sections.find(
-                          (s) => s.id === child.parent_id || s.id === child.id,
-                      ) ?? null
-                  );
-              })())
+          (() => {
+              const child = allCategories.find((c) => c.slug === initialSlug);
+              if (!child) return null;
+              return sections.find((s) => s.id === child.parent_id || s.id === child.id) ?? null;
+          })())
         : null;
 
     const activeCategory: number | null =
-        typeof userPicked === 'number'
-            ? userPicked
-            : (slugSection?.id ?? sections[0]?.id ?? null);
+        typeof userPicked === 'number' ? userPicked : (slugSection?.id ?? sections[0]?.id ?? null);
 
     const sectionRefs = useRef<Map<number, HTMLElement>>(new Map());
     const scrollingToRef = useRef<number | null>(null);
@@ -316,9 +303,7 @@ export default function Menu({ branch }: Props) {
                 if (scrollingToRef.current !== null) return;
                 const top = entries
                     .filter((e) => e.isIntersecting)
-                    .sort(
-                        (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
-                    )[0];
+                    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
                 if (!top) return;
                 const id = Number((top.target as HTMLElement).dataset.catId);
                 if (Number.isFinite(id)) setUserPicked(id);
@@ -393,207 +378,210 @@ export default function Menu({ branch }: Props) {
             <Head title={`${branch.name} — Menu`} />
 
             <div className="-my-4 flex h-[calc(100vh-72px-96px-env(safe-area-inset-bottom))] flex-col">
-            <div className="border-border focus-within:border-amber-500 focus-within:ring-amber-500/20 mb-3 mt-3 flex shrink-0 items-center gap-2 rounded-full border bg-white px-3 py-2 shadow-sm focus-within:ring-2">
-                <Search className="text-muted-foreground size-4" />
-                <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search the menu…"
-                    aria-label="Search menu"
-                    className="placeholder:text-muted-foreground flex-1 bg-transparent text-sm outline-none"
-                />
-                {isSearching && (
-                    <button
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        aria-label="Clear search"
-                        className="text-muted-foreground -mr-1 rounded-full p-1 hover:text-amber-700"
-                    >
-                        <X className="size-3.5" />
-                    </button>
-                )}
-            </div>
-            {isLoading && <MenuSkeleton />}
-            {isError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    Failed to load menu. Please refresh.
+                <div className="border-border mt-3 mb-3 flex shrink-0 items-center gap-2 rounded-full border bg-white px-3 py-2 shadow-sm focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20">
+                    <Search className="text-muted-foreground size-4" />
+                    <input
+                        type="search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search the menu…"
+                        aria-label="Search menu"
+                        className="placeholder:text-muted-foreground flex-1 bg-transparent text-sm outline-none"
+                    />
+                    {isSearching && (
+                        <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            aria-label="Clear search"
+                            className="text-muted-foreground -mr-1 rounded-full p-1 hover:text-amber-700"
+                        >
+                            <X className="size-3.5" />
+                        </button>
+                    )}
                 </div>
-            )}
-            {data && data.categories.length === 0 && (
-                <div className="border-border bg-card text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-                    {data.message ?? 'No items available right now.'}
-                </div>
-            )}
-
-            {data && (data.combos?.length ?? 0) > 0 && (
-                <section className="shrink-0 mb-4">
-                    <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-                        <Sparkles className="size-3.5 text-amber-500" /> Combos
-                    </h2>
-                    <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
-                        {data.combos!.map((combo) => (
-                            <button
-                                key={combo.id}
-                                type="button"
-                                onClick={() => handleComboSelect(combo)}
-                                className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100 hover:from-amber-100 hover:to-orange-200 dark:border-amber-900 dark:from-amber-950/50 dark:to-orange-950/50 flex w-44 shrink-0 snap-start flex-col gap-1.5 rounded-xl border p-2 text-left shadow-sm transition-colors"
-                            >
-                                <div className="bg-secondary aspect-[4/3] overflow-hidden rounded-lg">
-                                    {combo.image ? (
-                                        <img
-                                            src={`/storage/${combo.image}`}
-                                            alt={combo.name}
-                                            className="size-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="flex size-full items-center justify-center">
-                                            <Coffee className="text-muted-foreground size-6" />
-                                        </div>
-                                    )}
-                                </div>
-                                <p className="line-clamp-1 text-sm font-semibold leading-tight">
-                                    {combo.name}
-                                </p>
-                                <p className="text-muted-foreground line-clamp-1 text-[10px]">
-                                    {combo.items.map((i) => `${i.quantity}× ${i.name}`).join(' + ')}
-                                </p>
-                                <p className="text-primary text-sm font-bold">
-                                    RM{Number(combo.price).toFixed(2)}
-                                </p>
-                            </button>
-                        ))}
+                {isLoading && <MenuSkeleton />}
+                {isError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        Failed to load menu. Please refresh.
                     </div>
-                </section>
-            )}
+                )}
+                {data && data.categories.length === 0 && (
+                    <div className="border-border bg-card text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
+                        {data.message ?? 'No items available right now.'}
+                    </div>
+                )}
 
-            {data && data.categories.length > 0 && (
-                <div className="-mx-4 flex min-h-0 flex-1 gap-0">
-                    <aside className="bg-muted/40 border-border w-20 shrink-0 overflow-y-auto overscroll-contain border-r pb-2 [-webkit-overflow-scrolling:touch]">
-                        <ul className="flex flex-col">
-                            {sections.map((sec) => {
-                                const Icon = iconFor(sec.slug);
-                                const thumb =
-                                    sec.image ??
-                                    sec.products.find((p) => p.image)?.image ??
-                                    null;
-                                const active = sec.id === activeCategory;
-                                return (
-                                    <li
-                                        key={sec.id}
-                                        ref={(el) => {
-                                            if (el) asideItemRefs.current.set(sec.id, el);
-                                            else asideItemRefs.current.delete(sec.id);
-                                        }}
-                                    >
-                                        <button
-                                            type="button"
-                                            onClick={() => scrollToCategory(sec.id)}
-                                            className={cn(
-                                                'flex w-full flex-col items-center gap-1 px-1.5 py-2.5 text-center transition-colors',
-                                                active
-                                                    ? 'bg-card border-primary border-l-[3px] pl-1'
-                                                    : 'hover:bg-card/60',
-                                            )}
+                {data && (data.combos?.length ?? 0) > 0 && (
+                    <section className="mb-4 shrink-0">
+                        <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                            <Sparkles className="size-3.5 text-amber-500" /> Combos
+                        </h2>
+                        <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+                            {data.combos!.map((combo) => (
+                                <button
+                                    key={combo.id}
+                                    type="button"
+                                    onClick={() => handleComboSelect(combo)}
+                                    className="flex w-44 shrink-0 snap-start flex-col gap-1.5 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100 p-2 text-left shadow-sm transition-colors hover:from-amber-100 hover:to-orange-200 dark:border-amber-900 dark:from-amber-950/50 dark:to-orange-950/50"
+                                >
+                                    <div className="bg-secondary aspect-[4/3] overflow-hidden rounded-lg">
+                                        {combo.image ? (
+                                            <img
+                                                src={`/storage/${combo.image}`}
+                                                alt={combo.name}
+                                                className="size-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex size-full items-center justify-center">
+                                                <Coffee className="text-muted-foreground size-6" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="line-clamp-1 text-sm leading-tight font-semibold">
+                                        {combo.name}
+                                    </p>
+                                    <p className="text-muted-foreground line-clamp-1 text-[10px]">
+                                        {combo.items
+                                            .map((i) => `${i.quantity}× ${i.name}`)
+                                            .join(' + ')}
+                                    </p>
+                                    <p className="text-primary text-sm font-bold">
+                                        RM{Number(combo.price).toFixed(2)}
+                                    </p>
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {data && data.categories.length > 0 && (
+                    <div className="-mx-4 flex min-h-0 flex-1 gap-0">
+                        <aside className="bg-muted/40 border-border w-20 shrink-0 overflow-y-auto overscroll-contain border-r pb-2 [-webkit-overflow-scrolling:touch]">
+                            <ul className="flex flex-col">
+                                {sections.map((sec) => {
+                                    const Icon = iconFor(sec.slug);
+                                    const thumb =
+                                        sec.image ??
+                                        sec.products.find((p) => p.image)?.image ??
+                                        null;
+                                    const active = sec.id === activeCategory;
+                                    return (
+                                        <li
+                                            key={sec.id}
+                                            ref={(el) => {
+                                                if (el) asideItemRefs.current.set(sec.id, el);
+                                                else asideItemRefs.current.delete(sec.id);
+                                            }}
                                         >
-                                            <span
+                                            <button
+                                                type="button"
+                                                onClick={() => scrollToCategory(sec.id)}
                                                 className={cn(
-                                                    'flex size-11 items-center justify-center overflow-hidden rounded-full transition-all',
+                                                    'flex w-full flex-col items-center gap-1 px-1.5 py-2.5 text-center transition-colors',
                                                     active
-                                                        ? 'ring-primary ring-2 ring-offset-2'
-                                                        : 'bg-secondary',
+                                                        ? 'bg-card border-primary border-l-[3px] pl-1'
+                                                        : 'hover:bg-card/60',
                                                 )}
                                             >
-                                                {thumb ? (
-                                                    <img
-                                                        src={
-                                                            thumb.startsWith('http')
-                                                                ? thumb
-                                                                : `/storage/${thumb}`
-                                                        }
-                                                        alt={sec.name}
-                                                        className="size-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <Icon
-                                                        className={cn(
-                                                            'size-5',
-                                                            active
-                                                                ? 'text-primary'
-                                                                : 'text-secondary-foreground/70',
-                                                        )}
-                                                    />
-                                                )}
-                                            </span>
-                                            <span
-                                                className={cn(
-                                                    'text-[10px] leading-tight font-medium',
-                                                    active
-                                                        ? 'text-foreground'
-                                                        : 'text-muted-foreground',
-                                                )}
-                                            >
-                                                {sec.name}
-                                            </span>
-                                        </button>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </aside>
+                                                <span
+                                                    className={cn(
+                                                        'flex size-11 items-center justify-center overflow-hidden rounded-full transition-all',
+                                                        active
+                                                            ? 'ring-primary ring-2 ring-offset-2'
+                                                            : 'bg-secondary',
+                                                    )}
+                                                >
+                                                    {thumb ? (
+                                                        <img
+                                                            src={
+                                                                thumb.startsWith('http')
+                                                                    ? thumb
+                                                                    : `/storage/${thumb}`
+                                                            }
+                                                            alt={sec.name}
+                                                            className="size-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <Icon
+                                                            className={cn(
+                                                                'size-5',
+                                                                active
+                                                                    ? 'text-primary'
+                                                                    : 'text-secondary-foreground/70',
+                                                            )}
+                                                        />
+                                                    )}
+                                                </span>
+                                                <span
+                                                    className={cn(
+                                                        'text-[10px] leading-tight font-medium',
+                                                        active
+                                                            ? 'text-foreground'
+                                                            : 'text-muted-foreground',
+                                                    )}
+                                                >
+                                                    {sec.name}
+                                                </span>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </aside>
 
-                    <main
-                        ref={(el) => {
-                            menuScrollRef.current = el;
-                        }}
-                        className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 [-webkit-overflow-scrolling:touch]"
-                    >
-                        {isSearching && displayedSections.length === 0 && (
-                            <div className="border-border bg-card text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
-                                No items match &ldquo;{searchQuery}&rdquo;.
-                            </div>
-                        )}
-                        {isSearching && displayedSections.length > 0 && (
-                            <p className="text-muted-foreground mb-3 text-xs">
-                                {searchMatchCount} match{searchMatchCount === 1 ? '' : 'es'} for &ldquo;{searchQuery}&rdquo;
-                            </p>
-                        )}
-                        {displayedSections.map((sec) => (
-                            <section
-                                key={sec.id}
-                                ref={setSectionRef(sec.id)}
-                                data-cat-id={sec.id}
-                                className="scroll-mt-2 mb-8 last:mb-4"
-                            >
-                                <div className="mb-3 flex items-center gap-2">
-                                    <Coffee className="text-primary size-4" />
-                                    <h2 className="text-sm font-bold tracking-wider uppercase">
-                                        {sec.name}
-                                    </h2>
-                                    <span className="text-muted-foreground text-xs">
-                                        · {sec.products.length} items
-                                    </span>
+                        <main
+                            ref={(el) => {
+                                menuScrollRef.current = el;
+                            }}
+                            className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2 [-webkit-overflow-scrolling:touch]"
+                        >
+                            {isSearching && displayedSections.length === 0 && (
+                                <div className="border-border bg-card text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
+                                    No items match &ldquo;{searchQuery}&rdquo;.
                                 </div>
-                                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                                    {sec.products.map((product) => (
-                                        <ProductCard
-                                            key={product.id}
-                                            product={product}
-                                            isAvailable={!unavailable.has(product.id)}
-                                            onSelect={handleProductSelect}
-                                        />
-                                    ))}
-                                    {sec.products.length === 0 && (
-                                        <p className="text-muted-foreground col-span-2 py-12 text-center text-sm">
-                                            No items in this category yet.
-                                        </p>
-                                    )}
-                                </div>
-                            </section>
-                        ))}
-                    </main>
-                </div>
-            )}
+                            )}
+                            {isSearching && displayedSections.length > 0 && (
+                                <p className="text-muted-foreground mb-3 text-xs">
+                                    {searchMatchCount} match{searchMatchCount === 1 ? '' : 'es'} for
+                                    &ldquo;{searchQuery}&rdquo;
+                                </p>
+                            )}
+                            {displayedSections.map((sec) => (
+                                <section
+                                    key={sec.id}
+                                    ref={setSectionRef(sec.id)}
+                                    data-cat-id={sec.id}
+                                    className="mb-8 scroll-mt-2 last:mb-4"
+                                >
+                                    <div className="mb-3 flex items-center gap-2">
+                                        <Coffee className="text-primary size-4" />
+                                        <h2 className="text-sm font-bold tracking-wider uppercase">
+                                            {sec.name}
+                                        </h2>
+                                        <span className="text-muted-foreground text-xs">
+                                            · {sec.products.length} items
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                                        {sec.products.map((product) => (
+                                            <ProductCard
+                                                key={product.id}
+                                                product={product}
+                                                isAvailable={!unavailable.has(product.id)}
+                                                onSelect={handleProductSelect}
+                                            />
+                                        ))}
+                                        {sec.products.length === 0 && (
+                                            <p className="text-muted-foreground col-span-2 py-12 text-center text-sm">
+                                                No items in this category yet.
+                                            </p>
+                                        )}
+                                    </div>
+                                </section>
+                            ))}
+                        </main>
+                    </div>
+                )}
             </div>
 
             <ModifierSheet

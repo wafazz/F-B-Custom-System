@@ -97,7 +97,9 @@ export default function PosWalkIn({ branch, parents }: Props) {
     const [tableNumber, setTableNumber] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'duitnow'>('cash');
     const [activeParent, setActiveParent] = useState<string | null>(parents[0]?.name ?? null);
-    const [activeChild, setActiveChild] = useState<string | null>(parents[0]?.children[0]?.name ?? null);
+    const [activeChild, setActiveChild] = useState<string | null>(
+        parents[0]?.children[0]?.name ?? null,
+    );
     const [picker, setPicker] = useState<PosProduct | null>(null);
     const [customer, setCustomer] = useState<CustomerHit | null>(null);
     const [search, setSearch] = useState('');
@@ -187,9 +189,7 @@ export default function PosWalkIn({ branch, parents }: Props) {
     const childCats = activeParentObj?.children ?? [];
     const showChildBar = childCats.length > 1 || childCats[0]?.name !== activeParentObj?.name;
     const visibleProducts =
-        childCats.find((c) => c.name === activeChild)?.products ??
-        childCats[0]?.products ??
-        [];
+        childCats.find((c) => c.name === activeChild)?.products ?? childCats[0]?.products ?? [];
 
     function selectParent(name: string) {
         const found = parents.find((p) => p.name === name);
@@ -426,7 +426,7 @@ export default function PosWalkIn({ branch, parents }: Props) {
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Attach member (phone / email / code)"
-                                    className="w-full rounded-md border border-slate-700 bg-slate-950 py-2 pr-2 pl-7 text-xs text-slate-100 placeholder:text-slate-500 outline-none focus:border-amber-500"
+                                    className="w-full rounded-md border border-slate-700 bg-slate-950 py-2 pr-2 pl-7 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:border-amber-500"
                                 />
                                 {visibleHits.length > 0 && (
                                     <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-700 bg-slate-900 shadow-xl">
@@ -455,9 +455,11 @@ export default function PosWalkIn({ branch, parents }: Props) {
                                         ))}
                                     </ul>
                                 )}
-                                {search.trim().length >= 2 && !searching && visibleHits.length === 0 && (
-                                    <p className="mt-1 text-[10px] text-slate-500">No match</p>
-                                )}
+                                {search.trim().length >= 2 &&
+                                    !searching &&
+                                    visibleHits.length === 0 && (
+                                        <p className="mt-1 text-[10px] text-slate-500">No match</p>
+                                    )}
                             </div>
                         )}
                     </div>
@@ -685,8 +687,7 @@ function ModifierPicker({
         return init;
     });
 
-    const countOf = (groupId: number, optionId: number) =>
-        selection[groupId]?.[optionId] ?? 0;
+    const countOf = (groupId: number, optionId: number) => selection[groupId]?.[optionId] ?? 0;
     const totalInGroup = (groupId: number) =>
         Object.values(selection[groupId] ?? {}).reduce((a, b) => a + b, 0);
 
@@ -754,9 +755,7 @@ function ModifierPicker({
                                 {group.is_required && <span className="ml-1 text-red-400">*</span>}
                             </h4>
                             <span className="text-[10px] text-slate-500">
-                                {group.is_required
-                                    ? `Pick ${group.min_select}+`
-                                    : 'Optional'}
+                                {group.is_required ? `Pick ${group.min_select}+` : 'Optional'}
                             </span>
                         </div>
                         {group.allow_quantity ? (
@@ -815,9 +814,7 @@ function ModifierPicker({
                                         <button
                                             key={option.id}
                                             type="button"
-                                            onClick={() =>
-                                                bump(group, option.id, active ? -1 : 1)
-                                            }
+                                            onClick={() => bump(group, option.id, active ? -1 : 1)}
                                             className={cn(
                                                 'flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors',
                                                 active
@@ -928,7 +925,8 @@ function CashTender({
         setTendered((v) => {
             const next = v + key;
             // disallow leading zero like "007"
-            if (next.length > 1 && next[0] === '0' && next[1] !== '.') return next.replace(/^0+/, '');
+            if (next.length > 1 && next[0] === '0' && next[1] !== '.')
+                return next.replace(/^0+/, '');
             // limit to 2 decimal places
             if (next.includes('.') && next.split('.')[1].length > 2) return v;
             return next;

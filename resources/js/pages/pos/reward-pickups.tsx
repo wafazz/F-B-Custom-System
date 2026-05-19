@@ -101,10 +101,10 @@ export default function PosRewardPickups({ pending, fulfilled_today }: Props) {
                 {/* Pending list */}
                 <div>
                     <div className="mb-3 flex items-baseline justify-between">
-                        <h1 className="text-xl font-bold flex items-center gap-2">
-                            <Gift className="text-amber-400 size-5" /> Reward pickups
+                        <h1 className="flex items-center gap-2 text-xl font-bold">
+                            <Gift className="size-5 text-amber-400" /> Reward pickups
                         </h1>
-                        <span className="text-neutral-400 text-xs">
+                        <span className="text-xs text-neutral-400">
                             {pendingRows.length} pending
                         </span>
                     </div>
@@ -116,29 +116,34 @@ export default function PosRewardPickups({ pending, fulfilled_today }: Props) {
                     ) : (
                         <ul className="space-y-2">
                             {pendingRows.map((p) => (
-                                <PickupRow key={p.id} pickup={p} onFulfil={() => handleFulfil(p)} busy={busy} />
+                                <PickupRow
+                                    key={p.id}
+                                    pickup={p}
+                                    onFulfil={() => handleFulfil(p)}
+                                    busy={busy}
+                                />
                             ))}
                         </ul>
                     )}
 
                     {fulfilledRows.length > 0 && (
                         <section className="mt-6">
-                            <h2 className="text-neutral-400 mb-2 text-xs font-semibold uppercase tracking-wider">
+                            <h2 className="mb-2 text-xs font-semibold tracking-wider text-neutral-400 uppercase">
                                 Fulfilled today
                             </h2>
                             <ul className="space-y-1.5">
                                 {fulfilledRows.map((p) => (
                                     <li
                                         key={p.id}
-                                        className="rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2 text-xs text-neutral-300 flex items-center gap-2"
+                                        className="flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/40 px-3 py-2 text-xs text-neutral-300"
                                     >
-                                        <CheckCircle2 className="text-emerald-400 size-3.5 shrink-0" />
+                                        <CheckCircle2 className="size-3.5 shrink-0 text-emerald-400" />
                                         <span className="font-mono font-bold text-amber-300">
                                             {p.pickup_code}
                                         </span>
                                         <span className="text-neutral-400">·</span>
                                         <span className="truncate">{p.reward?.name}</span>
-                                        <span className="text-neutral-500 ml-auto text-[10px]">
+                                        <span className="ml-auto text-[10px] text-neutral-500">
                                             {p.customer?.name}
                                         </span>
                                     </li>
@@ -151,20 +156,20 @@ export default function PosRewardPickups({ pending, fulfilled_today }: Props) {
                 {/* Lookup panel */}
                 <aside className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
                     <h2 className="mb-2 text-sm font-bold text-amber-200">Look up code</h2>
-                    <p className="text-neutral-400 mb-3 text-xs">
-                        Customer reads out their pickup code (starts with R-). Search to
-                        confirm + fulfil instantly.
+                    <p className="mb-3 text-xs text-neutral-400">
+                        Customer reads out their pickup code (starts with R-). Search to confirm +
+                        fulfil instantly.
                     </p>
                     <form onSubmit={handleLookup} className="flex gap-2">
                         <div className="flex flex-1 items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2">
-                            <Search className="text-neutral-500 size-4" />
+                            <Search className="size-4 text-neutral-500" />
                             <input
                                 type="text"
                                 value={code}
                                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                                 placeholder="R-ABC123"
                                 autoFocus
-                                className="flex-1 bg-transparent text-sm font-mono uppercase tracking-wider text-neutral-100 outline-none placeholder:text-neutral-600"
+                                className="flex-1 bg-transparent font-mono text-sm tracking-wider text-neutral-100 uppercase outline-none placeholder:text-neutral-600"
                             />
                         </div>
                         <Button type="submit" disabled={busy || !code.trim()}>
@@ -225,7 +230,7 @@ function PickupRow({
                         className="size-14 shrink-0 rounded-lg object-cover"
                     />
                 ) : (
-                    <div className="bg-neutral-800 text-amber-300 flex size-14 shrink-0 items-center justify-center rounded-lg">
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-neutral-800 text-amber-300">
                         {pickup.reward?.kind === 'product' ? (
                             <Coffee className="size-6" />
                         ) : (
@@ -234,19 +239,19 @@ function PickupRow({
                     </div>
                 )}
                 <div className="min-w-0 flex-1">
-                    <p className="text-amber-300 font-mono text-lg font-extrabold tracking-wider leading-none">
+                    <p className="font-mono text-lg leading-none font-extrabold tracking-wider text-amber-300">
                         {pickup.pickup_code}
                     </p>
                     <p className="mt-1 truncate text-sm font-semibold text-neutral-100">
                         {pickup.reward?.name}
                         {pickup.reward?.kind === 'product' && pickup.reward.product_name && (
-                            <span className="text-neutral-400 font-normal">
+                            <span className="font-normal text-neutral-400">
                                 {' '}
                                 · {pickup.reward.product_name}
                             </span>
                         )}
                     </p>
-                    <p className="text-neutral-400 text-[11px]">
+                    <p className="text-[11px] text-neutral-400">
                         {pickup.customer?.name}
                         {pickup.customer?.phone && ` · ${pickup.customer.phone}`}
                         {' · '}

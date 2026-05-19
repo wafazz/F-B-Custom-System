@@ -3,8 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 const MONTH_NAMES = [
-    '', 'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    '',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
 ];
 
 export interface VoucherDetail {
@@ -49,9 +60,16 @@ export function VoucherDetailsSheet({
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="bottom"
-                className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50 max-h-[92vh] overflow-y-auto sm:mx-auto sm:max-w-md sm:rounded-xl"
+                className="max-h-[92vh] overflow-y-auto bg-white text-neutral-900 sm:mx-auto sm:max-w-md sm:rounded-xl dark:bg-neutral-950 dark:text-neutral-50"
             >
-                {voucher && <Body voucher={voucher} actionLabel={actionLabel} onAction={onAction} actionDisabled={actionDisabled} />}
+                {voucher && (
+                    <Body
+                        voucher={voucher}
+                        actionLabel={actionLabel}
+                        onAction={onAction}
+                        actionDisabled={actionDisabled}
+                    />
+                )}
             </SheetContent>
         </Sheet>
     );
@@ -92,9 +110,9 @@ function Body({
 
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                    <p className="text-lg font-bold leading-tight">{voucher.name}</p>
+                    <p className="text-lg leading-tight font-bold">{voucher.name}</p>
                     {voucher.description && (
-                        <p className="text-muted-foreground mt-1 whitespace-pre-line text-sm leading-snug">
+                        <p className="text-muted-foreground mt-1 text-sm leading-snug whitespace-pre-line">
                             {voucher.description}
                         </p>
                     )}
@@ -135,7 +153,10 @@ function Body({
                     <Row
                         icon={<Cake className="size-3.5" />}
                         label="Birthday months"
-                        value={voucher.birthday_months.map((m) => MONTH_NAMES[m] ?? '').filter(Boolean).join(', ')}
+                        value={voucher.birthday_months
+                            .map((m) => MONTH_NAMES[m] ?? '')
+                            .filter(Boolean)
+                            .join(', ')}
                     />
                 )}
                 {voucher.product_names.length > 0 && (
@@ -170,15 +191,7 @@ function Body({
     );
 }
 
-function Row({
-    label,
-    value,
-    icon,
-}: {
-    label: string;
-    value: string;
-    icon?: React.ReactNode;
-}) {
+function Row({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
     return (
         <div className="flex items-start justify-between gap-3">
             <dt className="text-muted-foreground flex items-center gap-1.5">

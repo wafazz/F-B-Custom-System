@@ -23,6 +23,12 @@ export default tseslint.config(
         settings: { react: { version: 'detect' } },
         rules: {
             ...reactHooks.configs.recommended.rules,
+            // New in eslint-plugin-react-hooks v7. Treats every setState
+            // inside an effect as an error, but several places in this
+            // codebase deliberately set state from an effect for one-shot
+            // gating (install prompts, stock backfill). Track as a warning
+            // until those are refactored to use derived state / refs.
+            'react-hooks/set-state-in-effect': 'warn',
             'react-refresh/only-export-components': [
                 'warn',
                 {

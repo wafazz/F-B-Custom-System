@@ -1,5 +1,18 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Coffee, CreditCard, Hash, MessageSquare, Package, ShoppingBag, Sparkles, Star, Store, Tag, Wallet as WalletIcon, X } from 'lucide-react';
+import {
+    Coffee,
+    CreditCard,
+    Hash,
+    MessageSquare,
+    Package,
+    ShoppingBag,
+    Sparkles,
+    Star,
+    Store,
+    Tag,
+    Wallet as WalletIcon,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -361,9 +374,7 @@ export default function Checkout({
                                         active
                                             ? 'border-amber-400 bg-amber-100 text-amber-800'
                                             : 'border-border hover:bg-secondary/50',
-                                        !eligible &&
-                                            !active &&
-                                            'cursor-not-allowed opacity-50',
+                                        !eligible && !active && 'cursor-not-allowed opacity-50',
                                     )}
                                     title={
                                         !eligible
@@ -371,11 +382,7 @@ export default function Checkout({
                                             : undefined
                                     }
                                 >
-                                    {active ? (
-                                        <X className="size-3" />
-                                    ) : (
-                                        <Tag className="size-3" />
-                                    )}
+                                    {active ? <X className="size-3" /> : <Tag className="size-3" />}
                                     <span className="font-mono">{v.code}</span>
                                     <span className="text-muted-foreground font-normal">
                                         {v.discount_type === 'percentage'
@@ -391,47 +398,45 @@ export default function Checkout({
 
             {(() => {
                 const inCart = new Set(
-                    lines
-                        .map((l) => l.product_id)
-                        .filter((id): id is number => id !== null),
+                    lines.map((l) => l.product_id).filter((id): id is number => id !== null),
                 );
                 const remaining = suggestions.filter((s) => !inCart.has(s.id));
                 if (remaining.length === 0) return null;
                 return (
-                <section className="mb-4">
-                    <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-                        <Sparkles className="size-3.5 text-amber-500" /> You might also want
-                    </h2>
-                    <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
-                        {remaining.map((s) => (
-                            <Link
-                                key={s.id}
-                                href={`/branches/${branch.id}/menu?product=${s.id}`}
-                                className="border-border bg-card hover:bg-secondary/30 flex w-32 shrink-0 snap-start flex-col gap-1.5 rounded-xl border p-2 shadow-sm transition-colors"
-                            >
-                                <div className="bg-secondary aspect-square overflow-hidden rounded-lg">
-                                    {s.image ? (
-                                        <img
-                                            src={`/storage/${s.image}`}
-                                            alt={s.name}
-                                            className="size-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="flex size-full items-center justify-center">
-                                            <Coffee className="text-muted-foreground size-6" />
-                                        </div>
-                                    )}
-                                </div>
-                                <p className="line-clamp-2 text-xs font-medium leading-tight">
-                                    {s.name}
-                                </p>
-                                <p className="text-primary text-xs font-bold">
-                                    RM{s.price.toFixed(2)}
-                                </p>
-                            </Link>
-                        ))}
-                    </div>
-                </section>
+                    <section className="mb-4">
+                        <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+                            <Sparkles className="size-3.5 text-amber-500" /> You might also want
+                        </h2>
+                        <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+                            {remaining.map((s) => (
+                                <Link
+                                    key={s.id}
+                                    href={`/branches/${branch.id}/menu?product=${s.id}`}
+                                    className="border-border bg-card hover:bg-secondary/30 flex w-32 shrink-0 snap-start flex-col gap-1.5 rounded-xl border p-2 shadow-sm transition-colors"
+                                >
+                                    <div className="bg-secondary aspect-square overflow-hidden rounded-lg">
+                                        {s.image ? (
+                                            <img
+                                                src={`/storage/${s.image}`}
+                                                alt={s.name}
+                                                className="size-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex size-full items-center justify-center">
+                                                <Coffee className="text-muted-foreground size-6" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="line-clamp-2 text-xs leading-tight font-medium">
+                                        {s.name}
+                                    </p>
+                                    <p className="text-primary text-xs font-bold">
+                                        RM{s.price.toFixed(2)}
+                                    </p>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
                 );
             })()}
 
@@ -469,7 +474,7 @@ export default function Checkout({
                     <span className="text-primary">RM{total.toFixed(2)}</span>
                 </div>
                 {estimatedPoints > 0 && (
-                    <div className="-mx-4 -mb-4 mt-1 flex items-center justify-between gap-3 rounded-b-xl bg-amber-50 px-4 py-2.5 text-xs">
+                    <div className="-mx-4 mt-1 -mb-4 flex items-center justify-between gap-3 rounded-b-xl bg-amber-50 px-4 py-2.5 text-xs">
                         <span className="flex items-center gap-1.5 text-amber-900">
                             <Star className="size-3.5 fill-amber-400 text-amber-500" />
                             <span>
@@ -482,9 +487,7 @@ export default function Checkout({
                                 )}
                             </span>
                         </span>
-                        <span className="text-amber-700/70 text-[10px]">
-                            on payment
-                        </span>
+                        <span className="text-[10px] text-amber-700/70">on payment</span>
                     </div>
                 )}
             </section>

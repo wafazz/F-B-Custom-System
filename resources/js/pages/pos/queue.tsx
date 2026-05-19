@@ -133,11 +133,7 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
         for (const o of orders) {
             const prev = prevStatusById.current.get(o.id);
             prevStatusById.current.set(o.id, o.status);
-            if (
-                branch.auto_print_labels &&
-                o.status === 'preparing' &&
-                prev !== 'preparing'
-            ) {
+            if (branch.auto_print_labels && o.status === 'preparing' && prev !== 'preparing') {
                 printOrderLabels(o, {
                     copies: branch.label_copies,
                     size: branch.label_size,

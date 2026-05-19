@@ -41,17 +41,17 @@ class PrintReceiptRequested implements ShouldBroadcast
                 'subtotal' => (float) $order->subtotal,
                 'total' => (float) $order->total,
                 'created_at' => $order->created_at?->toIso8601String(),
-                'items' => $order->items->map(fn ($i) => [
+                'items' => array_map(fn ($i) => [
                     'name' => $i->product_name,
                     'quantity' => (int) $i->quantity,
                     'unit_price' => (float) $i->unit_price,
                     'line_total' => (float) $i->line_total,
-                    'modifiers' => $i->modifiers->map(fn ($m) => [
+                    'modifiers' => array_map(fn ($m) => [
                         'name' => $m->option_name,
                         'price' => (float) $m->price_delta,
-                    ])->values(),
+                    ], $i->modifiers->all()),
                     'notes' => $i->notes,
-                ])->values(),
+                ], $order->items->all()),
             ],
             'branch' => [
                 'id' => $order->branch->id,

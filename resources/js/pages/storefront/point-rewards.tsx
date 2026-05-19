@@ -59,18 +59,18 @@ export default function PointRewards({ rewards, pending, points_balance }: Props
 
             <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-bold flex items-center gap-2">
-                        <Gift className="text-amber-600 size-5" /> Reward catalogue
+                    <h1 className="flex items-center gap-2 text-xl font-bold">
+                        <Gift className="size-5 text-amber-600" /> Reward catalogue
                     </h1>
                     <p className="text-muted-foreground text-xs">
                         Spend your loyalty points on free drinks, food &amp; merch.
                     </p>
                 </div>
-                <div className="bg-amber-100 text-amber-900 flex shrink-0 flex-col items-end rounded-xl px-3 py-2 text-right">
-                    <span className="text-[10px] uppercase tracking-wider font-semibold opacity-70">
+                <div className="flex shrink-0 flex-col items-end rounded-xl bg-amber-100 px-3 py-2 text-right text-amber-900">
+                    <span className="text-[10px] font-semibold tracking-wider uppercase opacity-70">
                         Balance
                     </span>
-                    <span className="text-lg font-extrabold leading-none">
+                    <span className="text-lg leading-none font-extrabold">
                         {points_balance.toLocaleString()}
                     </span>
                     <span className="text-[10px] opacity-70">pts</span>
@@ -90,14 +90,12 @@ export default function PointRewards({ rewards, pending, points_balance }: Props
 
             {pending.length > 0 && (
                 <section className="mb-5">
-                    <h2 className="mb-2 text-sm font-semibold">
-                        Show this at the counter
-                    </h2>
+                    <h2 className="mb-2 text-sm font-semibold">Show this at the counter</h2>
                     <ul className="space-y-2">
                         {pending.map((p) => (
                             <li
                                 key={p.id}
-                                className="border-amber-300 bg-amber-50 flex items-center gap-3 rounded-xl border p-3"
+                                className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3"
                             >
                                 {p.reward?.banner_image ? (
                                     <img
@@ -106,7 +104,7 @@ export default function PointRewards({ rewards, pending, points_balance }: Props
                                         className="size-14 shrink-0 rounded-lg object-cover"
                                     />
                                 ) : (
-                                    <div className="bg-amber-200 text-amber-700 flex size-14 shrink-0 items-center justify-center rounded-lg">
+                                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-amber-200 text-amber-700">
                                         {p.reward?.kind === 'product' ? (
                                             <Coffee className="size-6" />
                                         ) : (
@@ -118,7 +116,7 @@ export default function PointRewards({ rewards, pending, points_balance }: Props
                                     <p className="text-card-foreground text-sm font-bold">
                                         {p.reward?.name ?? 'Reward'}
                                     </p>
-                                    <p className="text-amber-700 mt-0.5 font-mono text-lg font-extrabold tracking-wider">
+                                    <p className="mt-0.5 font-mono text-lg font-extrabold tracking-wider text-amber-700">
                                         {p.pickup_code}
                                     </p>
                                     <p className="text-muted-foreground text-[10px]">
@@ -135,9 +133,7 @@ export default function PointRewards({ rewards, pending, points_balance }: Props
             {rewards.length === 0 ? (
                 <div className="border-border bg-card rounded-2xl border border-dashed py-12 text-center">
                     <Sparkles className="text-muted-foreground mx-auto mb-3 size-10" />
-                    <p className="text-card-foreground text-sm font-semibold">
-                        No rewards yet
-                    </p>
+                    <p className="text-card-foreground text-sm font-semibold">No rewards yet</p>
                     <p className="text-muted-foreground mt-1 text-xs">
                         Catalogue is empty — check back later.
                     </p>
@@ -165,7 +161,7 @@ export default function PointRewards({ rewards, pending, points_balance }: Props
                                 className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm"
                             >
                                 {r.banner_image && (
-                                    <div className="bg-amber-100 aspect-[16/9] w-full overflow-hidden">
+                                    <div className="aspect-[16/9] w-full overflow-hidden bg-amber-100">
                                         <img
                                             src={`/storage/${r.banner_image}`}
                                             alt=""
@@ -177,26 +173,26 @@ export default function PointRewards({ rewards, pending, points_balance }: Props
                                 <div className="p-4">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-bold leading-tight">
+                                            <p className="text-sm leading-tight font-bold">
                                                 {r.name}
                                             </p>
-                                            <p className="text-muted-foreground mt-0.5 text-[11px] flex items-center gap-1">
+                                            <p className="text-muted-foreground mt-0.5 flex items-center gap-1 text-[11px]">
                                                 {r.kind === 'product' ? (
                                                     <Coffee className="size-3" />
                                                 ) : (
                                                     <Package className="size-3" />
                                                 )}
                                                 {r.kind === 'product'
-                                                    ? r.product_name ?? 'Menu item'
+                                                    ? (r.product_name ?? 'Menu item')
                                                     : 'Merchandise'}
                                             </p>
                                             {r.description && (
-                                                <p className="text-muted-foreground mt-1.5 whitespace-pre-line text-xs leading-snug">
+                                                <p className="text-muted-foreground mt-1.5 text-xs leading-snug whitespace-pre-line">
                                                     {r.description}
                                                 </p>
                                             )}
                                         </div>
-                                        <span className="bg-amber-100 text-amber-700 flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold">
+                                        <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
                                             {r.points_cost.toLocaleString()} pts
                                         </span>
                                     </div>

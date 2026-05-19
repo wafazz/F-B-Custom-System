@@ -33,7 +33,7 @@ export function PushToggle() {
             switch (result.reason) {
                 case 'permission-denied':
                     window.alert(
-                        "Notifications are blocked. Click the 🔒 padlock in the URL bar → Site settings → Notifications → Allow, then try again.",
+                        'Notifications are blocked. Click the 🔒 padlock in the URL bar → Site settings → Notifications → Allow, then try again.',
                     );
                     break;
                 case 'permission-default':
@@ -51,7 +51,9 @@ export function PushToggle() {
                     }
                     break;
                 case 'browser-subscribe-failed':
-                    window.alert(`Browser refused the subscription: ${result.message ?? 'unknown error'}`);
+                    window.alert(
+                        `Browser refused the subscription: ${result.message ?? 'unknown error'}`,
+                    );
                     break;
                 case 'unsupported':
                     window.alert(

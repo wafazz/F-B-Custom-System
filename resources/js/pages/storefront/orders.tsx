@@ -41,7 +41,7 @@ export default function OrdersHistory({ orders }: Props) {
             <div className="mb-4 flex items-center gap-3">
                 <Link
                     href="/profile"
-                    className="bg-card text-card-foreground hover:bg-amber-50 flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-100 shadow-sm transition-colors"
+                    className="bg-card text-card-foreground flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-100 shadow-sm transition-colors hover:bg-amber-50"
                     aria-label="Back to profile"
                 >
                     <ArrowLeft className="size-4" />
@@ -86,7 +86,7 @@ export default function OrdersHistory({ orders }: Props) {
                                     type="button"
                                     onClick={() => payAgain(order.id)}
                                     disabled={payingId === order.id}
-                                    className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-60"
+                                    className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold tracking-wider uppercase transition-colors disabled:opacity-60"
                                 >
                                     <CreditCard className="size-4" />
                                     {payingId === order.id

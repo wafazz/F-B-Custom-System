@@ -89,7 +89,7 @@ export default function Order({ order, reverb }: Props) {
             <div className="mb-2 flex items-center gap-3">
                 <Link
                     href="/orders"
-                    className="bg-card text-card-foreground hover:bg-amber-50 inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors"
+                    className="bg-card text-card-foreground inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-amber-50"
                 >
                     <ArrowLeft className="size-4" />
                     <span>Back to My Orders</span>
@@ -129,7 +129,9 @@ export default function Order({ order, reverb }: Props) {
                                     </span>
                                     <span
                                         className={
-                                            reached ? 'text-card-foreground' : 'text-muted-foreground'
+                                            reached
+                                                ? 'text-card-foreground'
+                                                : 'text-muted-foreground'
                                         }
                                     >
                                         {prettify(stage)}
@@ -146,12 +148,12 @@ export default function Order({ order, reverb }: Props) {
             </div>
 
             {order.can_pay_again && (
-                <section className="border-amber-200 bg-amber-50 mb-4 rounded-xl border p-4 shadow-sm">
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
                     <div className="mb-3">
-                        <p className="text-amber-900 text-sm font-bold">
+                        <p className="text-sm font-bold text-amber-900">
                             Payment pending — finish it now
                         </p>
-                        <p className="text-amber-800/80 mt-0.5 text-[11px]">
+                        <p className="mt-0.5 text-[11px] text-amber-800/80">
                             This order is still waiting for payment. If it isn't paid by end of
                             today it will be automatically cancelled.
                         </p>
@@ -160,7 +162,7 @@ export default function Order({ order, reverb }: Props) {
                         type="button"
                         onClick={payAgain}
                         disabled={paying}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold uppercase tracking-wider shadow-sm transition-colors disabled:opacity-60"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold tracking-wider uppercase shadow-sm transition-colors disabled:opacity-60"
                     >
                         <CreditCard className="size-4" />
                         {paying ? 'Redirecting…' : `Pay now — RM${order.total.toFixed(2)}`}

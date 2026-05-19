@@ -107,7 +107,7 @@ export default function PosLayout({ children }: { children: ReactNode }) {
                     </button>
                 </div>
             </header>
-            <main className="mx-auto w-full min-h-0 max-w-7xl flex-1 p-6">{children}</main>
+            <main className="mx-auto min-h-0 w-full max-w-7xl flex-1 p-6">{children}</main>
         </div>
     );
 }

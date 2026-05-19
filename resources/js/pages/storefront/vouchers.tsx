@@ -2,7 +2,10 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { Check, Copy, Info, Sparkles, Tag, Ticket, TimerReset } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { VoucherDetailsSheet, type VoucherDetail } from '@/components/storefront/voucher-details-sheet';
+import {
+    VoucherDetailsSheet,
+    type VoucherDetail,
+} from '@/components/storefront/voucher-details-sheet';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cn } from '@/lib/utils';
 import type { Flash } from '@/types';
@@ -93,30 +96,30 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
                                         onOpenDetails={() => setDetailsVoucher(c.voucher!)}
                                     />
                                     <div className="p-4">
-                                    <VoucherBody
-                                        voucher={c.voucher}
-                                        onOpenDetails={() => setDetailsVoucher(c.voucher!)}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleCopy(c.voucher!.code)}
-                                        className={cn(
-                                            'mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed py-2 text-sm font-mono font-bold tracking-wider transition-colors',
-                                            copied === c.voucher.code
-                                                ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                                                : 'border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100',
-                                        )}
-                                    >
-                                        {copied === c.voucher.code ? (
-                                            <>
-                                                <Check className="size-4" /> Copied!
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Copy className="size-4" /> {c.voucher.code}
-                                            </>
-                                        )}
-                                    </button>
+                                        <VoucherBody
+                                            voucher={c.voucher}
+                                            onOpenDetails={() => setDetailsVoucher(c.voucher!)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopy(c.voucher!.code)}
+                                            className={cn(
+                                                'mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed py-2 font-mono text-sm font-bold tracking-wider transition-colors',
+                                                copied === c.voucher.code
+                                                    ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                                                    : 'border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100',
+                                            )}
+                                        >
+                                            {copied === c.voucher.code ? (
+                                                <>
+                                                    <Check className="size-4" /> Copied!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="size-4" /> {c.voucher.code}
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 </li>
                             ) : null,
@@ -126,16 +129,21 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
             </section>
 
             {(() => {
-                const rewards = available.filter((v) => v.points_cost !== null && v.points_cost > 0);
+                const rewards = available.filter(
+                    (v) => v.points_cost !== null && v.points_cost > 0,
+                );
                 if (rewards.length === 0) return null;
                 return (
                     <section className="mb-6">
                         <div className="mb-2 flex items-baseline justify-between gap-2">
-                            <h2 className="text-sm font-semibold flex items-center gap-1.5">
+                            <h2 className="flex items-center gap-1.5 text-sm font-semibold">
                                 <Sparkles className="size-3.5 text-amber-500" /> Redeem rewards
                             </h2>
                             <span className="text-muted-foreground text-[11px]">
-                                Balance: <strong className="text-amber-700">{points_balance.toLocaleString()} pts</strong>
+                                Balance:{' '}
+                                <strong className="text-amber-700">
+                                    {points_balance.toLocaleString()} pts
+                                </strong>
                             </span>
                         </div>
                         <ul className="space-y-2">
@@ -152,7 +160,10 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
                                             onOpenDetails={() => setDetailsVoucher(v)}
                                         />
                                         <div className="p-4">
-                                            <VoucherBody voucher={v} onOpenDetails={() => setDetailsVoucher(v)} />
+                                            <VoucherBody
+                                                voucher={v}
+                                                onOpenDetails={() => setDetailsVoucher(v)}
+                                            />
                                             <Button
                                                 onClick={() => handleClaim(v)}
                                                 disabled={claiming === v.id || !canAfford}
@@ -176,7 +187,9 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
             <section className="mb-6">
                 <h2 className="mb-2 text-sm font-semibold">Available to claim</h2>
                 {(() => {
-                    const free = available.filter((v) => v.points_cost === null || v.points_cost === 0);
+                    const free = available.filter(
+                        (v) => v.points_cost === null || v.points_cost === 0,
+                    );
                     if (free.length === 0) {
                         return (
                             <div className="border-border bg-card text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
@@ -196,7 +209,10 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
                                         onOpenDetails={() => setDetailsVoucher(v)}
                                     />
                                     <div className="p-4">
-                                        <VoucherBody voucher={v} onOpenDetails={() => setDetailsVoucher(v)} />
+                                        <VoucherBody
+                                            voucher={v}
+                                            onOpenDetails={() => setDetailsVoucher(v)}
+                                        />
                                         <Button
                                             onClick={() => handleClaim(v)}
                                             disabled={claiming === v.id}
@@ -222,12 +238,12 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
                                     key={c.id}
                                     className="border-border bg-card text-muted-foreground flex items-center justify-between gap-2 rounded-lg border p-3 opacity-60"
                                 >
-                                    <span className="font-mono font-semibold">{c.voucher.code}</span>
+                                    <span className="font-mono font-semibold">
+                                        {c.voucher.code}
+                                    </span>
                                     <span className="text-[10px]">
                                         used{' '}
-                                        {c.used_at
-                                            ? new Date(c.used_at).toLocaleDateString()
-                                            : ''}
+                                        {c.used_at ? new Date(c.used_at).toLocaleDateString() : ''}
                                     </span>
                                 </li>
                             ) : null,
@@ -258,7 +274,7 @@ function VoucherBanner({
             type="button"
             onClick={onOpenDetails}
             aria-label="View voucher details"
-            className="bg-amber-100 group relative block aspect-[16/9] w-full overflow-hidden"
+            className="group relative block aspect-[16/9] w-full overflow-hidden bg-amber-100"
         >
             <img
                 src={`/storage/${image}`}
@@ -266,20 +282,14 @@ function VoucherBanner({
                 aria-hidden
                 className="size-full object-cover transition-transform group-hover:scale-105"
             />
-            <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+            <span className="pointer-events-none absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
                 <Info className="size-3" /> Details
             </span>
         </button>
     );
 }
 
-function VoucherBody({
-    voucher,
-    onOpenDetails,
-}: {
-    voucher: Voucher;
-    onOpenDetails?: () => void;
-}) {
+function VoucherBody({ voucher, onOpenDetails }: { voucher: Voucher; onOpenDetails?: () => void }) {
     const discountLabel =
         voucher.discount_type === 'percentage'
             ? `${voucher.discount_value.toFixed(0)}% off`
@@ -296,9 +306,7 @@ function VoucherBody({
                 </div>
             </div>
             <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                {voucher.min_subtotal > 0 && (
-                    <span>Min RM{voucher.min_subtotal.toFixed(2)}</span>
-                )}
+                {voucher.min_subtotal > 0 && <span>Min RM{voucher.min_subtotal.toFixed(2)}</span>}
                 {voucher.max_discount !== null && (
                     <span>Cap RM{voucher.max_discount.toFixed(2)}</span>
                 )}

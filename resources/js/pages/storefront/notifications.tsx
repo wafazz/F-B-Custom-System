@@ -21,11 +21,7 @@ interface Props {
 
 export default function Notifications({ items, unread_count }: Props) {
     function markRead(id: string) {
-        router.post(
-            `/notifications/${id}/read`,
-            {},
-            { preserveScroll: true, preserveState: true },
-        );
+        router.post(`/notifications/${id}/read`, {}, { preserveScroll: true, preserveState: true });
     }
 
     function markAllRead() {
@@ -72,7 +68,9 @@ export default function Notifications({ items, unread_count }: Props) {
             {items.length === 0 ? (
                 <div className="border-border bg-card rounded-2xl border border-dashed py-12 text-center">
                     <Inbox className="text-muted-foreground mx-auto mb-3 size-10" />
-                    <p className="text-card-foreground text-sm font-semibold">No notifications yet</p>
+                    <p className="text-card-foreground text-sm font-semibold">
+                        No notifications yet
+                    </p>
                     <p className="text-muted-foreground mt-1 text-xs">
                         Order updates and rewards will appear here.
                     </p>

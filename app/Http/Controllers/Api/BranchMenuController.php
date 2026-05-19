@@ -47,6 +47,7 @@ class BranchMenuController extends Controller
             $category = $product->category;
             $catId = $category->getKey();
             if (! isset($byCategory[$catId])) {
+                /** @var Category|null $parent */
                 $parent = $category->parent;
                 $byCategory[$catId] = [
                     'id' => $catId,

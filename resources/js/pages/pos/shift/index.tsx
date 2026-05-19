@@ -89,7 +89,8 @@ function OpenShiftForm() {
                 <div>
                     <h1 className="text-lg font-bold">No active shift</h1>
                     <p className="text-xs text-slate-400">
-                        Open a shift before taking orders. Enter the cash float you're starting with.
+                        Open a shift before taking orders. Enter the cash float you're starting
+                        with.
                     </p>
                 </div>
             </div>
@@ -144,37 +145,58 @@ function ActiveShift({ shift }: { shift: CurrentShift }) {
                     <div>
                         <p className="text-sm font-bold text-emerald-200">Shift in progress</p>
                         <p className="text-xs text-emerald-400/80">
-                            Opened {openedAt.toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' })}
+                            Opened{' '}
+                            {openedAt.toLocaleString('en-MY', {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                            })}
                             {shift.opened_by && ` · ${shift.opened_by}`}
                         </p>
                     </div>
                 </div>
-                <Button
-                    onClick={() => setCloseOpen(true)}
-                    className="bg-red-700 hover:bg-red-600"
-                >
+                <Button onClick={() => setCloseOpen(true)} className="bg-red-700 hover:bg-red-600">
                     <DoorClosed className="mr-1.5 size-4" /> Close shift
                 </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                <Stat label="Opening float" value={s.opening_float} icon={<Banknote className="size-4" />} tone="slate" />
-                <Stat label="Cash sales" value={s.cash_sales} icon={<Banknote className="size-4" />} tone="emerald" />
-                <Stat label="Cash in" value={s.cash_in_total} icon={<TrendingUp className="size-4" />} tone="emerald" />
-                <Stat label="Cash out" value={s.cash_out_total} icon={<TrendingDown className="size-4" />} tone="red" />
+                <Stat
+                    label="Opening float"
+                    value={s.opening_float}
+                    icon={<Banknote className="size-4" />}
+                    tone="slate"
+                />
+                <Stat
+                    label="Cash sales"
+                    value={s.cash_sales}
+                    icon={<Banknote className="size-4" />}
+                    tone="emerald"
+                />
+                <Stat
+                    label="Cash in"
+                    value={s.cash_in_total}
+                    icon={<TrendingUp className="size-4" />}
+                    tone="emerald"
+                />
+                <Stat
+                    label="Cash out"
+                    value={s.cash_out_total}
+                    icon={<TrendingDown className="size-4" />}
+                    tone="red"
+                />
             </div>
 
             <div className="rounded-xl border-2 border-amber-500/60 bg-amber-900/20 p-4">
                 <div className="flex items-baseline justify-between">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">
+                        <p className="text-xs font-semibold tracking-wider text-amber-300 uppercase">
                             Expected cash in drawer
                         </p>
                         <p className="text-[10px] text-amber-200/70">
                             Float + cash sales + cash-in − cash-out
                         </p>
                     </div>
-                    <p className="text-3xl font-bold tabular-nums text-amber-100">
+                    <p className="text-3xl font-bold text-amber-100 tabular-nums">
                         RM{s.expected_cash.toFixed(2)}
                     </p>
                 </div>
@@ -216,7 +238,9 @@ function ActiveShift({ shift }: { shift: CurrentShift }) {
                                         <span
                                             className={cn(
                                                 'flex size-5 items-center justify-center rounded-full text-white',
-                                                m.type === 'cash_in' ? 'bg-emerald-700' : 'bg-red-700',
+                                                m.type === 'cash_in'
+                                                    ? 'bg-emerald-700'
+                                                    : 'bg-red-700',
                                             )}
                                         >
                                             {m.type === 'cash_in' ? (
@@ -230,7 +254,9 @@ function ActiveShift({ shift }: { shift: CurrentShift }) {
                                     <span
                                         className={cn(
                                             'font-semibold tabular-nums',
-                                            m.type === 'cash_in' ? 'text-emerald-400' : 'text-red-400',
+                                            m.type === 'cash_in'
+                                                ? 'text-emerald-400'
+                                                : 'text-red-400',
                                         )}
                                     >
                                         {m.type === 'cash_in' ? '+' : '−'}RM{m.amount.toFixed(2)}
@@ -250,7 +276,7 @@ function ActiveShift({ shift }: { shift: CurrentShift }) {
                     {s.other_sales > 0 && <Row label="Other" v={s.other_sales} />}
                     <div className="mt-2 flex items-baseline justify-between border-t border-slate-800 pt-2">
                         <span className="text-xs font-bold">Gross</span>
-                        <span className="text-base font-bold tabular-nums text-amber-400">
+                        <span className="text-base font-bold text-amber-400 tabular-nums">
                             RM{s.gross_sales.toFixed(2)}
                         </span>
                     </div>
@@ -297,7 +323,7 @@ function Stat({
     };
     return (
         <div className="rounded-lg border border-slate-700 bg-slate-900 p-3">
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                 {icon}
                 {label}
             </div>
@@ -349,7 +375,9 @@ function MovementModal({
                     className="space-y-3"
                 >
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-400">Amount (RM)</label>
+                        <label className="mb-1 block text-xs font-medium text-slate-400">
+                            Amount (RM)
+                        </label>
                         <input
                             type="number"
                             step="0.01"
@@ -359,18 +387,28 @@ function MovementModal({
                             className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-base font-semibold tabular-nums outline-none focus:border-amber-500"
                             autoFocus
                         />
-                        {errors.amount && <p className="mt-1 text-xs text-red-400">{errors.amount}</p>}
+                        {errors.amount && (
+                            <p className="mt-1 text-xs text-red-400">{errors.amount}</p>
+                        )}
                     </div>
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-400">Reason</label>
+                        <label className="mb-1 block text-xs font-medium text-slate-400">
+                            Reason
+                        </label>
                         <input
                             type="text"
                             value={data.reason}
                             onChange={(e) => setData('reason', e.target.value)}
-                            placeholder={type === 'cash_in' ? 'e.g. additional float' : 'e.g. petty cash — pastry supplier'}
+                            placeholder={
+                                type === 'cash_in'
+                                    ? 'e.g. additional float'
+                                    : 'e.g. petty cash — pastry supplier'
+                            }
                             className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-amber-500"
                         />
-                        {errors.reason && <p className="mt-1 text-xs text-red-400">{errors.reason}</p>}
+                        {errors.reason && (
+                            <p className="mt-1 text-xs text-red-400">{errors.reason}</p>
+                        )}
                     </div>
                     <div className="mt-4 flex gap-2">
                         <Button
@@ -421,8 +459,8 @@ function CloseShiftModal({
             <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-5">
                 <h2 className="mb-3 text-base font-bold">Close shift</h2>
                 <p className="mb-3 text-xs text-slate-400">
-                    Count the physical cash in the drawer and enter the total. The variance shows the
-                    difference vs expected.
+                    Count the physical cash in the drawer and enter the total. The variance shows
+                    the difference vs expected.
                 </p>
                 <div className="mb-3 rounded-md border border-slate-700 bg-slate-950 p-3 text-sm">
                     <div className="flex justify-between text-slate-400">

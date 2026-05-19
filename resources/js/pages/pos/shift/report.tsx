@@ -44,10 +44,7 @@ interface Props {
 export default function PosShiftReport({ branch, shift, summary }: Props) {
     const opened = new Date(shift.opened_at);
     const closed = shift.closed_at ? new Date(shift.closed_at) : null;
-    const duration =
-        closed
-            ? Math.round((closed.getTime() - opened.getTime()) / 60000)
-            : null;
+    const duration = closed ? Math.round((closed.getTime() - opened.getTime()) / 60000) : null;
 
     return (
         <PosLayout>
@@ -78,9 +75,7 @@ export default function PosShiftReport({ branch, shift, summary }: Props) {
                         <p className="text-xs">
                             {branch.name} · {branch.code}
                         </p>
-                        <p className="mt-1 text-[10px] text-slate-500">
-                            Shift #{shift.id}
-                        </p>
+                        <p className="mt-1 text-[10px] text-slate-500">Shift #{shift.id}</p>
                     </header>
 
                     <hr className="my-3 border-dashed border-slate-300" />
@@ -118,7 +113,7 @@ export default function PosShiftReport({ branch, shift, summary }: Props) {
 
                     <hr className="my-3 border-dashed border-slate-300" />
 
-                    <h2 className="mb-1 text-xs font-bold uppercase tracking-wider">
+                    <h2 className="mb-1 text-xs font-bold tracking-wider uppercase">
                         Sales by method
                     </h2>
                     <section className="text-xs">
@@ -126,9 +121,7 @@ export default function PosShiftReport({ branch, shift, summary }: Props) {
                         <Line label="Card" v={summary.card_sales} />
                         <Line label="DuitNow" v={summary.duitnow_sales} />
                         <Line label="Wallet" v={summary.wallet_sales} />
-                        {summary.other_sales > 0 && (
-                            <Line label="Other" v={summary.other_sales} />
-                        )}
+                        {summary.other_sales > 0 && <Line label="Other" v={summary.other_sales} />}
                         <Line label="Gross sales" v={summary.gross_sales} bold />
                         <Line
                             label={`${summary.order_count} ${summary.order_count === 1 ? 'order' : 'orders'}`}
@@ -139,9 +132,7 @@ export default function PosShiftReport({ branch, shift, summary }: Props) {
 
                     <hr className="my-3 border-dashed border-slate-300" />
 
-                    <h2 className="mb-1 text-xs font-bold uppercase tracking-wider">
-                        Cash drawer
-                    </h2>
+                    <h2 className="mb-1 text-xs font-bold tracking-wider uppercase">Cash drawer</h2>
                     <section className="text-xs">
                         <Line label="Opening float" v={summary.opening_float} />
                         <Line label="+ Cash sales" v={summary.cash_sales} />
@@ -155,7 +146,7 @@ export default function PosShiftReport({ branch, shift, summary }: Props) {
                     {summary.movements.length > 0 && (
                         <>
                             <hr className="my-3 border-dashed border-slate-300" />
-                            <h2 className="mb-1 text-xs font-bold uppercase tracking-wider">
+                            <h2 className="mb-1 text-xs font-bold tracking-wider uppercase">
                                 Cash movements
                             </h2>
                             <ul className="space-y-0.5 text-[11px]">
@@ -172,7 +163,8 @@ export default function PosShiftReport({ branch, shift, summary }: Props) {
                                                     : 'text-red-700',
                                             )}
                                         >
-                                            {m.type === 'cash_in' ? '+' : '−'}RM{m.amount.toFixed(2)}
+                                            {m.type === 'cash_in' ? '+' : '−'}RM
+                                            {m.amount.toFixed(2)}
                                         </span>
                                     </li>
                                 ))}
@@ -183,14 +175,12 @@ export default function PosShiftReport({ branch, shift, summary }: Props) {
                     {shift.notes && (
                         <>
                             <hr className="my-3 border-dashed border-slate-300" />
-                            <p className="text-[11px] italic text-slate-700">{shift.notes}</p>
+                            <p className="text-[11px] text-slate-700 italic">{shift.notes}</p>
                         </>
                     )}
 
                     <hr className="my-3 border-dashed border-slate-300" />
-                    <p className="text-center text-[10px] text-slate-500">
-                        End of shift report
-                    </p>
+                    <p className="text-center text-[10px] text-slate-500">End of shift report</p>
                 </article>
             </div>
         </PosLayout>
@@ -210,18 +200,9 @@ function Line({
     muted?: boolean;
     variance?: boolean;
 }) {
-    const display =
-        v === null
-            ? null
-            : `${v < 0 ? '−' : ''}RM${Math.abs(v).toFixed(2)}`;
+    const display = v === null ? null : `${v < 0 ? '−' : ''}RM${Math.abs(v).toFixed(2)}`;
     return (
-        <div
-            className={cn(
-                'flex justify-between',
-                bold && 'font-bold',
-                muted && 'text-slate-500',
-            )}
-        >
+        <div className={cn('flex justify-between', bold && 'font-bold', muted && 'text-slate-500')}>
             <span>{label}</span>
             {display !== null && (
                 <span

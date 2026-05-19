@@ -48,19 +48,19 @@ export default function Loyalty({
                     </div>
                     <Link
                         href="/spin"
-                        className="bg-fuchsia-500/10 text-fuchsia-600 hover:bg-fuchsia-500/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                        className="flex shrink-0 items-center gap-1.5 rounded-full bg-fuchsia-500/10 px-3 py-1.5 text-xs font-semibold text-fuchsia-600 hover:bg-fuchsia-500/20"
                     >
                         <Sparkles className="size-3.5" /> Spin
                     </Link>
                     <Link
                         href="/rewards"
-                        className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                        className="flex shrink-0 items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-500/20"
                     >
                         <Gift className="size-3.5" /> Claim pts
                     </Link>
                     <Link
                         href="/favourites"
-                        className="bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                        className="flex shrink-0 items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-500/20"
                     >
                         <Heart className="size-3.5" /> Favourites
                     </Link>

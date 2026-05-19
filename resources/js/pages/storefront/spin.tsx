@@ -98,8 +98,8 @@ export default function Spin({ segments, can_spin }: Props) {
             <Head title="Spin the wheel" />
 
             <div className="mb-2 flex items-center justify-between gap-2">
-                <h1 className="text-xl font-bold flex items-center gap-2">
-                    <Sparkles className="text-amber-500 size-5" /> Daily spin
+                <h1 className="flex items-center gap-2 text-xl font-bold">
+                    <Sparkles className="size-5 text-amber-500" /> Daily spin
                 </h1>
             </div>
             <p className="text-muted-foreground mb-6 text-xs">
@@ -116,7 +116,7 @@ export default function Spin({ segments, can_spin }: Props) {
                     <div className="relative">
                         <div
                             aria-hidden
-                            className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1"
+                            className="absolute top-0 left-1/2 z-10 -translate-x-1/2 -translate-y-1"
                             style={{
                                 width: 0,
                                 height: 0,
@@ -137,11 +137,7 @@ export default function Spin({ segments, can_spin }: Props) {
                                     : 'none',
                             }}
                         >
-                            <svg
-                                viewBox="-100 -100 200 200"
-                                className="size-full"
-                                aria-hidden
-                            >
+                            <svg viewBox="-100 -100 200 200" className="size-full" aria-hidden>
                                 {segments.map((s, i) => {
                                     const startAngle = i * segmentAngle - 90;
                                     const endAngle = (i + 1) * segmentAngle - 90;
@@ -185,7 +181,7 @@ export default function Spin({ segments, can_spin }: Props) {
 
                         {/* Centre cap */}
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                            <div className="bg-amber-800 size-12 rounded-full ring-4 ring-amber-100 shadow-lg" />
+                            <div className="size-12 rounded-full bg-amber-800 shadow-lg ring-4 ring-amber-100" />
                         </div>
                     </div>
 
@@ -194,16 +190,12 @@ export default function Spin({ segments, can_spin }: Props) {
                         disabled={spinning || done}
                         className="mt-8 w-full max-w-xs"
                     >
-                        {spinning
-                            ? 'Spinning…'
-                            : done
-                              ? 'See you tomorrow!'
-                              : 'Spin the wheel'}
+                        {spinning ? 'Spinning…' : done ? 'See you tomorrow!' : 'Spin the wheel'}
                     </Button>
 
                     {result && (
                         <div className="mt-4 w-full max-w-xs rounded-2xl border border-amber-300 bg-amber-50 p-4 text-center shadow">
-                            <p className="text-xs uppercase tracking-wider font-semibold text-amber-700">
+                            <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
                                 {result.awarded_points > 0 || result.voucher_claimed
                                     ? 'You won!'
                                     : 'Not this time'}
@@ -211,9 +203,7 @@ export default function Spin({ segments, can_spin }: Props) {
                             <p className="mt-1 text-2xl font-extrabold text-amber-900">
                                 {result.label}
                             </p>
-                            <p className="text-muted-foreground mt-2 text-xs">
-                                {result.message}
-                            </p>
+                            <p className="text-muted-foreground mt-2 text-xs">{result.message}</p>
                         </div>
                     )}
 

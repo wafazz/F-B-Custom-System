@@ -60,7 +60,12 @@ export function printOrderLabels(order: LabelOrder, opts: PrintOptions = {}) {
     };
 }
 
-function renderLabelsHtml(order: LabelOrder, copies: number, size: string, branchName: string): string {
+function renderLabelsHtml(
+    order: LabelOrder,
+    copies: number,
+    size: string,
+    branchName: string,
+): string {
     const widthMm = size === '80mm' ? 80 : 58;
     const labels: string[] = [];
     const time = order.created_at

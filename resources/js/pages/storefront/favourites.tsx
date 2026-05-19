@@ -66,12 +66,12 @@ export default function Favourites({ products }: Props) {
                                         <Coffee className="size-8" />
                                     </div>
                                 )}
-                                <span className="bg-white/85 absolute right-1.5 top-1.5 flex size-7 items-center justify-center rounded-full text-rose-500 shadow backdrop-blur-sm">
+                                <span className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-white/85 text-rose-500 shadow backdrop-blur-sm">
                                     <Heart className="size-3.5 fill-rose-500" />
                                 </span>
                             </div>
                             <div className="mt-2 flex flex-1 flex-col">
-                                <h3 className="line-clamp-2 text-sm font-semibold leading-tight">
+                                <h3 className="line-clamp-2 text-sm leading-tight font-semibold">
                                     {p.name}
                                 </h3>
                                 <p className="text-primary mt-auto pt-2 text-sm font-bold">

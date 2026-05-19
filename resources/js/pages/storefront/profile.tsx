@@ -1,5 +1,18 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Bell, ChevronRight, Download, Home, Key, LogOut, Mail, Package, Phone, Trash2, Trophy, User } from 'lucide-react';
+import {
+    Bell,
+    ChevronRight,
+    Download,
+    Home,
+    Key,
+    LogOut,
+    Mail,
+    Package,
+    Phone,
+    Trash2,
+    Trophy,
+    User,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -174,7 +187,7 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
                     </h2>
                     <Link
                         href="/orders"
-                        className="text-muted-foreground hover:text-amber-700 flex items-center gap-1 text-xs font-medium"
+                        className="text-muted-foreground flex items-center gap-1 text-xs font-medium hover:text-amber-700"
                     >
                         View all <ChevronRight className="size-3" />
                     </Link>
@@ -207,7 +220,7 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
                                             </p>
                                             <span
                                                 className={cn(
-                                                    'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                                                    'rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase',
                                                     statusBadge(order.status),
                                                 )}
                                             >
@@ -306,7 +319,9 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
                                 className={FIELD}
                                 disabled={profile.date_of_birth_locked}
                                 readOnly={profile.date_of_birth_locked}
-                                aria-describedby={profile.date_of_birth_locked ? 'dob-help' : undefined}
+                                aria-describedby={
+                                    profile.date_of_birth_locked ? 'dob-help' : undefined
+                                }
                             />
                             {profile.date_of_birth_locked && (
                                 <p id="dob-help" className="mt-1 text-[10px] text-neutral-500">

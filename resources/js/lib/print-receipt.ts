@@ -86,7 +86,8 @@ function renderReceiptHtml(order: ReceiptOrder, branch: ReceiptBranch, size: str
               minute: '2-digit',
           })
         : '';
-    const where = order.order_type === 'dine_in' ? `Dine-in · Table ${order.dine_in_table ?? '—'}` : 'Pickup';
+    const where =
+        order.order_type === 'dine_in' ? `Dine-in · Table ${order.dine_in_table ?? '—'}` : 'Pickup';
 
     const itemRows = order.items
         .map((item) => {
@@ -106,15 +107,18 @@ function renderReceiptHtml(order: ReceiptOrder, branch: ReceiptBranch, size: str
         })
         .join('');
 
-    const sstRow = order.sst_amount > 0
-        ? `<tr><td>SST${branch.sst_rate ? ` ${branch.sst_rate.toFixed(0)}%` : ''}</td><td class="r">${money(order.sst_amount)}</td></tr>`
-        : '';
-    const serviceRow = order.service_charge_amount > 0
-        ? `<tr><td>Service charge${branch.service_charge_rate ? ` ${branch.service_charge_rate.toFixed(0)}%` : ''}</td><td class="r">${money(order.service_charge_amount)}</td></tr>`
-        : '';
-    const discountRow = order.discount_amount > 0
-        ? `<tr><td>Discount</td><td class="r">−${money(order.discount_amount)}</td></tr>`
-        : '';
+    const sstRow =
+        order.sst_amount > 0
+            ? `<tr><td>SST${branch.sst_rate ? ` ${branch.sst_rate.toFixed(0)}%` : ''}</td><td class="r">${money(order.sst_amount)}</td></tr>`
+            : '';
+    const serviceRow =
+        order.service_charge_amount > 0
+            ? `<tr><td>Service charge${branch.service_charge_rate ? ` ${branch.service_charge_rate.toFixed(0)}%` : ''}</td><td class="r">${money(order.service_charge_amount)}</td></tr>`
+            : '';
+    const discountRow =
+        order.discount_amount > 0
+            ? `<tr><td>Discount</td><td class="r">−${money(order.discount_amount)}</td></tr>`
+            : '';
 
     return `<!DOCTYPE html>
 <html>

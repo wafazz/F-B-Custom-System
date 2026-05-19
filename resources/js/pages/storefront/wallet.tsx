@@ -56,17 +56,23 @@ export default function Wallet({ balance, history, topup_amounts, pending_topups
                     </div>
                     <div>
                         <p className="text-xs text-amber-900/70">Available balance</p>
-                        <p className="text-3xl font-bold tabular-nums text-amber-900">RM{balance.toFixed(2)}</p>
+                        <p className="text-3xl font-bold text-amber-900 tabular-nums">
+                            RM{balance.toFixed(2)}
+                        </p>
                     </div>
                 </div>
                 {pending_topups > 0 && (
                     <p className="mt-3 flex items-center gap-1.5 text-xs text-amber-900/80">
-                        <RefreshCcw className="size-3" /> {pending_topups} top-up{pending_topups > 1 ? 's' : ''} pending payment
+                        <RefreshCcw className="size-3" /> {pending_topups} top-up
+                        {pending_topups > 1 ? 's' : ''} pending payment
                     </p>
                 )}
             </section>
 
-            <form onSubmit={submit} className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
+            <form
+                onSubmit={submit}
+                className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm"
+            >
                 <h2 className="mb-3 text-sm font-semibold">Top up</h2>
                 <div className="mb-3 grid grid-cols-5 gap-2">
                     {topup_amounts.map((v) => (
@@ -86,7 +92,9 @@ export default function Wallet({ balance, history, topup_amounts, pending_topups
                     ))}
                 </div>
                 <div className="mb-3 space-y-1">
-                    <label className="text-xs text-muted-foreground">Or enter custom amount (RM 5 – 1000)</label>
+                    <label className="text-muted-foreground text-xs">
+                        Or enter custom amount (RM 5 – 1000)
+                    </label>
                     <input
                         type="number"
                         step="0.01"
@@ -97,10 +105,14 @@ export default function Wallet({ balance, history, topup_amounts, pending_topups
                         placeholder="0.00"
                         className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
                     />
-                    {form.errors.amount && <p className="text-xs text-red-600">{form.errors.amount}</p>}
+                    {form.errors.amount && (
+                        <p className="text-xs text-red-600">{form.errors.amount}</p>
+                    )}
                 </div>
                 <Button type="submit" disabled={form.processing} className="w-full">
-                    {form.processing ? 'Redirecting…' : `Top up RM${(custom || picked).toString()} via Billplz`}
+                    {form.processing
+                        ? 'Redirecting…'
+                        : `Top up RM${(custom || picked).toString()} via Billplz`}
                 </Button>
             </form>
 
@@ -132,7 +144,9 @@ export default function Wallet({ balance, history, topup_amounts, pending_topups
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className={`font-bold ${credit ? 'text-emerald-600' : 'text-red-600'}`}>
+                                    <p
+                                        className={`font-bold ${credit ? 'text-emerald-600' : 'text-red-600'}`}
+                                    >
                                         {credit ? '+' : ''}
                                         RM{Math.abs(row.amount).toFixed(2)}
                                     </p>

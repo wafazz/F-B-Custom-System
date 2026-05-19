@@ -98,9 +98,7 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                             {cart.order_type === 'dine_in' ? (
                                 <>
                                     <Store className="size-4" />
-                                    {cart.table_number
-                                        ? `Table ${cart.table_number}`
-                                        : 'Dine-in'}
+                                    {cart.table_number ? `Table ${cart.table_number}` : 'Dine-in'}
                                 </>
                             ) : (
                                 <>
@@ -149,9 +147,7 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                         </div>
                         <div className="text-right">
                             <p className="text-2xl font-bold text-amber-900 tabular-nums">
-                                {pointsRevealed
-                                    ? cart.customer.points.toLocaleString()
-                                    : '••••'}
+                                {pointsRevealed ? cart.customer.points.toLocaleString() : '••••'}
                             </p>
                             <p className="text-xs font-semibold text-amber-700">pts</p>
                         </div>
@@ -196,7 +192,9 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                                                 </p>
                                                 {l.modifier_labels.length > 0 && (
                                                     <p className="mt-0.5 text-xs text-amber-600">
-                                                        {groupModifierLabels(l.modifier_labels).join(' · ')}
+                                                        {groupModifierLabels(
+                                                            l.modifier_labels,
+                                                        ).join(' · ')}
                                                     </p>
                                                 )}
                                             </div>

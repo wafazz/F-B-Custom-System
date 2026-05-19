@@ -21,9 +21,7 @@ function haversineKm(a: [number, number], b: [number, number]): number {
     const dLng = ((b[1] - a[1]) * Math.PI) / 180;
     const lat1 = (a[0] * Math.PI) / 180;
     const lat2 = (b[0] * Math.PI) / 180;
-    const x =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(x));
 }
 
@@ -36,15 +34,9 @@ function escapeHtml(s: string): string {
         .replace(/'/g, '&#039;');
 }
 
-function pinIcon(
-    name: string,
-    image: string | null,
-    active: boolean,
-): L.DivIcon {
+function pinIcon(name: string, image: string | null, active: boolean): L.DivIcon {
     const ring = active ? '#92400e' : '#b45309';
-    const shadow = active
-        ? '0 8px 20px rgba(124,74,30,0.45)'
-        : '0 4px 12px rgba(0,0,0,0.22)';
+    const shadow = active ? '0 8px 20px rgba(124,74,30,0.45)' : '0 4px 12px rgba(0,0,0,0.22)';
     const size = active ? 56 : 44;
     const labelMaxW = active ? 140 : 110;
     const safeName = escapeHtml(name.replace(/^star coffee[\s—-]*/i, ''));
@@ -283,7 +275,7 @@ export default function BranchSelect({ branches }: Props) {
             <div className="bg-card/90 absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 border-b border-amber-100/50 px-3 py-3 backdrop-blur-md">
                 <Link
                     href="/"
-                    className="bg-card hover:bg-amber-50 flex size-9 items-center justify-center rounded-full shadow-sm"
+                    className="bg-card flex size-9 items-center justify-center rounded-full shadow-sm hover:bg-amber-50"
                     aria-label="Back"
                 >
                     <ArrowLeft className="size-4" />
@@ -293,7 +285,7 @@ export default function BranchSelect({ branches }: Props) {
             </div>
 
             {/* Floating hint chip below the header */}
-            <div className="bg-amber-100/95 text-amber-900 absolute left-1/2 top-[60px] z-30 max-w-[280px] -translate-x-1/2 rounded-full px-3 py-1.5 text-[10px] font-medium shadow-md">
+            <div className="absolute top-[60px] left-1/2 z-30 max-w-[280px] -translate-x-1/2 rounded-full bg-amber-100/95 px-3 py-1.5 text-[10px] font-medium text-amber-900 shadow-md">
                 We always choose the outlet closest to you. Select another one if you'd like.
             </div>
 
@@ -301,7 +293,7 @@ export default function BranchSelect({ branches }: Props) {
             <button
                 type="button"
                 onClick={requestLocate}
-                className="bg-card text-card-foreground absolute right-3 top-[60px] z-30 flex size-10 items-center justify-center rounded-full shadow-md hover:bg-amber-50"
+                className="bg-card text-card-foreground absolute top-[60px] right-3 z-30 flex size-10 items-center justify-center rounded-full shadow-md hover:bg-amber-50"
                 aria-label="Locate me"
             >
                 <Crosshair className="size-4" />
@@ -335,7 +327,7 @@ export default function BranchSelect({ branches }: Props) {
                             className={cn(
                                 'group relative flex w-[min(86vw,380px)] shrink-0 snap-center flex-col overflow-hidden rounded-2xl bg-white/95 backdrop-blur-xl transition-all duration-300 dark:bg-neutral-900/95',
                                 isActive
-                                    ? 'ring-1 ring-amber-300/60 shadow-[0_20px_40px_-12px_rgba(124,74,30,0.35)] -translate-y-1'
+                                    ? '-translate-y-1 shadow-[0_20px_40px_-12px_rgba(124,74,30,0.35)] ring-1 ring-amber-300/60'
                                     : 'shadow-[0_8px_24px_-8px_rgba(0,0,0,0.2)]',
                             )}
                         >
@@ -350,7 +342,7 @@ export default function BranchSelect({ branches }: Props) {
                             />
 
                             <div className="flex gap-3 p-3.5">
-                                <div className="relative bg-amber-50 dark:bg-amber-950/40 aspect-square size-[88px] shrink-0 overflow-hidden rounded-xl ring-1 ring-amber-100/80 dark:ring-amber-900/40">
+                                <div className="relative aspect-square size-[88px] shrink-0 overflow-hidden rounded-xl bg-amber-50 ring-1 ring-amber-100/80 dark:bg-amber-950/40 dark:ring-amber-900/40">
                                     {branch.cover_image || branch.logo ? (
                                         <img
                                             src={cover}
@@ -359,7 +351,7 @@ export default function BranchSelect({ branches }: Props) {
                                         />
                                     ) : (
                                         <div className="flex size-full items-center justify-center">
-                                            <Coffee className="text-amber-700/60 size-8" />
+                                            <Coffee className="size-8 text-amber-700/60" />
                                         </div>
                                     )}
                                     {branch.distance_km !== null && (
@@ -370,7 +362,7 @@ export default function BranchSelect({ branches }: Props) {
                                 </div>
                                 <div className="flex min-w-0 flex-1 flex-col">
                                     <div className="flex items-start justify-between gap-2">
-                                        <p className="text-amber-700 text-[10px] font-bold uppercase tracking-[0.18em]">
+                                        <p className="text-[10px] font-bold tracking-[0.18em] text-amber-700 uppercase">
                                             Star Coffee
                                         </p>
                                         <div className="flex shrink-0 flex-col items-end gap-1">
@@ -381,7 +373,7 @@ export default function BranchSelect({ branches }: Props) {
                                                         : undefined
                                                 }
                                                 className={cn(
-                                                    'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)]',
+                                                    'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-bold tracking-[0.14em] uppercase shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)]',
                                                     branch.is_open_now
                                                         ? 'bg-gradient-to-b from-emerald-50 to-emerald-100/70 text-emerald-700 ring-1 ring-emerald-200/80'
                                                         : 'bg-gradient-to-b from-red-50 to-red-100/70 text-red-600 ring-1 ring-red-200/80',
@@ -417,7 +409,7 @@ export default function BranchSelect({ branches }: Props) {
                                             )}
                                         </div>
                                     </div>
-                                    <h3 className="text-card-foreground mt-0.5 truncate text-base font-bold leading-tight">
+                                    <h3 className="text-card-foreground mt-0.5 truncate text-base leading-tight font-bold">
                                         {branch.name.replace(/^star coffee[\s—-]*/i, '')}
                                     </h3>
                                     <p className="text-muted-foreground mt-1 line-clamp-1 text-[11px] leading-snug">
@@ -429,7 +421,7 @@ export default function BranchSelect({ branches }: Props) {
                                             href={`https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="text-amber-700 hover:text-amber-800 mt-auto inline-flex w-fit items-center gap-1 text-[11px] font-semibold hover:underline"
+                                            className="mt-auto inline-flex w-fit items-center gap-1 text-[11px] font-semibold text-amber-700 hover:text-amber-800 hover:underline"
                                         >
                                             <Navigation className="size-3" /> Get directions
                                         </a>
@@ -441,7 +433,7 @@ export default function BranchSelect({ branches }: Props) {
                                 type="button"
                                 onClick={() => handleSelect(branch)}
                                 className={cn(
-                                    'group/btn relative mx-3.5 mb-3.5 overflow-hidden rounded-xl py-3 text-xs font-bold uppercase tracking-[0.2em] shadow-[0_6px_18px_-6px_rgba(124,74,30,0.5)] transition-all',
+                                    'group/btn relative mx-3.5 mb-3.5 overflow-hidden rounded-xl py-3 text-xs font-bold tracking-[0.2em] uppercase shadow-[0_6px_18px_-6px_rgba(124,74,30,0.5)] transition-all',
                                     isActive
                                         ? 'bg-gradient-to-r from-amber-800 via-amber-700 to-amber-900 text-amber-50 hover:from-amber-700 hover:to-amber-800'
                                         : 'bg-neutral-900 text-amber-50 hover:bg-neutral-800 dark:bg-amber-50 dark:text-neutral-900',

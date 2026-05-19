@@ -18,7 +18,7 @@ export default function Privacy({ page }: Props) {
                 <div className="not-prose mb-2 flex items-center gap-3">
                     <Link
                         href="/profile?tab=data"
-                        className="bg-card text-card-foreground hover:bg-amber-50 inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors"
+                        className="bg-card text-card-foreground inline-flex items-center gap-1.5 rounded-full border border-amber-100 px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-amber-50"
                     >
                         <ArrowLeft className="size-4" />
                         <span>Back to Privacy & Data</span>

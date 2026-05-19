@@ -146,9 +146,10 @@ export default function Cart({ branch, recommendations }: Props) {
                     {recommendations.length > 0 && (
                         <section className="mt-4">
                             <h2 className="flex items-center gap-1.5 text-sm font-semibold">
-                                <Sparkles className="size-3.5 text-amber-500" /> Frequently bought with
+                                <Sparkles className="size-3.5 text-amber-500" /> Frequently bought
+                                with
                             </h2>
-                            <div className="mt-2 -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+                            <div className="-mx-1 mt-2 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
                                 {recommendations.map((rec) => (
                                     <Link
                                         key={rec.id}
@@ -168,7 +169,7 @@ export default function Cart({ branch, recommendations }: Props) {
                                                 </div>
                                             )}
                                         </div>
-                                        <p className="line-clamp-2 text-xs font-medium leading-tight">
+                                        <p className="line-clamp-2 text-xs leading-tight font-medium">
                                             {rec.name}
                                         </p>
                                         <p className="text-primary text-xs font-bold">
@@ -187,7 +188,9 @@ export default function Cart({ branch, recommendations }: Props) {
                         </div>
                         {branch.service_charge_enabled && (
                             <div className="text-muted-foreground flex justify-between">
-                                <span>Service charge ({branch.service_charge_rate.toFixed(0)}%)</span>
+                                <span>
+                                    Service charge ({branch.service_charge_rate.toFixed(0)}%)
+                                </span>
                                 <span>RM{serviceCharge.toFixed(2)}</span>
                             </div>
                         )}
@@ -215,7 +218,9 @@ export default function Cart({ branch, recommendations }: Props) {
 
                     {!branch.is_open_now && (
                         <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-                            <span className="font-semibold">⏰ This branch is currently closed.</span>
+                            <span className="font-semibold">
+                                ⏰ This branch is currently closed.
+                            </span>
                             <span>Online ordering will resume during operating hours.</span>
                         </div>
                     )}
@@ -226,14 +231,10 @@ export default function Cart({ branch, recommendations }: Props) {
                                 <Button
                                     className="w-full"
                                     disabled={
-                                        !isMatch ||
-                                        !branch.accepts_orders ||
-                                        !branch.is_open_now
+                                        !isMatch || !branch.accepts_orders || !branch.is_open_now
                                     }
                                 >
-                                    {branch.is_open_now
-                                        ? 'Continue to checkout'
-                                        : 'Branch closed'}
+                                    {branch.is_open_now ? 'Continue to checkout' : 'Branch closed'}
                                 </Button>
                             </Link>
                         ) : (

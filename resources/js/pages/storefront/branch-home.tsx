@@ -111,10 +111,10 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                                 }}
                             >
                                 <div className="flex h-full flex-col justify-center p-6 text-white">
-                                    <p className="text-2xl font-bold leading-none drop-shadow-lg sm:text-3xl">
+                                    <p className="text-2xl leading-none font-bold drop-shadow-lg sm:text-3xl">
                                         {s.title.split(' ')[0]}
                                     </p>
-                                    <p className="-mt-1 font-serif text-3xl italic text-amber-100 drop-shadow-lg sm:text-4xl">
+                                    <p className="-mt-1 font-serif text-3xl text-amber-100 italic drop-shadow-lg sm:text-4xl">
                                         {s.title.split(' ').slice(1).join(' ') || ''}
                                     </p>
                                     {s.subtitle && (
@@ -125,7 +125,7 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                                     {s.cta_label && s.cta_url && (
                                         <a
                                             href={resolveCtaUrl(s.cta_url, branch.id)}
-                                            className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-neutral-900 shadow transition-transform hover:scale-105"
+                                            className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-bold tracking-wider text-neutral-900 uppercase shadow transition-transform hover:scale-105"
                                         >
                                             {s.cta_label} <ArrowRight className="size-3" />
                                         </a>
@@ -217,7 +217,9 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                                         href={href}
                                         className={cn(
                                             'absolute inset-0 flex transition-opacity duration-700',
-                                            rewardsActive === i ? 'opacity-100' : 'pointer-events-none opacity-0',
+                                            rewardsActive === i
+                                                ? 'opacity-100'
+                                                : 'pointer-events-none opacity-0',
                                         )}
                                         style={{
                                             background:
@@ -225,7 +227,7 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                                         }}
                                     >
                                         <div className="relative z-10 flex flex-1 flex-col justify-center p-5 text-white">
-                                            <p className="text-base font-bold leading-tight sm:text-lg">
+                                            <p className="text-base leading-tight font-bold sm:text-lg">
                                                 {r.title}
                                             </p>
                                             {r.subtitle && (
@@ -233,7 +235,7 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                                                     {r.subtitle}
                                                 </p>
                                             )}
-                                            <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-900 shadow">
+                                            <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11px] font-bold tracking-wider text-amber-900 uppercase shadow">
                                                 {r.cta_label ?? 'View rewards'}
                                                 <ArrowRight className="size-3" />
                                             </span>

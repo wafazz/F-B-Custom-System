@@ -35,25 +35,32 @@ export default function Loyalty({
         <StorefrontLayout>
             <Head title="Your Rewards" />
 
-            <div className="mb-3 flex items-center justify-between gap-2">
-                <h1 className="text-xl font-bold">Your Rewards</h1>
-                <div className="flex items-center gap-2">
-                    <PushToggle />
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                <div className="flex items-center justify-between gap-2 sm:justify-start">
+                    <h1 className="text-xl font-bold">Your Rewards</h1>
+                    <div className="sm:hidden">
+                        <PushToggle />
+                    </div>
+                </div>
+                <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+                    <div className="hidden sm:inline-flex">
+                        <PushToggle />
+                    </div>
                     <Link
                         href="/rewards"
-                        className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                        className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
                     >
                         <Gift className="size-3.5" /> Claim pts
                     </Link>
                     <Link
                         href="/favourites"
-                        className="bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                        className="bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
                     >
                         <Heart className="size-3.5" /> Favourites
                     </Link>
                     <Link
                         href="/vouchers"
-                        className="bg-primary/10 text-primary hover:bg-primary/20 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+                        className="bg-primary/10 text-primary hover:bg-primary/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
                     >
                         <Ticket className="size-3.5" /> Vouchers
                     </Link>

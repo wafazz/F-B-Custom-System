@@ -4,6 +4,10 @@ includes:
 
 parameters:
     level: 5
+    # CI runs PHP 8.3 and 8.4 matrices; baseline was generated on one PHP,
+    # so platform-version-only errors (e.g. PHP 8.4's Pdo\Mysql class) won't
+    # appear on the other run. Don't fail when a baseline entry is unused.
+    reportUnmatchedIgnoredErrors: false
     paths:
         - app/
         - config/

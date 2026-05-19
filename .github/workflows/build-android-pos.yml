@@ -78,17 +78,32 @@ jobs:
 
       - name: Install JS dependencies
         working-directory: mobile-pos/StarCoffeePos
+        # EXACT version pins. Carets let npm pull breaking-change minors
+        # — e.g. react-native-screens 3.34 needs Kotlin 1.9, but RN 0.73's
+        # template ships Kotlin 1.8 and react-native-screens 3.34 then
+        # fails compileDebugKotlin. Lock to the versions that physically
+        # ship in the RN 0.73 template:
         run: |
           npm install --legacy-peer-deps
-          npm install --legacy-peer-deps \
-            @react-navigation/native@^6.1.18 \
-            @react-navigation/native-stack@^6.10.0 \
-            react-native-screens@^3.31.1 \
-            react-native-safe-area-context@^4.10.5 \
-            @react-native-async-storage/async-storage@^1.23.1 \
+          npm install --legacy-peer-deps --save-exact \
+            @react-navigation/native@6.1.10 \
+            @react-navigation/native-stack@6.9.18 \
+            react-native-screens@3.29.0 \
+            react-native-safe-area-context@4.8.2 \
+            @react-native-async-storage/async-storage@1.21.0 \
             react-native-bluetooth-classic@1.73.0-rc.12 \
-            buffer@^6.0.3
-          npm install --legacy-peer-deps --save-dev babel-plugin-module-resolver@^5.0.2
+            buffer@6.0.3
+          npm install --legacy-peer-deps --save-dev --save-exact \
+            babel-plugin-module-resolver@5.0.0
+
+      - name: Bump Kotlin to 1.9.24
+        working-directory: mobile-pos/StarCoffeePos
+        # RN 0.73 template ships kotlinVersion = "1.8.0". Several modern
+        # native libs (react-native-screens 3.34+, etc.) need 1.9+. Pin
+        # to 1.9.24 — compatible with AGP 8.1 that RN 0.73 also ships.
+        run: |
+          sed -i 's|kotlinVersion = "[0-9.]*"|kotlinVersion = "1.9.24"|' android/build.gradle
+          cat android/build.gradle | grep -i kotlin || true
 
       - name: Patch AndroidManifest with Bluetooth permissions
         working-directory: mobile-pos/StarCoffeePos

@@ -10,6 +10,7 @@ interface ProfileData {
     email: string;
     phone: string | null;
     date_of_birth: string | null;
+    date_of_birth_locked: boolean;
     gender: string | null;
     address_line: string | null;
     city: string | null;
@@ -290,13 +291,28 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
 
                     <div className="grid grid-cols-2 gap-3">
                         <Field>
-                            <label className={LABEL}>Date of birth</label>
+                            <label className={LABEL}>
+                                Date of birth
+                                {profile.date_of_birth_locked && (
+                                    <span className="ml-1 text-[10px] font-normal text-neutral-500">
+                                        (locked)
+                                    </span>
+                                )}
+                            </label>
                             <input
                                 type="date"
                                 value={form.data.date_of_birth}
                                 onChange={(e) => form.setData('date_of_birth', e.target.value)}
                                 className={FIELD}
+                                disabled={profile.date_of_birth_locked}
+                                readOnly={profile.date_of_birth_locked}
+                                aria-describedby={profile.date_of_birth_locked ? 'dob-help' : undefined}
                             />
+                            {profile.date_of_birth_locked && (
+                                <p id="dob-help" className="mt-1 text-[10px] text-neutral-500">
+                                    Birthday can only be set once. Contact us to make changes.
+                                </p>
+                            )}
                         </Field>
                         <Field>
                             <label className={LABEL}>Gender</label>

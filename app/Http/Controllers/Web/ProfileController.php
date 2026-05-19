@@ -31,6 +31,7 @@ class ProfileController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'date_of_birth' => $user->date_of_birth ? Carbon::parse((string) $user->date_of_birth)->format('Y-m-d') : null,
+                'date_of_birth_locked' => $user->date_of_birth !== null,
                 'gender' => $user->gender,
                 'address_line' => $user->address_line,
                 'city' => $user->city,
@@ -96,6 +97,13 @@ class ProfileController extends Controller
             'whatsapp_consent' => ['boolean'],
             'push_consent' => ['boolean'],
         ]);
+
+        // Date of birth is set-once for customers. Once stored, only an admin
+        // can change it via /admin/users — strip any tampered payload here so
+        // the field can't be overwritten via DevTools or a stale form.
+        if ($user->date_of_birth !== null) {
+            unset($data['date_of_birth']);
+        }
 
         $user->update($data);
 

@@ -1,0 +1,146 @@
+name: Build Android POS APK
+
+# Triggers:
+#  - push to main that touches mobile-pos/ → builds and uploads APK as artifact
+#  - tag push starting with pos-v* (e.g. pos-v1.0.3) → builds + creates GitHub Release with the APK attached
+#  - manual run from the Actions tab → builds and uploads APK as artifact
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile-pos/**'
+      - '.github/workflows/build-android-pos.yml'
+    tags:
+      - 'pos-v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Initialize fresh React Native project
+        # CI-side scaffold so the repo doesn't need to track Gradle wrapper
+        # binaries / generated boilerplate. Re-runs every build (~5 min) but
+        # the result is fully deterministic against RN 0.74.5.
+        working-directory: mobile-pos
+        run: |
+          npx -y @react-native-community/cli@latest init StarCoffeePos \
+            --version 0.74.5 \
+            --skip-install \
+            --pm npm \
+            --install-pods false
+
+      - name: Copy our source over the template
+        working-directory: mobile-pos
+        run: |
+          cp -R src StarCoffeePos/
+          cp App.tsx StarCoffeePos/
+          cp tsconfig.json StarCoffeePos/
+          # Tell metro about our @/ alias
+          cat > StarCoffeePos/babel.config.js <<'JS'
+          module.exports = {
+            presets: ['module:@react-native/babel-preset'],
+            plugins: [
+              [
+                'module-resolver',
+                {
+                  root: ['./src'],
+                  alias: { '@': './src' },
+                  extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+                },
+              ],
+            ],
+          };
+          JS
+
+      - name: Install JS dependencies
+        working-directory: mobile-pos/StarCoffeePos
+        run: |
+          npm install --legacy-peer-deps
+          npm install --legacy-peer-deps \
+            @react-navigation/native@^6 \
+            @react-navigation/native-stack@^6 \
+            react-native-screens@^3 \
+            react-native-safe-area-context@^4 \
+            @react-native-async-storage/async-storage@^1 \
+            react-native-bluetooth-classic@^1 \
+            buffer
+          npm install --legacy-peer-deps --save-dev babel-plugin-module-resolver
+
+      - name: Patch AndroidManifest with Bluetooth permissions
+        working-directory: mobile-pos/StarCoffeePos
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          src = p.read_text()
+          perms = """
+              <uses-permission android:name="android.permission.BLUETOOTH" />
+              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+              <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+              <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+          """
+          marker = '<uses-permission android:name="android.permission.INTERNET" />'
+          if marker in src and "BLUETOOTH_CONNECT" not in src:
+              src = src.replace(marker, marker + "\n" + perms)
+              p.write_text(src)
+              print("Patched AndroidManifest with BT perms.")
+          else:
+              print("No patch needed.")
+          PY
+
+      - name: Set app name + package
+        working-directory: mobile-pos/StarCoffeePos
+        run: |
+          # Rename app label
+          sed -i 's|<string name="app_name">.*</string>|<string name="app_name">Star Coffee POS</string>|' \
+            android/app/src/main/res/values/strings.xml
+
+      - name: Build release APK (unsigned debug-keystore)
+        working-directory: mobile-pos/StarCoffeePos/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK
+        working-directory: mobile-pos/StarCoffeePos
+        run: |
+          mkdir -p ../../artifacts
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             ../../artifacts/star-coffee-pos-${{ github.sha }}.apk
+          ls -la ../../artifacts
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: star-coffee-pos-apk
+          path: artifacts/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release (tag pushes only)
+        if: startsWith(github.ref, 'refs/tags/pos-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.apk
+          generate_release_notes: true

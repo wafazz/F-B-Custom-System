@@ -112,3 +112,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/devices', [DeviceTokenController::class, 'store'])->name('api.devices.store');
     Route::delete('/devices', [DeviceTokenController::class, 'destroy'])->name('api.devices.destroy');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Native POS (React Native app) — Sanctum-token authed
+|--------------------------------------------------------------------------
+*/
+Route::post('/pos/login', [\App\Http\Controllers\Api\PosApiController::class, 'login'])
+    ->middleware('throttle:10,1')
+    ->name('api.pos.login');
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/pos/logout', [\App\Http\Controllers\Api\PosApiController::class, 'logout'])->name('api.pos.logout');
+    Route::get('/pos/branches/{branch}/queue', [\App\Http\Controllers\Api\PosApiController::class, 'queue'])->name('api.pos.queue');
+    Route::post('/pos/orders/{order}/transition', [\App\Http\Controllers\Api\PosApiController::class, 'transition'])->name('api.pos.transition');
+});

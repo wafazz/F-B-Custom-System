@@ -117,17 +117,22 @@ jobs:
           sed -i 's|<string name="app_name">.*</string>|<string name="app_name">Star Coffee POS</string>|' \
             android/app/src/main/res/values/strings.xml
 
-      - name: Build release APK (unsigned debug-keystore)
+      - name: Build debug APK (debug-signed, OK for sideload)
         working-directory: mobile-pos/StarCoffeePos/android
+        # assembleRelease needs a release signing config we haven't wired
+        # yet — assembleDebug uses the auto-generated debug keystore which
+        # Android happily installs from "unknown sources". When you're
+        # ready for Play Store distribution, ping me to add release
+        # signing via repo secrets.
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK
         working-directory: mobile-pos/StarCoffeePos
         run: |
           mkdir -p ../../artifacts
-          cp android/app/build/outputs/apk/release/app-release.apk \
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
              ../../artifacts/star-coffee-pos-${{ github.sha }}.apk
           ls -la ../../artifacts
 

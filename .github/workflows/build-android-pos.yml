@@ -134,16 +134,26 @@ jobs:
           sed -i 's|<string name="app_name">.*</string>|<string name="app_name">Star Coffee POS</string>|' \
             android/app/src/main/res/values/strings.xml
 
-      - name: Build debug APK (debug-signed, OK for sideload)
+      - name: Disable R8/Proguard for release
+        working-directory: mobile-pos/StarCoffeePos
+        # Release in the RN 0.73 template is signed with the debug keystore
+        # (sideloadable) but minification can break RN reflection. Turn it
+        # off so we get a clean offline-runnable APK.
+        run: |
+          sed -i 's|def enableProguardInReleaseBuilds = true|def enableProguardInReleaseBuilds = false|' android/app/build.gradle
+          grep -n enableProguardInReleaseBuilds android/app/build.gradle || true
+
+      - name: Build release APK (JS bundled, debug-signed, no Metro needed)
         id: build_apk
         working-directory: mobile-pos/StarCoffeePos/android
-        # Tee gradle's full output into a log file at $GITHUB_WORKSPACE so
-        # the next step can always upload it, success or failure. Without
-        # this we lose visibility into Gradle/Metro errors.
+        # assembleRelease bundles the JS into the APK and disables the dev
+        # client, so the app runs offline on the SUNMI without Metro.
+        # RN 0.73 template signs release with the debug keystore by default,
+        # so the APK is still sideloadable — no signing secrets required.
         run: |
           chmod +x ./gradlew
           set -o pipefail
-          ./gradlew assembleDebug --no-daemon --stacktrace --info \
+          ./gradlew assembleRelease --no-daemon --stacktrace --info \
             2>&1 | tee "$GITHUB_WORKSPACE/build.log"
 
       - name: Upload full Gradle build log (always)
@@ -159,7 +169,7 @@ jobs:
         working-directory: mobile-pos/StarCoffeePos
         run: |
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
-          cp android/app/build/outputs/apk/debug/app-debug.apk \
+          cp android/app/build/outputs/apk/release/app-release.apk \
              "$GITHUB_WORKSPACE/artifacts/star-coffee-pos-${{ github.sha }}.apk"
           ls -la "$GITHUB_WORKSPACE/artifacts"
 

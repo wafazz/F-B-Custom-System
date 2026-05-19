@@ -5,6 +5,7 @@ import PosLayout from '@/layouts/pos-layout';
 import { getEcho } from '@/lib/echo';
 import { printOrderLabels } from '@/lib/print-labels';
 import { printOrderReceipt, type ReceiptOrder } from '@/lib/print-receipt';
+import { isBridgeAvailable, printViaBridge } from '@/lib/sunmi-bridge';
 
 interface FlashReceipt extends ReceiptOrder {
     branch: {
@@ -167,12 +168,24 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
         });
     }
 
-    function printReceipt(orderId: number) {
-        router.post(
-            `/pos/orders/${orderId}/print-receipt`,
-            {},
-            { preserveScroll: true },
-        );
+    async function printReceipt(orderId: number) {
+        // Try the SUNMI built-in printer first via the localhost bridge.
+        // If unreachable (no bridge installed, not on SUNMI), fall back to
+        // the Reverb -> WiFi printer path.
+        if (await isBridgeAvailable()) {
+            try {
+                const res = await fetch(`/pos/orders/${orderId}/receipt-payload`, {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!res.ok) throw new Error(`payload HTTP ${res.status}`);
+                const payload = await res.json();
+                await printViaBridge(payload);
+                return;
+            } catch (err) {
+                console.warn('SUNMI bridge print failed, falling back to WiFi runner', err);
+            }
+        }
+        router.post(`/pos/orders/${orderId}/print-receipt`, {}, { preserveScroll: true });
     }
 
     function cancel(orderId: number) {

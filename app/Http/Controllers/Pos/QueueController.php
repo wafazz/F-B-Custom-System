@@ -63,6 +63,15 @@ class QueueController extends Controller
         return back()->with('success', 'Receipt sent to printer');
     }
 
+    /** Receipt payload — same shape as the broadcast, used by the SUNMI bridge in the PWA. */
+    public function receiptPayload(Request $request, Order $order): \Illuminate\Http\JsonResponse
+    {
+        $branchId = (int) $request->session()->get('pos.branch_id');
+        abort_unless($order->branch_id === $branchId, 403);
+
+        return response()->json((new PrintReceiptRequested($order))->broadcastWith());
+    }
+
     public function transition(Request $request, Order $order, OrderService $service): RedirectResponse
     {
         $branchId = (int) $request->session()->get('pos.branch_id');

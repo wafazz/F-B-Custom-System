@@ -1,25 +1,25 @@
-name: Build Android POS APK
+name: Build SUNMI Print Bridge APK
 
 # Triggers:
-#  - push to main that touches mobile-pos/ → builds and uploads APK as artifact
-#  - tag push starting with pos-v* (e.g. pos-v1.0.3) → builds + creates GitHub Release with the APK attached
-#  - manual run from the Actions tab → builds and uploads APK as artifact
+#  - push to main that touches sunmi-print-bridge/ → builds + uploads APK as artifact
+#  - tag push starting with bridge-v* → builds + creates a GitHub Release
+#  - manual run from the Actions tab
 
 on:
   push:
     branches: [main]
     paths:
-      - 'mobile-pos/**'
+      - 'sunmi-print-bridge/**'
       - '.github/workflows/build-android-pos.yml'
     tags:
-      - 'pos-v*'
+      - 'bridge-v*'
   workflow_dispatch:
 
 jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -31,158 +31,56 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Initialize fresh React Native project
-        # CI-side scaffold so the repo doesn't need to track Gradle wrapper
-        # binaries / generated boilerplate. Re-runs every build (~5 min) but
-        # the result is fully deterministic against the pinned RN version.
-        # Using 0.73.6 because react-native-bluetooth-classic has better
-        # compatibility with the AGP 8.1 + Kotlin 1.8 toolchain.
-        working-directory: mobile-pos
-        run: |
-          npx -y @react-native-community/cli@13 init StarCoffeePos \
-            --version 0.73.6 \
-            --skip-install \
-            --pm npm \
-            --install-pods false
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Copy our source over the template
-        working-directory: mobile-pos
+      - name: Generate Gradle wrapper
+        # The repo tracks only the Gradle build files (no wrapper jar). Run
+        # the system Gradle once to create a versioned wrapper.
+        working-directory: sunmi-print-bridge
         run: |
-          cp -R src StarCoffeePos/
-          cp App.tsx StarCoffeePos/
-          cp tsconfig.json StarCoffeePos/
-          # Tell metro about our @/ alias
-          cat > StarCoffeePos/babel.config.js <<'JS'
-          module.exports = {
-            presets: ['module:@react-native/babel-preset'],
-            plugins: [
-              [
-                'module-resolver',
-                {
-                  root: ['./src'],
-                  alias: { '@': './src' },
-                  extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
-                },
-              ],
-            ],
-          };
-          JS
+          gradle wrapper --gradle-version 8.4 --distribution-type bin
+          ls -la gradle/wrapper
 
-      - name: Install JS dependencies
-        working-directory: mobile-pos/StarCoffeePos
-        # EXACT version pins. Carets let npm pull breaking-change minors
-        # — e.g. react-native-screens 3.34 needs Kotlin 1.9, but RN 0.73's
-        # template ships Kotlin 1.8 and react-native-screens 3.34 then
-        # fails compileDebugKotlin. Lock to the versions that physically
-        # ship in the RN 0.73 template:
-        run: |
-          npm install --legacy-peer-deps
-          npm install --legacy-peer-deps --save-exact \
-            @react-navigation/native@6.1.10 \
-            @react-navigation/native-stack@6.9.18 \
-            react-native-screens@3.29.0 \
-            react-native-safe-area-context@4.8.2 \
-            @react-native-async-storage/async-storage@1.21.0 \
-            react-native-bluetooth-classic@1.73.0-rc.12 \
-            buffer@6.0.3
-          npm install --legacy-peer-deps --save-dev --save-exact \
-            babel-plugin-module-resolver@5.0.0
-
-      - name: Bump Kotlin to 1.9.24
-        working-directory: mobile-pos/StarCoffeePos
-        # RN 0.73 template ships kotlinVersion = "1.8.0". Several modern
-        # native libs (react-native-screens 3.34+, etc.) need 1.9+. Pin
-        # to 1.9.24 — compatible with AGP 8.1 that RN 0.73 also ships.
-        run: |
-          sed -i 's|kotlinVersion = "[0-9.]*"|kotlinVersion = "1.9.24"|' android/build.gradle
-          cat android/build.gradle | grep -i kotlin || true
-
-      - name: Patch AndroidManifest with Bluetooth permissions
-        working-directory: mobile-pos/StarCoffeePos
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("android/app/src/main/AndroidManifest.xml")
-          src = p.read_text()
-          perms = """
-              <uses-permission android:name="android.permission.BLUETOOTH" />
-              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-              <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-              <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-          """
-          marker = '<uses-permission android:name="android.permission.INTERNET" />'
-          if marker in src and "BLUETOOTH_CONNECT" not in src:
-              src = src.replace(marker, marker + "\n" + perms)
-              p.write_text(src)
-              print("Patched AndroidManifest with BT perms.")
-          else:
-              print("No patch needed.")
-          PY
-
-      - name: Set app name + package
-        working-directory: mobile-pos/StarCoffeePos
-        run: |
-          # Rename app label
-          sed -i 's|<string name="app_name">.*</string>|<string name="app_name">Star Coffee POS</string>|' \
-            android/app/src/main/res/values/strings.xml
-
-      - name: Disable R8/Proguard for release
-        working-directory: mobile-pos/StarCoffeePos
-        # Release in the RN 0.73 template is signed with the debug keystore
-        # (sideloadable) but minification can break RN reflection. Turn it
-        # off so we get a clean offline-runnable APK.
-        run: |
-          sed -i 's|def enableProguardInReleaseBuilds = true|def enableProguardInReleaseBuilds = false|' android/app/build.gradle
-          grep -n enableProguardInReleaseBuilds android/app/build.gradle || true
-
-      - name: Build release APK (JS bundled, debug-signed, no Metro needed)
+      - name: Build debug APK
         id: build_apk
-        working-directory: mobile-pos/StarCoffeePos/android
-        # assembleRelease bundles the JS into the APK and disables the dev
-        # client, so the app runs offline on the SUNMI without Metro.
-        # RN 0.73 template signs release with the debug keystore by default,
-        # so the APK is still sideloadable — no signing secrets required.
+        working-directory: sunmi-print-bridge
         run: |
           chmod +x ./gradlew
           set -o pipefail
-          ./gradlew assembleRelease --no-daemon --stacktrace --info \
+          ./gradlew assembleDebug --no-daemon --stacktrace \
             2>&1 | tee "$GITHUB_WORKSPACE/build.log"
 
       - name: Upload full Gradle build log (always)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pos-build-log
+          name: bridge-build-log
           path: build.log
           retention-days: 14
 
       - name: Rename APK
         if: success()
-        working-directory: mobile-pos/StarCoffeePos
+        working-directory: sunmi-print-bridge
         run: |
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
-          cp android/app/build/outputs/apk/release/app-release.apk \
-             "$GITHUB_WORKSPACE/artifacts/star-coffee-pos-${{ github.sha }}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk \
+             "$GITHUB_WORKSPACE/artifacts/sunmi-print-bridge-${{ github.sha }}.apk"
           ls -la "$GITHUB_WORKSPACE/artifacts"
 
       - name: Upload APK artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: star-coffee-pos-apk
+          name: sunmi-print-bridge-apk
           path: artifacts/*.apk
           retention-days: 30
 
       - name: Create GitHub Release (tag pushes only)
-        if: startsWith(github.ref, 'refs/tags/pos-v')
+        if: startsWith(github.ref, 'refs/tags/bridge-v')
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*.apk

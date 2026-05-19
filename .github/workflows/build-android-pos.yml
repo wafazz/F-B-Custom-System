@@ -120,23 +120,33 @@ jobs:
             android/app/src/main/res/values/strings.xml
 
       - name: Build debug APK (debug-signed, OK for sideload)
+        id: build_apk
         working-directory: mobile-pos/StarCoffeePos/android
-        # assembleRelease needs a release signing config we haven't wired
-        # yet — assembleDebug uses the auto-generated debug keystore which
-        # Android happily installs from "unknown sources". When you're
-        # ready for Play Store distribution, ping me to add release
-        # signing via repo secrets.
+        # Tee gradle's full output into a log file at $GITHUB_WORKSPACE so
+        # the next step can always upload it, success or failure. Without
+        # this we lose visibility into Gradle/Metro errors.
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          set -o pipefail
+          ./gradlew assembleDebug --no-daemon --stacktrace --info \
+            2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+
+      - name: Upload full Gradle build log (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pos-build-log
+          path: build.log
+          retention-days: 14
 
       - name: Rename APK
+        if: success()
         working-directory: mobile-pos/StarCoffeePos
         run: |
-          mkdir -p ../../artifacts
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
           cp android/app/build/outputs/apk/debug/app-debug.apk \
-             ../../artifacts/star-coffee-pos-${{ github.sha }}.apk
-          ls -la ../../artifacts
+             "$GITHUB_WORKSPACE/artifacts/star-coffee-pos-${{ github.sha }}.apk"
+          ls -la "$GITHUB_WORKSPACE/artifacts"
 
       - name: Upload APK artifact
         if: success()
@@ -145,30 +155,6 @@ jobs:
           name: star-coffee-pos-apk
           path: artifacts/*.apk
           retention-days: 30
-
-      # If anything above failed, dump everything that might help debug.
-      - name: Dump build logs on failure
-        if: failure()
-        run: |
-          mkdir -p ../../debug-logs
-          echo "=== gradle --version ===" > ../../debug-logs/summary.txt
-          (cd mobile-pos/StarCoffeePos/android && ./gradlew --version) >> ../../debug-logs/summary.txt 2>&1 || true
-          echo "=== assembleDebug rerun (with --info) ===" >> ../../debug-logs/summary.txt
-          (cd mobile-pos/StarCoffeePos/android && ./gradlew assembleDebug --info --stacktrace) \
-            >> ../../debug-logs/summary.txt 2>&1 || true
-
-          # Bundle every Gradle report directory + metro/node logs we can find
-          find mobile-pos/StarCoffeePos -type d -name "reports" -exec cp -r {} ../../debug-logs/ \; 2>/dev/null || true
-          find mobile-pos/StarCoffeePos -type f -name "*.log" -exec cp {} ../../debug-logs/ \; 2>/dev/null || true
-        working-directory: ${{ github.workspace }}
-
-      - name: Upload debug logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pos-build-debug-logs
-          path: debug-logs
-          retention-days: 14
 
       - name: Create GitHub Release (tag pushes only)
         if: startsWith(github.ref, 'refs/tags/pos-v')

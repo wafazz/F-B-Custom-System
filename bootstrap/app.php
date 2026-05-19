@@ -32,6 +32,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->respond(function ($response, $exception, $request) {
             if (! app()->environment('local') && in_array($response->getStatusCode(), [403, 404, 500, 503])) {
+                // JSON / XHR clients (mobile POS, API consumers) need a JSON
+                // error body — otherwise they get HTML and blow up parsing it.
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    return response()->json([
+                        'message' => $exception->getMessage() ?: 'Server error.',
+                    ], $response->getStatusCode());
+                }
+
                 return inertia('errors/error', ['status' => $response->getStatusCode()])
                     ->toResponse($request)
                     ->setStatusCode($response->getStatusCode());

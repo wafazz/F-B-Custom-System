@@ -81,6 +81,10 @@ class OrderPagesController extends Controller
                     'max_discount' => $v->max_discount !== null ? (float) $v->max_discount : null,
                     'product_ids' => $v->product_ids,
                     'combo_ids' => $v->combo_ids,
+                    'bxgy_buy_qty' => $v->bxgy_buy_qty,
+                    'bxgy_free_qty' => $v->bxgy_free_qty,
+                    'bxgy_free_product_ids' => $v->bxgy_free_product_ids,
+                    'bxgy_free_combo_ids' => $v->bxgy_free_combo_ids,
                 ];
             }
         }

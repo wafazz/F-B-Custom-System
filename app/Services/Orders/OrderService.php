@@ -200,6 +200,8 @@ class OrderService
                         'combo_id' => isset($row['combo'])
                             ? (int) $row['combo']->getKey() : null,
                         'line_total' => (float) $row['line_total'],
+                        'quantity' => (int) $row['quantity'],
+                        'unit_price' => (float) $row['unit_price'],
                     ],
                     $itemsToInsert,
                 );

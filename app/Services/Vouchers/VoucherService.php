@@ -51,16 +51,19 @@ class VoucherService
     /**
      * Compute the discount amount this voucher gives against a cart.
      *
-     * @param  list<array{product_id: int|null, combo_id: int|null, line_total: float}>|null  $items
+     * @param  list<array{product_id: int|null, combo_id: int|null, line_total: float, quantity?: int, unit_price?: float}>|null  $items
      *         When set + voucher has product_ids or combo_ids, the discount
-     *         applies only to the subtotal of matching lines (a line matches
-     *         when its product_id is in voucher.product_ids OR its combo_id
-     *         is in voucher.combo_ids). Otherwise applies to full subtotal.
+     *         applies only to the subtotal of matching lines. quantity +
+     *         unit_price are required for buy_x_get_y vouchers.
      */
     public function discountFor(Voucher $voucher, float $subtotal, ?array $items = null): float
     {
         if ($subtotal < (float) $voucher->min_subtotal) {
             throw new RuntimeException(sprintf('Minimum subtotal RM%.2f required.', (float) $voucher->min_subtotal));
+        }
+
+        if ($voucher->discount_type === 'buy_x_get_y') {
+            return $this->bxgyDiscount($voucher, $subtotal, $items);
         }
 
         $eligibleSubtotal = $subtotal;
@@ -101,6 +104,110 @@ class VoucherService
         // Cap by eligible subtotal so a fixed-amount voucher can't exceed it,
         // and by the overall subtotal so it can't exceed the order total.
         return min(round($raw, 2), $eligibleSubtotal, $subtotal);
+    }
+
+    /**
+     * Buy N Free M: discount equals the unit_price sum of the M cheapest
+     * items inside the free pool (one unit per slot). Standard cafe rule
+     * — customers can't game it by gifting their most expensive line.
+     *
+     * @param  list<array{product_id: int|null, combo_id: int|null, line_total: float, quantity?: int, unit_price?: float}>|null  $items
+     */
+    private function bxgyDiscount(Voucher $voucher, float $subtotal, ?array $items): float
+    {
+        $buyQty = (int) ($voucher->bxgy_buy_qty ?? 0);
+        $freeQty = (int) ($voucher->bxgy_free_qty ?? 0);
+        if ($buyQty <= 0 || $freeQty <= 0 || $items === null) {
+            throw new RuntimeException('This voucher is not configured correctly.');
+        }
+
+        $productScope = array_map(static fn ($v): int => (int) $v, $voucher->product_ids ?? []);
+        $comboScope = array_map(static fn ($v): int => (int) $v, $voucher->combo_ids ?? []);
+        $hasQualifyingScope = ! empty($productScope) || ! empty($comboScope);
+
+        $isQualifying = function (array $row) use ($productScope, $comboScope, $hasQualifyingScope): bool {
+            if (! $hasQualifyingScope) {
+                return true; // No scope set → every cart line qualifies.
+            }
+            $productHit = ! empty($productScope)
+                && $row['product_id'] !== null
+                && in_array((int) $row['product_id'], $productScope, true);
+            $comboHit = ! empty($comboScope)
+                && $row['combo_id'] !== null
+                && in_array((int) $row['combo_id'], $comboScope, true);
+            return $productHit || $comboHit;
+        };
+
+        $qualifyingQty = 0;
+        foreach ($items as $row) {
+            if ($isQualifying($row)) {
+                $qualifyingQty += (int) ($row['quantity'] ?? 0);
+            }
+        }
+
+        $groups = intdiv($qualifyingQty, $buyQty);
+        if ($groups <= 0) {
+            throw new RuntimeException(
+                sprintf('Add %d more qualifying item(s) to unlock this voucher.', $buyQty - $qualifyingQty),
+            );
+        }
+        $freeCount = $groups * $freeQty;
+
+        // Build free pool:
+        //   bxgy_free_product_ids null AND bxgy_free_combo_ids null
+        //     → free pool = qualifying lines (same scope)
+        //   bxgy_free_product_ids = [] AND bxgy_free_combo_ids = []
+        //     → free pool = every cart line (any item)
+        //   otherwise → use the bxgy_free_* lists
+        $freeProductScope = $voucher->bxgy_free_product_ids;
+        $freeComboScope = $voucher->bxgy_free_combo_ids;
+        $freePoolMode = match (true) {
+            $freeProductScope === null && $freeComboScope === null => 'same',
+            (is_array($freeProductScope) && $freeProductScope === [])
+                && (is_array($freeComboScope) && $freeComboScope === []) => 'any',
+            default => 'cross',
+        };
+
+        $crossProducts = array_map(static fn ($v): int => (int) $v, $freeProductScope ?? []);
+        $crossCombos = array_map(static fn ($v): int => (int) $v, $freeComboScope ?? []);
+        $inFreePool = function (array $row) use ($freePoolMode, $isQualifying, $crossProducts, $crossCombos): bool {
+            return match ($freePoolMode) {
+                'any' => true,
+                'same' => $isQualifying($row),
+                'cross' => (! empty($crossProducts)
+                        && $row['product_id'] !== null
+                        && in_array((int) $row['product_id'], $crossProducts, true))
+                    || (! empty($crossCombos)
+                        && $row['combo_id'] !== null
+                        && in_array((int) $row['combo_id'], $crossCombos, true)),
+            };
+        };
+
+        // Expand each pool line to one entry per unit so we can rank by unit
+        // price across qty boundaries.
+        $units = [];
+        foreach ($items as $row) {
+            if (! $inFreePool($row)) {
+                continue;
+            }
+            $qty = (int) ($row['quantity'] ?? 0);
+            $unitPrice = (float) ($row['unit_price'] ?? 0);
+            for ($i = 0; $i < $qty; $i++) {
+                $units[] = $unitPrice;
+            }
+        }
+        if (empty($units)) {
+            throw new RuntimeException('No items in your cart qualify for the free reward.');
+        }
+        sort($units);
+
+        $take = min($freeCount, count($units));
+        $discount = 0.0;
+        for ($i = 0; $i < $take; $i++) {
+            $discount += $units[$i];
+        }
+
+        return min(round($discount, 2), $subtotal);
     }
 
     public function commit(Voucher $voucher, Order $order, float $discount): VoucherRedemption

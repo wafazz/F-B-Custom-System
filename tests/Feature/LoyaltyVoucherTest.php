@@ -259,3 +259,136 @@ test('VoucherService.find normalises code to uppercase', function () {
     $voucher = app(VoucherService::class)->find('save10', 1);
     expect($voucher->code)->toBe('SAVE10');
 });
+
+// ----- Buy X Get Y free -----
+
+test('buy x get y: same-scope discounts the cheapest qualifying unit (buy 2 free 1)', function () {
+    [, $product] = buildBranchProduct(10.00);
+    $voucher = Voucher::factory()->create([
+        'discount_type' => 'buy_x_get_y',
+        'discount_value' => 0,
+        'product_ids' => [$product->id],
+        'bxgy_buy_qty' => 2,
+        'bxgy_free_qty' => 1,
+        'bxgy_free_product_ids' => null,
+        'bxgy_free_combo_ids' => null,
+    ]);
+
+    $items = [
+        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 30.0, 'quantity' => 3, 'unit_price' => 10.0],
+    ];
+
+    $discount = app(VoucherService::class)->discountFor($voucher, 30.0, $items);
+
+    // 3 qualifying units / buy 2 = 1 group = 1 free unit at RM10.
+    expect($discount)->toBe(10.0);
+});
+
+test('buy x get y: only fully completed groups grant freebies', function () {
+    [, $product] = buildBranchProduct(8.00);
+    $voucher = Voucher::factory()->create([
+        'discount_type' => 'buy_x_get_y',
+        'discount_value' => 0,
+        'product_ids' => [$product->id],
+        'bxgy_buy_qty' => 3,
+        'bxgy_free_qty' => 1,
+        'bxgy_free_product_ids' => null,
+        'bxgy_free_combo_ids' => null,
+    ]);
+
+    $items = [
+        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 16.0, 'quantity' => 2, 'unit_price' => 8.0],
+    ];
+
+    expect(fn () => app(VoucherService::class)->discountFor($voucher, 16.0, $items))
+        ->toThrow(\RuntimeException::class);
+});
+
+test('buy x get y: cross-sell scope picks free items from the secondary scope only', function () {
+    [$branch, $latte] = buildBranchProduct(12.00);
+    $pastry = Product::factory()->create(['base_price' => 6.00]);
+    $branch->products()->attach($pastry->id, ['is_available' => true]);
+
+    $voucher = Voucher::factory()->create([
+        'discount_type' => 'buy_x_get_y',
+        'discount_value' => 0,
+        'product_ids' => [$latte->id],
+        'bxgy_buy_qty' => 2,
+        'bxgy_free_qty' => 1,
+        'bxgy_free_product_ids' => [$pastry->id],
+        'bxgy_free_combo_ids' => [],
+    ]);
+
+    // Buy 2 lattes RM12 each + 1 pastry RM6. Free unit comes from the pastry pool.
+    $items = [
+        ['product_id' => $latte->id, 'combo_id' => null, 'line_total' => 24.0, 'quantity' => 2, 'unit_price' => 12.0],
+        ['product_id' => $pastry->id, 'combo_id' => null, 'line_total' => 6.0, 'quantity' => 1, 'unit_price' => 6.0],
+    ];
+
+    $discount = app(VoucherService::class)->discountFor($voucher, 30.0, $items);
+
+    // Free should be the pastry (RM6), not the more expensive latte.
+    expect($discount)->toBe(6.0);
+});
+
+test('buy x get y: any-item scope picks the cheapest unit across the whole cart', function () {
+    [$branch, $latte] = buildBranchProduct(12.00);
+    $cookie = Product::factory()->create(['base_price' => 4.00]);
+    $branch->products()->attach($cookie->id, ['is_available' => true]);
+
+    $voucher = Voucher::factory()->create([
+        'discount_type' => 'buy_x_get_y',
+        'discount_value' => 0,
+        'product_ids' => [$latte->id],
+        'bxgy_buy_qty' => 2,
+        'bxgy_free_qty' => 1,
+        'bxgy_free_product_ids' => [],
+        'bxgy_free_combo_ids' => [],
+    ]);
+
+    $items = [
+        ['product_id' => $latte->id, 'combo_id' => null, 'line_total' => 24.0, 'quantity' => 2, 'unit_price' => 12.0],
+        ['product_id' => $cookie->id, 'combo_id' => null, 'line_total' => 8.0, 'quantity' => 2, 'unit_price' => 4.0],
+    ];
+
+    $discount = app(VoucherService::class)->discountFor($voucher, 32.0, $items);
+
+    // Cheapest unit in the whole cart is the RM4 cookie.
+    expect($discount)->toBe(4.0);
+});
+
+test('buy x get y: redemption persists discount through OrderService::place', function () {
+    [$branch, $product] = buildBranchProduct(10.00);
+    $user = User::factory()->create();
+    $user->assignRole('customer');
+
+    $voucher = Voucher::factory()->create([
+        'discount_type' => 'buy_x_get_y',
+        'discount_value' => 0,
+        'product_ids' => [$product->id],
+        'bxgy_buy_qty' => 2,
+        'bxgy_free_qty' => 1,
+        'bxgy_free_product_ids' => null,
+        'bxgy_free_combo_ids' => null,
+    ]);
+
+    $payload = new OrderPayload(
+        branchId: $branch->id,
+        userId: $user->id,
+        orderType: OrderType::Pickup,
+        lines: [new OrderLinePayload(
+            productId: $product->id,
+            quantity: 3,
+            modifierOptionIds: [],
+        )],
+        paymentMethod: 'gateway',
+        voucherCode: $voucher->code,
+    );
+
+    $order = app(OrderService::class)->place($payload);
+
+    // 3x RM10 = RM30, free 1 cheapest = RM10 off.
+    expect((float) $order->discount_amount)->toBe(10.0);
+    expect((float) $order->subtotal)->toBe(30.0);
+    expect(VoucherRedemption::where('voucher_id', $voucher->id)->count())->toBe(1);
+});

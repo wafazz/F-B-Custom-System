@@ -24,12 +24,16 @@ import { cn } from '@/lib/utils';
 interface VoucherChip {
     code: string;
     name: string;
-    discount_type: 'percentage' | 'fixed';
+    discount_type: 'percentage' | 'fixed' | 'buy_x_get_y';
     discount_value: number;
     min_subtotal: number;
     max_discount: number | null;
     product_ids: number[] | null;
     combo_ids: number[] | null;
+    bxgy_buy_qty?: number | null;
+    bxgy_free_qty?: number | null;
+    bxgy_free_product_ids?: number[] | null;
+    bxgy_free_combo_ids?: number[] | null;
 }
 
 interface SuggestionProduct {
@@ -697,6 +701,10 @@ function computeVoucherDiscount(
 ): number {
     if (subtotal < voucher.min_subtotal) return 0;
 
+    if (voucher.discount_type === 'buy_x_get_y') {
+        return computeBxgyDiscount(voucher, subtotal, lines);
+    }
+
     const productScope = voucher.product_ids ?? [];
     const comboScope = voucher.combo_ids ?? [];
     const hasScope = productScope.length > 0 || comboScope.length > 0;
@@ -720,6 +728,79 @@ function computeVoucherDiscount(
             : voucher.discount_value;
     const capped = voucher.max_discount !== null ? Math.min(raw, voucher.max_discount) : raw;
     return Math.min(Math.round(capped * 100) / 100, eligibleSubtotal, subtotal);
+}
+
+/**
+ * Mirrors VoucherService::bxgyDiscount on the server. Keep them aligned —
+ * checkout uses this for the live preview; server is the source of truth
+ * on submit.
+ */
+function computeBxgyDiscount(
+    voucher: VoucherChip,
+    subtotal: number,
+    lines: Array<{
+        product_id: number | null;
+        combo_id?: number | null;
+        unit_price: number;
+        quantity: number;
+    }>,
+): number {
+    const buyQty = voucher.bxgy_buy_qty ?? 0;
+    const freeQty = voucher.bxgy_free_qty ?? 0;
+    if (buyQty <= 0 || freeQty <= 0) return 0;
+
+    const qualifyingProducts = new Set(voucher.product_ids ?? []);
+    const qualifyingCombos = new Set(voucher.combo_ids ?? []);
+    const hasQualifyingScope = qualifyingProducts.size > 0 || qualifyingCombos.size > 0;
+    const isQualifying = (l: { product_id: number | null; combo_id?: number | null }) => {
+        if (!hasQualifyingScope) return true;
+        const p = l.product_id !== null && qualifyingProducts.has(l.product_id);
+        const c =
+            l.combo_id !== null && l.combo_id !== undefined && qualifyingCombos.has(l.combo_id);
+        return p || c;
+    };
+
+    const qualifyingQty = lines.reduce((q, l) => (isQualifying(l) ? q + l.quantity : q), 0);
+    const groups = Math.floor(qualifyingQty / buyQty);
+    if (groups <= 0) return 0;
+    const freeCount = groups * freeQty;
+
+    const freeProductScope = voucher.bxgy_free_product_ids ?? null;
+    const freeComboScope = voucher.bxgy_free_combo_ids ?? null;
+    let mode: 'same' | 'any' | 'cross';
+    if (freeProductScope === null && freeComboScope === null) {
+        mode = 'same';
+    } else if (
+        Array.isArray(freeProductScope) &&
+        freeProductScope.length === 0 &&
+        Array.isArray(freeComboScope) &&
+        freeComboScope.length === 0
+    ) {
+        mode = 'any';
+    } else {
+        mode = 'cross';
+    }
+    const crossProducts = new Set(freeProductScope ?? []);
+    const crossCombos = new Set(freeComboScope ?? []);
+    const inFreePool = (l: { product_id: number | null; combo_id?: number | null }) => {
+        if (mode === 'any') return true;
+        if (mode === 'same') return isQualifying(l);
+        const p = l.product_id !== null && crossProducts.has(l.product_id);
+        const c = l.combo_id !== null && l.combo_id !== undefined && crossCombos.has(l.combo_id);
+        return p || c;
+    };
+
+    const units: number[] = [];
+    for (const l of lines) {
+        if (!inFreePool(l)) continue;
+        for (let i = 0; i < l.quantity; i++) units.push(l.unit_price);
+    }
+    if (units.length === 0) return 0;
+    units.sort((a, b) => a - b);
+    const take = Math.min(freeCount, units.length);
+    let discount = 0;
+    for (let i = 0; i < take; i++) discount += units[i];
+    return Math.min(Math.round(discount * 100) / 100, subtotal);
 }
 
 function TypeCard({

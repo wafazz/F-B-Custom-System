@@ -29,6 +29,10 @@ use Illuminate\Support\Carbon;
  * @property array<int, int>|null $birthday_months
  * @property array<int, int>|null $product_ids
  * @property array<int, int>|null $combo_ids
+ * @property int|null $bxgy_buy_qty
+ * @property int|null $bxgy_free_qty
+ * @property array<int, int>|null $bxgy_free_product_ids
+ * @property array<int, int>|null $bxgy_free_combo_ids
  * @property bool $new_users_only
  * @property int|null $points_cost
  * @property string $status
@@ -57,6 +61,10 @@ class Voucher extends Model
         'birthday_months',
         'product_ids',
         'combo_ids',
+        'bxgy_buy_qty',
+        'bxgy_free_qty',
+        'bxgy_free_product_ids',
+        'bxgy_free_combo_ids',
         'new_users_only',
         'points_cost',
         'status',
@@ -75,8 +83,17 @@ class Voucher extends Model
             'birthday_months' => 'array',
             'product_ids' => 'array',
             'combo_ids' => 'array',
+            'bxgy_buy_qty' => 'integer',
+            'bxgy_free_qty' => 'integer',
+            'bxgy_free_product_ids' => 'array',
+            'bxgy_free_combo_ids' => 'array',
             'new_users_only' => 'boolean',
         ];
+    }
+
+    public function isBxgy(): bool
+    {
+        return $this->discount_type === 'buy_x_get_y';
     }
 
     /**

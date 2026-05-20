@@ -56,12 +56,26 @@ class VoucherResource extends Resource
             Forms\Components\Section::make('Discount')
                 ->schema([
                     Forms\Components\Select::make('discount_type')
-                        ->options(['percentage' => 'Percentage (%)', 'fixed' => 'Fixed (RM)'])
+                        ->options([
+                            'percentage' => 'Percentage (%)',
+                            'fixed' => 'Fixed (RM)',
+                            'buy_x_get_y' => 'Buy X Get Y free',
+                        ])
                         ->default('percentage')
-                        ->required(),
-                    Forms\Components\TextInput::make('discount_value')->numeric()->required()->step(0.01),
+                        ->required()
+                        ->live(),
+                    Forms\Components\TextInput::make('discount_value')
+                        ->numeric()
+                        ->step(0.01)
+                        ->default(0)
+                        ->required(fn (Forms\Get $get) => $get('discount_type') !== 'buy_x_get_y')
+                        ->visible(fn (Forms\Get $get) => $get('discount_type') !== 'buy_x_get_y'),
                     Forms\Components\TextInput::make('min_subtotal')->numeric()->prefix('RM')->default(0),
-                    Forms\Components\TextInput::make('max_discount')->numeric()->prefix('RM')->helperText('Cap for percentage vouchers'),
+                    Forms\Components\TextInput::make('max_discount')
+                        ->numeric()
+                        ->prefix('RM')
+                        ->helperText('Cap for percentage vouchers')
+                        ->visible(fn (Forms\Get $get) => $get('discount_type') === 'percentage'),
                     Forms\Components\TextInput::make('points_cost')
                         ->label('Points cost (rewards catalogue)')
                         ->numeric()
@@ -71,6 +85,64 @@ class VoucherResource extends Resource
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
+
+            Forms\Components\Section::make('Buy X Get Y free')
+                ->description('Customer buys N qualifying items and gets M free. Configure the "free scope" below — empty list means any item in the cart qualifies; leave it null and the same products as the qualifying scope (set under Eligibility) will be used.')
+                ->visible(fn (Forms\Get $get) => $get('discount_type') === 'buy_x_get_y')
+                ->schema([
+                    Forms\Components\TextInput::make('bxgy_buy_qty')
+                        ->label('Buy quantity (N)')
+                        ->numeric()
+                        ->minValue(1)
+                        ->required()
+                        ->default(2),
+                    Forms\Components\TextInput::make('bxgy_free_qty')
+                        ->label('Free quantity (M)')
+                        ->numeric()
+                        ->minValue(1)
+                        ->required()
+                        ->default(1),
+                    Forms\Components\Select::make('bxgy_free_scope')
+                        ->label('Free items scope')
+                        ->options([
+                            'same' => 'Same as qualifying items',
+                            'cross' => 'Cross-sell (pick products below)',
+                            'any' => 'Any item in the cart (cheapest auto-picked)',
+                        ])
+                        ->required()
+                        ->live()
+                        ->dehydrated(false)
+                        ->afterStateHydrated(function (Forms\Components\Select $component, ?Voucher $record): void {
+                            if (! $record) {
+                                $component->state('same');
+                                return;
+                            }
+                            $component->state(match (true) {
+                                $record->bxgy_free_product_ids === null && $record->bxgy_free_combo_ids === null => 'same',
+                                $record->bxgy_free_product_ids === [] && $record->bxgy_free_combo_ids === [] => 'any',
+                                default => 'cross',
+                            });
+                        })
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('bxgy_free_product_ids')
+                        ->label('Free products (cross-sell)')
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->options(fn () => Product::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->visible(fn (Forms\Get $get) => $get('bxgy_free_scope') === 'cross')
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('bxgy_free_combo_ids')
+                        ->label('Free combos (cross-sell)')
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->options(fn () => Combo::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->visible(fn (Forms\Get $get) => $get('bxgy_free_scope') === 'cross')
+                        ->columnSpanFull(),
+                ])
+                ->columns(2),
+
 
             Forms\Components\Section::make('Limits & Validity')
                 ->schema([
@@ -177,5 +249,46 @@ class VoucherResource extends Resource
             'create' => Pages\CreateVoucher::route('/create'),
             'edit' => Pages\EditVoucher::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Translate the form-only `bxgy_free_scope` select into the persisted
+     * bxgy_free_product_ids + bxgy_free_combo_ids columns:
+     *   - 'same'  → both null   (free pool reuses product_ids/combo_ids)
+     *   - 'any'   → both []     (free pool = entire cart)
+     *   - 'cross' → keep what the admin picked in the two multiselects
+     *
+     * Also wipes the bxgy_* fields when the voucher isn't a BxGy type, so a
+     * later switch back to percentage/fixed doesn't leave stale data.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function normaliseBxgyPayload(array $data): array
+    {
+        if (($data['discount_type'] ?? null) !== 'buy_x_get_y') {
+            $data['bxgy_buy_qty'] = null;
+            $data['bxgy_free_qty'] = null;
+            $data['bxgy_free_product_ids'] = null;
+            $data['bxgy_free_combo_ids'] = null;
+            // bxgy vouchers don't use discount_value, but other types need it.
+            return $data;
+        }
+
+        // BxGy doesn't use discount_value — store 0 to satisfy the NOT NULL
+        // decimal column (we hid the input on the form so admins don't see it).
+        if (! isset($data['discount_value'])) {
+            $data['discount_value'] = 0;
+        }
+
+        $scope = $data['bxgy_free_scope'] ?? 'same';
+        unset($data['bxgy_free_scope']); // form-only, not a model column
+        match ($scope) {
+            'same' => $data['bxgy_free_product_ids'] = $data['bxgy_free_combo_ids'] = null,
+            'any' => $data['bxgy_free_product_ids'] = $data['bxgy_free_combo_ids'] = [],
+            default => null, // 'cross' — keep whatever the multiselects produced
+        };
+
+        return $data;
     }
 }

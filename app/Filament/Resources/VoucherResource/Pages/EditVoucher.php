@@ -14,6 +14,12 @@ class EditVoucher extends EditRecord
 {
     protected static string $resource = VoucherResource::class;
 
+    /** @param array<string, mixed> $data */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return VoucherResource::normaliseBxgyPayload($data);
+    }
+
     protected function getHeaderActions(): array
     {
         return [

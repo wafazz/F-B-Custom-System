@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Check, Copy, Info, Sparkles, Tag, Ticket, TimerReset } from 'lucide-react';
+import { ArrowRight, Check, Copy, Gift, Info, Sparkles, Tag, Ticket, TimerReset } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,6 +7,7 @@ import {
     type VoucherDetail,
 } from '@/components/storefront/voucher-details-sheet';
 import StorefrontLayout from '@/layouts/storefront-layout';
+import { useBranchStore } from '@/stores/branch-store';
 import { cn } from '@/lib/utils';
 import type { Flash } from '@/types';
 
@@ -28,9 +29,22 @@ interface Props {
 
 export default function Vouchers({ available, claimed, points_balance }: Props) {
     const flash = usePage<{ flash: Flash }>().props.flash;
+    const branch = useBranchStore((s) => s.selected);
     const [claiming, setClaiming] = useState<number | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
     const [detailsVoucher, setDetailsVoucher] = useState<Voucher | null>(null);
+
+    function handlePickBxgy(voucher: Voucher) {
+        // BxGy vouchers can't be redeemed with a copy-paste code — the customer
+        // has to explicitly choose which items they're buying and which they want
+        // free. Route to the picker against the currently selected branch; if
+        // none is set, send them to the branch selector first.
+        if (!branch) {
+            router.visit('/branches');
+            return;
+        }
+        router.visit(`/branches/${branch.id}/promos/${voucher.code}`);
+    }
 
     function handleClaim(voucher: Voucher) {
         setClaiming(voucher.id);
@@ -100,26 +114,37 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
                                             voucher={c.voucher}
                                             onOpenDetails={() => setDetailsVoucher(c.voucher!)}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleCopy(c.voucher!.code)}
-                                            className={cn(
-                                                'mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed py-2 font-mono text-sm font-bold tracking-wider transition-colors',
-                                                copied === c.voucher.code
-                                                    ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                                                    : 'border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100',
-                                            )}
-                                        >
-                                            {copied === c.voucher.code ? (
-                                                <>
-                                                    <Check className="size-4" /> Copied!
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy className="size-4" /> {c.voucher.code}
-                                                </>
-                                            )}
-                                        </button>
+                                        {c.voucher.discount_type === 'buy_x_get_y' ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePickBxgy(c.voucher!)}
+                                                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-amber-400 bg-amber-50 py-2 text-sm font-bold text-amber-700 transition-colors hover:bg-amber-100"
+                                            >
+                                                <Gift className="size-4" /> Pick your free items
+                                                <ArrowRight className="size-4" />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopy(c.voucher!.code)}
+                                                className={cn(
+                                                    'mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed py-2 font-mono text-sm font-bold tracking-wider transition-colors',
+                                                    copied === c.voucher.code
+                                                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                                                        : 'border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100',
+                                                )}
+                                            >
+                                                {copied === c.voucher.code ? (
+                                                    <>
+                                                        <Check className="size-4" /> Copied!
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="size-4" /> {c.voucher.code}
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
                                     </div>
                                 </li>
                             ) : null,

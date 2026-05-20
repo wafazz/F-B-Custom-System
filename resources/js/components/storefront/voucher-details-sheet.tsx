@@ -24,7 +24,7 @@ export interface VoucherDetail {
     name: string;
     description: string | null;
     banner_image: string | null;
-    discount_type: 'percentage' | 'fixed';
+    discount_type: 'percentage' | 'fixed' | 'buy_x_get_y';
     discount_value: number;
     min_subtotal: number;
     max_discount: number | null;

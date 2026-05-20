@@ -87,7 +87,7 @@ class VoucherResource extends Resource
                 ->columns(2),
 
             Forms\Components\Section::make('Buy X Get Y free')
-                ->description('Customer buys N qualifying items and gets M free. Configure the "free scope" below — empty list means any item in the cart qualifies; leave it null and the same products as the qualifying scope (set under Eligibility) will be used.')
+                ->description('Customer buys N qualifying items and gets M free. Pick the PAID items here too — these become the products customers see on the promo picker page.')
                 ->visible(fn (Forms\Get $get) => $get('discount_type') === 'buy_x_get_y')
                 ->schema([
                     Forms\Components\TextInput::make('bxgy_buy_qty')
@@ -102,10 +102,27 @@ class VoucherResource extends Resource
                         ->minValue(1)
                         ->required()
                         ->default(1),
+                    Forms\Components\Select::make('product_ids')
+                        ->label('Qualifying paid items')
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->required()
+                        ->options(fn () => Product::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->helperText('Customers must add at least N of these to their cart to redeem. Required — without this the picker page shows empty grids.')
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('combo_ids')
+                        ->label('Qualifying paid combos')
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->options(fn () => Combo::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->helperText('Optional — combos also count toward the N paid quantity.')
+                        ->columnSpanFull(),
                     Forms\Components\Select::make('bxgy_free_scope')
                         ->label('Free items scope')
                         ->options([
-                            'same' => 'Same as qualifying items',
+                            'same' => 'Same as paid items above',
                             'cross' => 'Cross-sell (pick products below)',
                             'any' => 'Any item in the cart (cheapest auto-picked)',
                         ])
@@ -201,6 +218,9 @@ class VoucherResource extends Resource
                             12 => 'December',
                         ])
                         ->helperText('Only customers whose birthday falls in these months can claim.'),
+                    // For BxGy these live in the "Buy X Get Y free" section
+                    // above (same column, prettier label). Hide here to avoid
+                    // confusing admins about where to pick paid items.
                     Forms\Components\Select::make('product_ids')
                         ->label('Specific menu items')
                         ->multiple()
@@ -208,6 +228,7 @@ class VoucherResource extends Resource
                         ->preload()
                         ->options(fn () => Product::query()->orderBy('name')->pluck('name', 'id')->all())
                         ->helperText('When set, the discount applies only to the subtotal of these items in the cart.')
+                        ->visible(fn (Forms\Get $get) => $get('discount_type') !== 'buy_x_get_y')
                         ->columnSpanFull(),
                     Forms\Components\Select::make('combo_ids')
                         ->label('Specific combos')
@@ -216,6 +237,7 @@ class VoucherResource extends Resource
                         ->preload()
                         ->options(fn () => Combo::query()->orderBy('name')->pluck('name', 'id')->all())
                         ->helperText('Combine with menu items above (matching is OR) or use alone. Leave both empty to apply to the whole order.')
+                        ->visible(fn (Forms\Get $get) => $get('discount_type') !== 'buy_x_get_y')
                         ->columnSpanFull(),
                 ])
                 ->columns(2),

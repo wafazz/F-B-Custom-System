@@ -224,11 +224,31 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                 )}
             </section>
 
-            {/* Rewards / promo banners — stacked vertically in sort_order */}
+            {/* Rewards / promo banners — stacked vertically in sort_order.
+                Each banner renders at its uploaded image's natural width
+                and aspect ratio. Banners without an image fall back to a
+                text card so they're not invisible. */}
             {rewards_slides.length > 0 && (
                 <section className="mb-2 flex flex-col gap-3">
                     {rewards_slides.map((r, i) => {
                         const href = r.cta_url ? resolveCtaUrl(r.cta_url, branch.id) : '/loyalty';
+                        if (r.image) {
+                            return (
+                                <Link
+                                    key={i}
+                                    href={href}
+                                    aria-label={r.title}
+                                    className="block transition-transform hover:-translate-y-0.5 active:scale-[0.99]"
+                                >
+                                    <img
+                                        src={`/storage/${r.image}`}
+                                        alt={r.title}
+                                        className="block h-auto w-full"
+                                        loading="lazy"
+                                    />
+                                </Link>
+                            );
+                        }
                         return (
                             <Link
                                 key={i}
@@ -253,20 +273,6 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                                         <ArrowRight className="size-3" />
                                     </span>
                                 </div>
-                                <div
-                                    className="pointer-events-none absolute inset-y-0 right-0 w-2/5 opacity-90"
-                                    style={{
-                                        backgroundImage: r.image
-                                            ? `url(/storage/${r.image})`
-                                            : "url('/images/logo.jpg')",
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        maskImage:
-                                            'linear-gradient(to left, black 35%, transparent 100%)',
-                                        WebkitMaskImage:
-                                            'linear-gradient(to left, black 35%, transparent 100%)',
-                                    }}
-                                />
                             </Link>
                         );
                     })}

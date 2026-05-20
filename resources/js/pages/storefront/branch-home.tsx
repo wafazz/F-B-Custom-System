@@ -49,7 +49,6 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
     const setBranch = useBranchStore((s) => s.setBranch);
     const { auth } = usePage().props as unknown as { auth: { user: { name: string } | null } };
     const [active, setActive] = useState(0);
-    const [rewardsActive, setRewardsActive] = useState(0);
 
     useEffect(() => {
         setBranch({
@@ -73,15 +72,6 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
         const t = window.setInterval(() => setActive((i) => (i + 1) % slides.length), 4500);
         return () => window.clearInterval(t);
     }, [slides.length]);
-
-    useEffect(() => {
-        if (rewards_slides.length <= 1) return;
-        const t = window.setInterval(
-            () => setRewardsActive((i) => (i + 1) % rewards_slides.length),
-            5500,
-        );
-        return () => window.clearInterval(t);
-    }, [rewards_slides.length]);
 
     const slide = slides[active] ?? slides[0];
 
@@ -234,82 +224,52 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                 )}
             </section>
 
-            {/* Rewards / promo carousel */}
+            {/* Rewards / promo banners — stacked vertically in sort_order */}
             {rewards_slides.length > 0 && (
-                <section className="mb-2">
-                    <div className="relative overflow-hidden rounded-2xl shadow-md">
-                        <div className="relative h-32 sm:h-36">
-                            {rewards_slides.map((r, i) => {
-                                const href = r.cta_url
-                                    ? resolveCtaUrl(r.cta_url, branch.id)
-                                    : '/loyalty';
-                                return (
-                                    <Link
-                                        key={i}
-                                        href={href}
-                                        className={cn(
-                                            'absolute inset-0 flex transition-opacity duration-700',
-                                            rewardsActive === i
-                                                ? 'opacity-100'
-                                                : 'pointer-events-none opacity-0',
-                                        )}
-                                        style={{
-                                            background:
-                                                'linear-gradient(135deg, #78350f 0%, #92400e 55%, #451a03 100%)',
-                                        }}
-                                    >
-                                        <div className="relative z-10 flex flex-1 flex-col justify-center p-5 text-white">
-                                            <p className="text-base leading-tight font-bold sm:text-lg">
-                                                {r.title}
-                                            </p>
-                                            {r.subtitle && (
-                                                <p className="mt-1 max-w-[75%] text-[11px] text-amber-100/90 sm:text-xs">
-                                                    {r.subtitle}
-                                                </p>
-                                            )}
-                                            <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11px] font-bold tracking-wider text-amber-900 uppercase shadow">
-                                                {r.cta_label ?? 'View rewards'}
-                                                <ArrowRight className="size-3" />
-                                            </span>
-                                        </div>
-                                        <div
-                                            className="pointer-events-none absolute inset-y-0 right-0 w-2/5 opacity-90"
-                                            style={{
-                                                backgroundImage: r.image
-                                                    ? `url(/storage/${r.image})`
-                                                    : "url('/images/logo.jpg')",
-                                                backgroundSize: 'cover',
-                                                backgroundPosition: 'center',
-                                                maskImage:
-                                                    'linear-gradient(to left, black 35%, transparent 100%)',
-                                                WebkitMaskImage:
-                                                    'linear-gradient(to left, black 35%, transparent 100%)',
-                                            }}
-                                        />
-                                    </Link>
-                                );
-                            })}
-                        </div>
-
-                        {rewards_slides.length > 1 && (
-                            <div className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
-                                {rewards_slides.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        type="button"
-                                        onClick={() => setRewardsActive(i)}
-                                        aria-label={`Promo slide ${i + 1}`}
-                                        className={cn(
-                                            'h-1.5 rounded-full transition-all',
-                                            rewardsActive === i
-                                                ? 'w-5 bg-white'
-                                                : 'w-1.5 bg-white/50',
-                                        )}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                <section className="mb-2 flex flex-col gap-3">
+                    {rewards_slides.map((r, i) => {
+                        const href = r.cta_url ? resolveCtaUrl(r.cta_url, branch.id) : '/loyalty';
+                        return (
+                            <Link
+                                key={i}
+                                href={href}
+                                className="relative flex h-32 overflow-hidden rounded-2xl shadow-md transition-transform hover:-translate-y-0.5 sm:h-36"
+                                style={{
+                                    background:
+                                        'linear-gradient(135deg, #78350f 0%, #92400e 55%, #451a03 100%)',
+                                }}
+                            >
+                                <div className="relative z-10 flex flex-1 flex-col justify-center p-5 text-white">
+                                    <p className="text-base leading-tight font-bold sm:text-lg">
+                                        {r.title}
+                                    </p>
+                                    {r.subtitle && (
+                                        <p className="mt-1 max-w-[75%] text-[11px] text-amber-100/90 sm:text-xs">
+                                            {r.subtitle}
+                                        </p>
+                                    )}
+                                    <span className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-[11px] font-bold tracking-wider text-amber-900 uppercase shadow">
+                                        {r.cta_label ?? 'View rewards'}
+                                        <ArrowRight className="size-3" />
+                                    </span>
+                                </div>
+                                <div
+                                    className="pointer-events-none absolute inset-y-0 right-0 w-2/5 opacity-90"
+                                    style={{
+                                        backgroundImage: r.image
+                                            ? `url(/storage/${r.image})`
+                                            : "url('/images/logo.jpg')",
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        maskImage:
+                                            'linear-gradient(to left, black 35%, transparent 100%)',
+                                        WebkitMaskImage:
+                                            'linear-gradient(to left, black 35%, transparent 100%)',
+                                    }}
+                                />
+                            </Link>
+                        );
+                    })}
                 </section>
             )}
         </StorefrontLayout>

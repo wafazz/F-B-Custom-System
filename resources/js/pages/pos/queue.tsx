@@ -5,7 +5,6 @@ import PosLayout from '@/layouts/pos-layout';
 import { getEcho } from '@/lib/echo';
 import { printOrderLabels } from '@/lib/print-labels';
 import { printOrderReceipt, type ReceiptOrder } from '@/lib/print-receipt';
-import { isBridgeAvailable, printViaBridge } from '@/lib/sunmi-bridge';
 
 interface FlashReceipt extends ReceiptOrder {
     id: number;
@@ -89,30 +88,10 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
         if (!receipt) return;
         if (printedRef.current === receipt.number) return;
         printedRef.current = receipt.number;
-
-        // Auto-print after Confirm & place / Charge & place. Try the
-        // SUNMI built-in printer via the localhost bridge first — that
-        // path is silent and reliable on SUNMI tablets. If the bridge
-        // isn't reachable (desktop, or SUNMI without the bridge APK),
-        // fall back to the browser print dialog using the rich flash
-        // receipt we already have.
-        void (async () => {
-            if (await isBridgeAvailable()) {
-                try {
-                    const res = await fetch(`/pos/orders/${receipt.id}/receipt-payload`, {
-                        headers: { Accept: 'application/json' },
-                    });
-                    if (res.ok) {
-                        const payload = await res.json();
-                        await printViaBridge(payload);
-                        return;
-                    }
-                } catch (err) {
-                    console.warn('SUNMI bridge auto-print failed, falling back', err);
-                }
-            }
-            printOrderReceipt(receipt, receipt.branch, { size: receipt.branch.label_size });
-        })();
+        // Auto-print after Confirm & place / Charge & place opens the
+        // receipt in a new tab via Chrome's normal print flow. Cashier
+        // can pick a connected printer or "Save as PDF".
+        printOrderReceipt(receipt, receipt.branch, { size: receipt.branch.label_size });
     }, [flash?.receipt]);
 
     useEffect(() => {
@@ -189,32 +168,17 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
     }
 
     async function printReceipt(orderId: number) {
-        // Try the SUNMI built-in printer first via the localhost bridge.
-        // If unreachable (no bridge installed, not on SUNMI), fan out to
-        // both the Reverb -> WiFi runner broadcast (for branches that have
-        // a print runner attached) AND a local browser print dialog so
-        // cashiers without dedicated hardware still get a receipt.
-        if (await isBridgeAvailable()) {
-            try {
-                const res = await fetch(`/pos/orders/${orderId}/receipt-payload`, {
-                    headers: { Accept: 'application/json' },
-                });
-                if (!res.ok) throw new Error(`payload HTTP ${res.status}`);
-                const payload = await res.json();
-                await printViaBridge(payload);
-                return;
-            } catch (err) {
-                console.warn('SUNMI bridge print failed, falling back', err);
-            }
-        }
-
-        router.post(`/pos/orders/${orderId}/print-receipt`, {}, { preserveScroll: true });
-
+        // Fetch the rich receipt shape and open Chrome's normal print
+        // dialog in a new tab. Cashier picks a connected printer or
+        // "Save as PDF".
         try {
             const res = await fetch(`/pos/orders/${orderId}/receipt-data`, {
                 headers: { Accept: 'application/json' },
             });
-            if (!res.ok) return;
+            if (!res.ok) {
+                console.warn('print: receipt-data HTTP', res.status);
+                return;
+            }
             const data = (await res.json()) as ReceiptOrder & {
                 branch: {
                     name: string;
@@ -228,7 +192,7 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
             };
             printOrderReceipt(data, data.branch, { size: data.branch.label_size });
         } catch (err) {
-            console.warn('receipt browser-print fallback failed', err);
+            console.warn('print: receipt browser-print failed', err);
         }
     }
 

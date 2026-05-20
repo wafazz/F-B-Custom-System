@@ -17,17 +17,30 @@
  * useEffect the cashier may need to allow popups for starcoffee.my.
  */
 export function browserPrintHtml(html: string): void {
-    // Inject a tiny script into the receipt doc that auto-prints on
-    // load and then closes the tab when the dialog dismisses.
+    // Inject a tiny script that auto-prints on load and closes the tab
+    // only AFTER the print dialog is dismissed. window.print() on
+    // Android Chrome doesn't block — it returns immediately — so we
+    // can't close on a fixed timeout (the tab would die before the
+    // dialog finishes painting). afterprint fires when the user
+    // dismisses the dialog (Print, Save as PDF, or Cancel). A 60 s
+    // safety net catches the case where afterprint never fires (some
+    // Android builds).
     const augmented = html.replace(
         '</body>',
         `<script>
-            window.addEventListener('load', function () {
-                setTimeout(function () {
-                    window.print();
-                    setTimeout(function () { window.close(); }, 1500);
-                }, 100);
-            });
+            (function () {
+                var closed = false;
+                function safeClose() {
+                    if (closed) return;
+                    closed = true;
+                    window.close();
+                }
+                window.addEventListener('afterprint', safeClose);
+                window.addEventListener('load', function () {
+                    setTimeout(function () { window.print(); }, 150);
+                });
+                setTimeout(safeClose, 60000);
+            })();
         </script></body>`,
     );
 

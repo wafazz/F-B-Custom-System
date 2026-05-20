@@ -34,6 +34,9 @@ interface VoucherChip {
     bxgy_free_qty?: number | null;
     bxgy_free_product_ids?: number[] | null;
     bxgy_free_combo_ids?: number[] | null;
+    valid_from_time?: string | null;
+    valid_until_time?: string | null;
+    in_window?: boolean;
 }
 
 interface SuggestionProduct {
@@ -394,25 +397,33 @@ export default function Checkout({
                         {vouchers.map((v) => {
                             const active = voucherCode === v.code;
                             const eligible = subtotal >= v.min_subtotal;
+                            const inWindow = v.in_window !== false;
+                            const usable = eligible && inWindow;
+                            const windowLabel =
+                                v.valid_from_time && v.valid_until_time
+                                    ? `${trimSeconds(v.valid_from_time)}–${trimSeconds(v.valid_until_time)}`
+                                    : null;
                             return (
                                 <button
                                     key={v.code}
                                     type="button"
                                     onClick={() =>
-                                        setVoucherCode(active ? null : eligible ? v.code : null)
+                                        setVoucherCode(active ? null : usable ? v.code : null)
                                     }
-                                    disabled={!eligible && !active}
+                                    disabled={!usable && !active}
                                     className={cn(
                                         'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
                                         active
                                             ? 'border-amber-400 bg-amber-100 text-amber-800'
                                             : 'border-border hover:bg-secondary/50',
-                                        !eligible && !active && 'cursor-not-allowed opacity-50',
+                                        !usable && !active && 'cursor-not-allowed opacity-50',
                                     )}
                                     title={
                                         !eligible
                                             ? `Minimum RM${v.min_subtotal.toFixed(2)}`
-                                            : undefined
+                                            : !inWindow && windowLabel
+                                              ? `Usable ${windowLabel} only`
+                                              : undefined
                                     }
                                 >
                                     {active ? <X className="size-3" /> : <Tag className="size-3" />}
@@ -420,8 +431,22 @@ export default function Checkout({
                                     <span className="text-muted-foreground font-normal">
                                         {v.discount_type === 'percentage'
                                             ? `${v.discount_value.toFixed(0)}%`
-                                            : `RM${v.discount_value.toFixed(2)}`}
+                                            : v.discount_type === 'buy_x_get_y'
+                                              ? `Buy ${v.bxgy_buy_qty}/Free ${v.bxgy_free_qty}`
+                                              : `RM${v.discount_value.toFixed(2)}`}
                                     </span>
+                                    {windowLabel && (
+                                        <span
+                                            className={cn(
+                                                'rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase',
+                                                inWindow
+                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                    : 'bg-slate-200 text-slate-500',
+                                            )}
+                                        >
+                                            {windowLabel}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -674,6 +699,12 @@ export default function Checkout({
             )}
         </StorefrontLayout>
     );
+}
+
+/** Trim trailing :ss off a HH:MM:SS time-column value. */
+function trimSeconds(hms: string): string {
+    const parts = hms.split(':');
+    return parts.length >= 2 ? `${parts[0]}:${parts[1]}` : hms;
 }
 
 function addMinutes(d: Date, mins: number): Date {

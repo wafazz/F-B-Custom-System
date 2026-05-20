@@ -150,6 +150,14 @@ class VoucherResource extends Resource
                     Forms\Components\TextInput::make('max_uses_per_user')->numeric()->default(1),
                     Forms\Components\DateTimePicker::make('valid_from'),
                     Forms\Components\DateTimePicker::make('valid_until'),
+                    Forms\Components\TimePicker::make('valid_from_time')
+                        ->label('Daily window — from')
+                        ->seconds(false)
+                        ->helperText('Recurring start time each day. Leave blank for no daily restriction.'),
+                    Forms\Components\TimePicker::make('valid_until_time')
+                        ->label('Daily window — until')
+                        ->seconds(false)
+                        ->helperText('Recurring end time each day. e.g. set 10:00 → 12:00 for a happy-hour voucher.'),
                     Forms\Components\Select::make('branch_ids')
                         ->multiple()
                         ->relationship('redemptions.order.branch', 'name')

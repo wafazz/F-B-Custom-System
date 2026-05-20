@@ -35,6 +35,13 @@ class VoucherService
         if (is_array($branchScope) && count($branchScope) > 0 && ! in_array($branchId, $branchScope, true)) {
             throw new RuntimeException('Voucher is not valid for this branch.');
         }
+        if (! self::isWithinDailyWindow($voucher)) {
+            $from = self::formatHourMinute($voucher->valid_from_time);
+            $until = self::formatHourMinute($voucher->valid_until_time);
+            throw new RuntimeException(
+                sprintf('This voucher can only be used between %s and %s.', $from, $until),
+            );
+        }
         if ($userId !== null) {
             $userUses = VoucherRedemption::query()
                 ->where('voucher_id', $voucher->id)
@@ -406,5 +413,58 @@ class VoucherService
         }
 
         return $users->count();
+    }
+
+    /**
+     * Daily recurring window check. Returns true when the voucher has no
+     * window set OR when the current clock-time falls inside it.
+     *
+     * Windows where close <= open wrap past midnight (e.g. 22:00 → 02:00).
+     * Same semantics as Branch::closedReason.
+     */
+    public static function isWithinDailyWindow(Voucher $voucher): bool
+    {
+        $fromText = $voucher->valid_from_time;
+        $untilText = $voucher->valid_until_time;
+        if ($fromText === null && $untilText === null) {
+            return true;
+        }
+        // If only one bound is set the window is incomplete — treat as open
+        // so a half-configured row doesn't lock the voucher out entirely.
+        if ($fromText === null || $untilText === null) {
+            return true;
+        }
+
+        $now = now();
+        $currentMinutes = $now->hour * 60 + $now->minute;
+        $openMinutes = self::timeStringToMinutes($fromText);
+        $closeMinutes = self::timeStringToMinutes($untilText);
+
+        if ($closeMinutes <= $openMinutes) {
+            // Wraps past midnight.
+            return $currentMinutes >= $openMinutes || $currentMinutes < $closeMinutes;
+        }
+
+        return $currentMinutes >= $openMinutes && $currentMinutes < $closeMinutes;
+    }
+
+    private static function timeStringToMinutes(string $hms): int
+    {
+        $parts = explode(':', $hms);
+        $h = (int) $parts[0];
+        $m = (int) ($parts[1] ?? 0);
+
+        return $h * 60 + $m;
+    }
+
+    /** Trim seconds off a HH:MM:SS column value for messages and previews. */
+    public static function formatHourMinute(?string $hms): string
+    {
+        if ($hms === null) {
+            return '—';
+        }
+        $parts = explode(':', $hms);
+
+        return sprintf('%02d:%02d', (int) $parts[0], (int) ($parts[1] ?? 0));
     }
 }

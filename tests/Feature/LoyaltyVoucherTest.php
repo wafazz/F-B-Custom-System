@@ -392,3 +392,67 @@ test('buy x get y: redemption persists discount through OrderService::place', fu
     expect((float) $order->subtotal)->toBe(30.0);
     expect(VoucherRedemption::where('voucher_id', $voucher->id)->count())->toBe(1);
 });
+
+// ----- Daily time window -----
+
+test('daily window: in-window voucher is found', function () {
+    $branch = Branch::factory()->create();
+    // Set window covering "now" — give a 12 hour buffer either side.
+    $start = now()->copy()->subHours(2)->format('H:i:s');
+    $end = now()->copy()->addHours(2)->format('H:i:s');
+    Voucher::factory()->create([
+        'code' => 'HAPPYHOUR',
+        'valid_from_time' => $start,
+        'valid_until_time' => $end,
+    ]);
+
+    $voucher = app(VoucherService::class)->find('HAPPYHOUR', $branch->id);
+
+    expect($voucher->code)->toBe('HAPPYHOUR');
+});
+
+test('daily window: out-of-window voucher is rejected', function () {
+    $branch = Branch::factory()->create();
+    // Set window for a 30-min slot that doesn't include "now".
+    $start = now()->copy()->subHours(5)->format('H:i:s');
+    $end = now()->copy()->subHours(4)->subMinutes(30)->format('H:i:s');
+    Voucher::factory()->create([
+        'code' => 'BREAKFAST',
+        'valid_from_time' => $start,
+        'valid_until_time' => $end,
+    ]);
+
+    expect(fn () => app(VoucherService::class)->find('BREAKFAST', $branch->id))
+        ->toThrow(RuntimeException::class, 'can only be used between');
+});
+
+test('daily window: null bounds mean no restriction', function () {
+    $branch = Branch::factory()->create();
+    Voucher::factory()->create([
+        'code' => 'ANYTIME',
+        'valid_from_time' => null,
+        'valid_until_time' => null,
+    ]);
+
+    $voucher = app(VoucherService::class)->find('ANYTIME', $branch->id);
+
+    expect($voucher->code)->toBe('ANYTIME');
+});
+
+test('daily window: wrap-around past midnight stays open during late hours', function () {
+    // Build a Voucher row without persisting, so we can directly drive the
+    // static helper without touching the database clock.
+    $voucher = new Voucher();
+    $voucher->valid_from_time = '22:00:00';
+    $voucher->valid_until_time = '02:00:00';
+
+    // Freeze "now" inside the wrap window.
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::create(2026, 5, 20, 23, 30));
+    expect(VoucherService::isWithinDailyWindow($voucher))->toBeTrue();
+
+    // And just before the window opens.
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::create(2026, 5, 20, 21, 30));
+    expect(VoucherService::isWithinDailyWindow($voucher))->toBeFalse();
+
+    \Illuminate\Support\Carbon::setTestNow(null);
+});

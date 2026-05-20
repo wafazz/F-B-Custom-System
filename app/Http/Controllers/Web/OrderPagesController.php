@@ -85,6 +85,9 @@ class OrderPagesController extends Controller
                     'bxgy_free_qty' => $v->bxgy_free_qty,
                     'bxgy_free_product_ids' => $v->bxgy_free_product_ids,
                     'bxgy_free_combo_ids' => $v->bxgy_free_combo_ids,
+                    'valid_from_time' => $v->valid_from_time,
+                    'valid_until_time' => $v->valid_until_time,
+                    'in_window' => \App\Services\Vouchers\VoucherService::isWithinDailyWindow($v),
                 ];
             }
         }

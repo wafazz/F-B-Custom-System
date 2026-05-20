@@ -24,6 +24,8 @@ use Illuminate\Support\Carbon;
  * @property int $used_count
  * @property Carbon|null $valid_from
  * @property Carbon|null $valid_until
+ * @property string|null $valid_from_time
+ * @property string|null $valid_until_time
  * @property array<int, int>|null $branch_ids
  * @property array<int, int>|null $tier_ids
  * @property array<int, int>|null $birthday_months
@@ -56,6 +58,8 @@ class Voucher extends Model
         'used_count',
         'valid_from',
         'valid_until',
+        'valid_from_time',
+        'valid_until_time',
         'branch_ids',
         'tier_ids',
         'birthday_months',

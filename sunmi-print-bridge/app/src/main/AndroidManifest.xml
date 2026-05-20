@@ -10,6 +10,10 @@
 
     <queries>
         <package android:name="woyou.aidlservice.jiuiv5" />
+        <package android:name="com.sunmi.extprinterservice" />
+        <intent>
+            <action android:name="woyou.aidlservice.jiuiv5.IWoyouService" />
+        </intent>
     </queries>
 
     <application

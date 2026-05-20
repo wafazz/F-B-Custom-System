@@ -74,7 +74,7 @@ class BridgeService : Service() {
         val writer = OutputStreamWriter(output)
         try {
             when {
-                method == "GET" && path == "/ping" -> respond(writer, 200, "application/json", """{"ok":true,"device":"sunmi"}""")
+                method == "GET" && path == "/ping" -> handlePing(writer)
                 method == "POST" && path == "/print" -> handlePrint(body, writer)
                 method == "OPTIONS" -> respondCors(writer)
                 else -> respond(writer, 404, "application/json", """{"error":"not found"}""")
@@ -86,15 +86,42 @@ class BridgeService : Service() {
         writer.flush()
     }
 
+    private fun handlePing(writer: OutputStreamWriter) {
+        val payload = JSONObject().apply {
+            put("ok", true)
+            put("device", "sunmi")
+            put("printer_bound", printer.isReady)
+            put("bound_package", printer.boundPackage ?: JSONObject.NULL)
+            put("last_bind_error", printer.lastBindError ?: JSONObject.NULL)
+            put("last_print_error", printer.lastPrintError ?: JSONObject.NULL)
+        }
+        respond(writer, 200, "application/json", payload.toString())
+    }
+
     private fun handlePrint(body: String, writer: OutputStreamWriter) {
         if (!printer.isReady) {
-            respond(writer, 503, "application/json", """{"error":"printer not bound"}""")
+            val err = JSONObject().apply {
+                put("error", "printer not bound")
+                put("bound_package", printer.boundPackage ?: JSONObject.NULL)
+                put("last_bind_error", printer.lastBindError ?: JSONObject.NULL)
+            }
+            respond(writer, 503, "application/json", err.toString())
             return
         }
-        val json = JSONObject(body)
-        val lines = ReceiptFormatter.format(json)
-        printer.printReceipt(lines)
-        respond(writer, 200, "application/json", """{"ok":true}""")
+        try {
+            val json = JSONObject(body)
+            val lines = ReceiptFormatter.format(json)
+            printer.printReceipt(lines)
+            respond(writer, 200, "application/json", """{"ok":true,"bound_package":${JSONObject.quote(printer.boundPackage ?: "")}}""")
+        } catch (e: Exception) {
+            Log.e(TAG, "print path failed", e)
+            val err = JSONObject().apply {
+                put("error", e::class.java.simpleName)
+                put("message", e.message ?: "")
+                put("last_print_error", printer.lastPrintError ?: JSONObject.NULL)
+            }
+            respond(writer, 500, "application/json", err.toString())
+        }
     }
 
     private fun parseRequestLine(line: String): Pair<String, String> {

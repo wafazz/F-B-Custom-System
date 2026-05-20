@@ -170,18 +170,3 @@ Route::prefix('pos')->name('pos.')->group(function () {
 Route::get('branch/{branch}/display', [DisplayController::class, 'show'])->name('display.show');
 Route::post('branch/{branch}/display/heartbeat', [DisplayController::class, 'heartbeat'])->name('display.heartbeat');
 
-// PWA: serve manifest + service worker from origin root so they get full scope
-Route::get('/manifest.webmanifest', function () {
-    return response()->file(public_path('build/manifest.webmanifest'), [
-        'Content-Type' => 'application/manifest+json',
-        'Cache-Control' => 'public, max-age=3600',
-    ]);
-})->name('pwa.manifest');
-
-Route::get('/sw.js', function () {
-    return response()->file(public_path('build/sw.js'), [
-        'Content-Type' => 'application/javascript',
-        'Service-Worker-Allowed' => '/',
-        'Cache-Control' => 'no-cache',
-    ]);
-})->name('pwa.sw');

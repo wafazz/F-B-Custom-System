@@ -1,7 +1,12 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Banknote, Gift, LogOut, ShoppingBag, Store, Tv } from 'lucide-react';
-import { type ReactNode, useEffect } from 'react';
+import { Banknote, Download, Gift, LogOut, ShoppingBag, Store, Tv } from 'lucide-react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+
+interface BeforeInstallPromptEvent extends Event {
+    prompt(): Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 interface PosShared {
     branch?: { id: number; code: string; name: string };
@@ -20,18 +25,40 @@ export default function PosLayout({ children }: { children: ReactNode }) {
         router.post('/pos/logout');
     }
 
-    // Point the install prompt at the POS-scoped manifest. The customer
-    // manifest is the page default — swap it while on /pos/* so "Add to
-    // Home Screen" creates a POS app icon (start_url=/pos, scope=/pos).
+    // The POS manifest is selected server-side in app.blade.php based on the
+    // request path, so Chrome reads /pos.webmanifest on the first paint and
+    // there's no manifest-swap race against the install criteria.
+    const [installEvt, setInstallEvt] = useState<BeforeInstallPromptEvent | null>(null);
+    const [installed, setInstalled] = useState(
+        () =>
+            typeof window !== 'undefined' &&
+            (window.matchMedia?.('(display-mode: standalone)').matches ||
+                (window.navigator as Navigator & { standalone?: boolean }).standalone === true),
+    );
+
     useEffect(() => {
-        const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-        if (!link) return;
-        const previous = link.href;
-        link.href = '/pos.webmanifest';
+        const onPrompt = (e: Event) => {
+            e.preventDefault();
+            setInstallEvt(e as BeforeInstallPromptEvent);
+        };
+        const onInstalled = () => {
+            setInstalled(true);
+            setInstallEvt(null);
+        };
+        window.addEventListener('beforeinstallprompt', onPrompt);
+        window.addEventListener('appinstalled', onInstalled);
         return () => {
-            link.href = previous;
+            window.removeEventListener('beforeinstallprompt', onPrompt);
+            window.removeEventListener('appinstalled', onInstalled);
         };
     }, []);
+
+    async function installApp() {
+        if (!installEvt) return;
+        await installEvt.prompt();
+        await installEvt.userChoice;
+        setInstallEvt(null);
+    }
 
     return (
         <div className="flex h-screen flex-col bg-slate-950 text-slate-100">
@@ -98,6 +125,16 @@ export default function PosLayout({ children }: { children: ReactNode }) {
                         </Link>
                     )}
                     {staff && <span className="text-xs text-slate-400">{staff.name}</span>}
+                    {!installed && installEvt && (
+                        <button
+                            type="button"
+                            onClick={installApp}
+                            className="flex items-center gap-1 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500"
+                            title="Install POS as a home-screen app"
+                        >
+                            <Download className="size-3.5" /> Install POS
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={logout}

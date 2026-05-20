@@ -8,7 +8,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    @php($isPos = request()->is('pos*'))
+    <link rel="manifest" href="{{ $isPos ? '/pos.webmanifest' : '/manifest.webmanifest' }}" />
 
     <title inertia>{{ config('app.name', 'Star Coffee') }}</title>
 

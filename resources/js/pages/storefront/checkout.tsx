@@ -77,6 +77,7 @@ export default function Checkout({
     const [useOwnTumbler, setUseOwnTumbler] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
 
     const { subtotal } = cartTotals(lines);
     const tumblerSaving = useOwnTumbler
@@ -500,13 +501,81 @@ export default function Checkout({
             )}
             {error && <p className="mb-3 rounded-md bg-red-50 p-3 text-xs text-red-700">{error}</p>}
 
-            <Button onClick={handlePlace} disabled={!canSubmit || submitting} className="w-full">
+            <Button
+                onClick={() => setConfirmOpen(true)}
+                disabled={!canSubmit || submitting}
+                className="w-full"
+            >
                 {submitting
                     ? 'Placing order…'
                     : branch.is_open_now
                       ? `Place order — RM${total.toFixed(2)}`
                       : 'Branch closed'}
             </Button>
+
+            {confirmOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+                    onClick={() => !submitting && setConfirmOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h2 className="text-base font-bold text-slate-900">Confirm your outlet</h2>
+                        <p className="mt-1 text-xs text-slate-500">
+                            Please double-check the branch before placing this order.
+                        </p>
+
+                        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                            <p className="text-sm font-bold text-amber-900">{branch.name}</p>
+                            <p className="text-[11px] text-amber-800/80">
+                                Branch code: {branch.code}
+                            </p>
+                        </div>
+
+                        <dl className="mt-4 space-y-1.5 text-xs text-slate-700">
+                            <div className="flex justify-between">
+                                <dt className="text-slate-500">Order type</dt>
+                                <dd className="font-semibold">
+                                    {orderType === 'pickup'
+                                        ? 'Pickup'
+                                        : `Dine-in · Table ${tableNumber || '—'}`}
+                                </dd>
+                            </div>
+                            <div className="flex justify-between">
+                                <dt className="text-slate-500">Payment</dt>
+                                <dd className="font-semibold capitalize">{paymentMethod}</dd>
+                            </div>
+                            <div className="flex justify-between border-t border-slate-100 pt-2 text-sm">
+                                <dt className="text-slate-500">Total</dt>
+                                <dd className="font-bold text-amber-700">RM{total.toFixed(2)}</dd>
+                            </div>
+                        </dl>
+
+                        <div className="mt-5 flex gap-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setConfirmOpen(false)}
+                                disabled={submitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="flex-1"
+                                onClick={() => {
+                                    setConfirmOpen(false);
+                                    void handlePlace();
+                                }}
+                                disabled={submitting}
+                            >
+                                Confirm & place
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </StorefrontLayout>
     );
 }

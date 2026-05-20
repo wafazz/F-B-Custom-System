@@ -270,19 +270,34 @@ export default function Checkout({
 
             <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
                 <h2 className="text-sm font-semibold">Items ({lines.length})</h2>
-                <ul className="mt-2 space-y-1.5 text-xs">
+                <ul className="mt-3 space-y-3">
                     {lines.map((line) => (
-                        <li key={line.id} className="flex justify-between gap-2">
-                            <span className="text-card-foreground">
-                                {line.quantity}× {line.name}
-                                {line.modifiers.length > 0 && (
-                                    <span className="text-muted-foreground">
-                                        {' '}
-                                        ({line.modifiers.map((m) => m.option_name).join(', ')})
-                                    </span>
+                        <li key={line.id} className="flex items-start gap-3">
+                            <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-amber-50 ring-1 ring-amber-100">
+                                {line.image ? (
+                                    <img
+                                        src={`/storage/${line.image}`}
+                                        alt={line.name}
+                                        className="size-full object-cover"
+                                        loading="lazy"
+                                    />
+                                ) : (
+                                    <div className="flex size-full items-center justify-center text-amber-600">
+                                        <Coffee className="size-5" />
+                                    </div>
                                 )}
-                            </span>
-                            <span className="font-medium">
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-card-foreground text-sm leading-tight font-semibold">
+                                    {line.quantity}× {line.name}
+                                </p>
+                                {line.modifiers.length > 0 && (
+                                    <p className="text-muted-foreground mt-0.5 text-[11px] leading-snug">
+                                        {line.modifiers.map((m) => m.option_name).join(' · ')}
+                                    </p>
+                                )}
+                            </div>
+                            <span className="shrink-0 text-sm font-semibold tabular-nums">
                                 RM{(line.unit_price * line.quantity).toFixed(2)}
                             </span>
                         </li>

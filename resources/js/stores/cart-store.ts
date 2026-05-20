@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CartLine, MenuCombo, MenuProduct, SelectedModifier } from '@/types/menu';
+import type {
+    BxgyBundlePick,
+    CartLine,
+    MenuCombo,
+    MenuProduct,
+    SelectedModifier,
+} from '@/types/menu';
 
 interface CartState {
     branchId: number | null;
@@ -13,6 +19,8 @@ interface CartState {
         branchId: number,
     ) => void;
     addCombo: (combo: MenuCombo, quantity: number, branchId: number) => void;
+    addBundle: (voucherCode: string, picks: BxgyBundlePick[], branchId: number) => void;
+    removeBundle: (voucherCode: string) => void;
     increment: (lineId: string) => void;
     decrement: (lineId: string) => void;
     remove: (lineId: string) => void;
@@ -86,6 +94,26 @@ export const useCartStore = create<CartState>()(
                       ];
                 set({ lines, branchId });
             },
+            addBundle: (voucherCode, picks, branchId) => {
+                // Drop any existing bundle for this voucher first so re-entering
+                // the picker replaces the previous selection.
+                const carry = get().lines.filter((l) => l.voucher_code !== voucherCode);
+                const newLines: CartLine[] = picks.map((pick, idx) => ({
+                    id: `bxgy:${voucherCode}:${pick.role}:${idx}:${pick.product.id}#${lineKey(pick.product.id, pick.modifiers)}`,
+                    product_id: pick.product.id,
+                    name: pick.product.name,
+                    image: pick.product.image,
+                    unit_price: unitPrice(pick.product.price, pick.modifiers),
+                    tumbler_discount: 0,
+                    quantity: pick.quantity,
+                    modifiers: pick.modifiers,
+                    voucher_code: voucherCode,
+                    voucher_role: pick.role,
+                }));
+                set({ lines: [...carry, ...newLines], branchId });
+            },
+            removeBundle: (voucherCode) =>
+                set({ lines: get().lines.filter((l) => l.voucher_code !== voucherCode) }),
             increment: (lineId) =>
                 set({
                     lines: get().lines.map((l) =>
@@ -120,8 +148,14 @@ export const useCartStore = create<CartState>()(
 export function cartTotals(lines: CartLine[]): { itemCount: number; subtotal: number } {
     return lines.reduce(
         (acc, line) => ({
+            // Item count is total visible units (paid + free) so the cart
+            // badge reflects everything the customer is carrying.
             itemCount: acc.itemCount + line.quantity,
-            subtotal: acc.subtotal + line.unit_price * line.quantity,
+            // Subtotal excludes promo-free lines — they're listed in the
+            // cart for transparency but cost RM0. Paid lines from a bundle
+            // contribute normally.
+            subtotal:
+                acc.subtotal + (line.voucher_role === 'free' ? 0 : line.unit_price * line.quantity),
         }),
         { itemCount: 0, subtotal: 0 },
     );

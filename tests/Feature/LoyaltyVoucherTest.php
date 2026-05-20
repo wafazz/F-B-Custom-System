@@ -262,7 +262,7 @@ test('VoucherService.find normalises code to uppercase', function () {
 
 // ----- Buy X Get Y free -----
 
-test('buy x get y: same-scope discounts the cheapest qualifying unit (buy 2 free 1)', function () {
+test('buy x get y: picker-driven bundle discounts exactly the marked-free lines', function () {
     [, $product] = buildBranchProduct(10.00);
     $voucher = Voucher::factory()->create([
         'discount_type' => 'buy_x_get_y',
@@ -275,16 +275,18 @@ test('buy x get y: same-scope discounts the cheapest qualifying unit (buy 2 free
     ]);
 
     $items = [
-        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 30.0, 'quantity' => 3, 'unit_price' => 10.0],
+        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 20.0, 'quantity' => 2, 'unit_price' => 10.0,
+            'voucher_code' => $voucher->code, 'voucher_role' => 'paid'],
+        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 10.0, 'quantity' => 1, 'unit_price' => 10.0,
+            'voucher_code' => $voucher->code, 'voucher_role' => 'free'],
     ];
 
     $discount = app(VoucherService::class)->discountFor($voucher, 30.0, $items);
 
-    // 3 qualifying units / buy 2 = 1 group = 1 free unit at RM10.
     expect($discount)->toBe(10.0);
 });
 
-test('buy x get y: only fully completed groups grant freebies', function () {
+test('buy x get y: rejects a tampered bundle that doesnt meet the buy quantity', function () {
     [, $product] = buildBranchProduct(8.00);
     $voucher = Voucher::factory()->create([
         'discount_type' => 'buy_x_get_y',
@@ -296,68 +298,40 @@ test('buy x get y: only fully completed groups grant freebies', function () {
         'bxgy_free_combo_ids' => null,
     ]);
 
+    // Bundle only has 1 paid item but voucher requires 3.
     $items = [
-        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 16.0, 'quantity' => 2, 'unit_price' => 8.0],
+        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 8.0, 'quantity' => 1, 'unit_price' => 8.0,
+            'voucher_code' => $voucher->code, 'voucher_role' => 'paid'],
+        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 8.0, 'quantity' => 1, 'unit_price' => 8.0,
+            'voucher_code' => $voucher->code, 'voucher_role' => 'free'],
     ];
 
     expect(fn () => app(VoucherService::class)->discountFor($voucher, 16.0, $items))
-        ->toThrow(\RuntimeException::class);
+        ->toThrow(RuntimeException::class, 'exactly');
 });
 
-test('buy x get y: cross-sell scope picks free items from the secondary scope only', function () {
-    [$branch, $latte] = buildBranchProduct(12.00);
-    $pastry = Product::factory()->create(['base_price' => 6.00]);
-    $branch->products()->attach($pastry->id, ['is_available' => true]);
-
+test('buy x get y: applying without a picker bundle redirects via error', function () {
+    [, $product] = buildBranchProduct(10.00);
     $voucher = Voucher::factory()->create([
         'discount_type' => 'buy_x_get_y',
         'discount_value' => 0,
-        'product_ids' => [$latte->id],
+        'product_ids' => [$product->id],
         'bxgy_buy_qty' => 2,
         'bxgy_free_qty' => 1,
-        'bxgy_free_product_ids' => [$pastry->id],
-        'bxgy_free_combo_ids' => [],
+        'bxgy_free_product_ids' => null,
+        'bxgy_free_combo_ids' => null,
     ]);
 
-    // Buy 2 lattes RM12 each + 1 pastry RM6. Free unit comes from the pastry pool.
+    // No voucher_code on the line — customer hasn't gone through the picker.
     $items = [
-        ['product_id' => $latte->id, 'combo_id' => null, 'line_total' => 24.0, 'quantity' => 2, 'unit_price' => 12.0],
-        ['product_id' => $pastry->id, 'combo_id' => null, 'line_total' => 6.0, 'quantity' => 1, 'unit_price' => 6.0],
+        ['product_id' => $product->id, 'combo_id' => null, 'line_total' => 30.0, 'quantity' => 3, 'unit_price' => 10.0],
     ];
 
-    $discount = app(VoucherService::class)->discountFor($voucher, 30.0, $items);
-
-    // Free should be the pastry (RM6), not the more expensive latte.
-    expect($discount)->toBe(6.0);
+    expect(fn () => app(VoucherService::class)->discountFor($voucher, 30.0, $items))
+        ->toThrow(RuntimeException::class, 'promo page');
 });
 
-test('buy x get y: any-item scope picks the cheapest unit across the whole cart', function () {
-    [$branch, $latte] = buildBranchProduct(12.00);
-    $cookie = Product::factory()->create(['base_price' => 4.00]);
-    $branch->products()->attach($cookie->id, ['is_available' => true]);
-
-    $voucher = Voucher::factory()->create([
-        'discount_type' => 'buy_x_get_y',
-        'discount_value' => 0,
-        'product_ids' => [$latte->id],
-        'bxgy_buy_qty' => 2,
-        'bxgy_free_qty' => 1,
-        'bxgy_free_product_ids' => [],
-        'bxgy_free_combo_ids' => [],
-    ]);
-
-    $items = [
-        ['product_id' => $latte->id, 'combo_id' => null, 'line_total' => 24.0, 'quantity' => 2, 'unit_price' => 12.0],
-        ['product_id' => $cookie->id, 'combo_id' => null, 'line_total' => 8.0, 'quantity' => 2, 'unit_price' => 4.0],
-    ];
-
-    $discount = app(VoucherService::class)->discountFor($voucher, 32.0, $items);
-
-    // Cheapest unit in the whole cart is the RM4 cookie.
-    expect($discount)->toBe(4.0);
-});
-
-test('buy x get y: redemption persists discount through OrderService::place', function () {
+test('buy x get y: redemption persists discount + role through OrderService::place', function () {
     [$branch, $product] = buildBranchProduct(10.00);
     $user = User::factory()->create();
     $user->assignRole('customer');
@@ -376,20 +350,38 @@ test('buy x get y: redemption persists discount through OrderService::place', fu
         branchId: $branch->id,
         userId: $user->id,
         orderType: OrderType::Pickup,
-        lines: [new OrderLinePayload(
-            productId: $product->id,
-            quantity: 3,
-            modifierOptionIds: [],
-        )],
+        lines: [
+            new OrderLinePayload(
+                productId: $product->id,
+                quantity: 2,
+                modifierOptionIds: [],
+                voucherCode: $voucher->code,
+                voucherRole: 'paid',
+            ),
+            new OrderLinePayload(
+                productId: $product->id,
+                quantity: 1,
+                modifierOptionIds: [],
+                voucherCode: $voucher->code,
+                voucherRole: 'free',
+            ),
+        ],
         paymentMethod: 'gateway',
         voucherCode: $voucher->code,
     );
 
     $order = app(OrderService::class)->place($payload);
 
-    // 3x RM10 = RM30, free 1 cheapest = RM10 off.
+    // 3x RM10 = RM30 subtotal, the 1 marked-free unit costs RM10 → discount RM10.
     expect((float) $order->discount_amount)->toBe(10.0);
     expect((float) $order->subtotal)->toBe(30.0);
+    // Free line persisted with the role tag.
+    expect(
+        $order->items()->where('voucher_role', 'free')->where('voucher_code', $voucher->code)->count(),
+    )->toBe(1);
+    expect(
+        $order->items()->where('voucher_role', 'paid')->where('voucher_code', $voucher->code)->count(),
+    )->toBe(1);
     expect(VoucherRedemption::where('voucher_id', $voucher->id)->count())->toBe(1);
 });
 

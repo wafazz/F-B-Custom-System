@@ -47,6 +47,10 @@ class OrderController extends Controller
                 modifierOptionIds: array_map('intval', $line['modifier_option_ids'] ?? []),
                 notes: $line['notes'] ?? null,
                 comboId: isset($line['combo_id']) ? (int) $line['combo_id'] : null,
+                voucherCode: isset($line['voucher_code']) ? (string) $line['voucher_code'] : null,
+                voucherRole: in_array($line['voucher_role'] ?? null, ['paid', 'free'], true)
+                    ? (string) $line['voucher_role']
+                    : null,
             ))->all(),
             dineInTable: $request->input('dine_in_table'),
             pickupAt: $request->input('pickup_at'),

@@ -19,6 +19,8 @@ class OrderItem extends Model
         'quantity',
         'line_total',
         'notes',
+        'voucher_code',
+        'voucher_role',
     ];
 
     protected function casts(): array

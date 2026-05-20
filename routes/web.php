@@ -20,6 +20,7 @@ use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PointRewardController;
 use App\Http\Controllers\Web\SpinController;
 use App\Http\Controllers\Web\OrderPagesController;
+use App\Http\Controllers\Web\PromoPickerController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReferralController;
 use App\Http\Controllers\Web\StorefrontController;
@@ -53,6 +54,8 @@ Route::get('/', [StorefrontController::class, 'splash'])->name('home');
 Route::get('/branches', [StorefrontController::class, 'selectBranch'])->name('branches.select');
 Route::get('/branches/{branch}', [StorefrontController::class, 'branchHome'])->name('branches.home');
 Route::get('/branches/{branch}/menu', [StorefrontController::class, 'menu'])->name('branches.menu');
+Route::get('/branches/{branch}/promos/{voucher:code}', [PromoPickerController::class, 'show'])
+    ->name('branches.promo');
 Route::get('/branches/{branch}/cart', [OrderPagesController::class, 'cart'])->name('branches.cart');
 Route::get('/branches/{branch}/checkout', [OrderPagesController::class, 'checkout'])
     ->middleware('auth')

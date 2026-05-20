@@ -14,7 +14,7 @@ import {
     Wallet as WalletIcon,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
@@ -115,6 +115,16 @@ export default function Checkout({
         );
     }
 
+    // Auto-bind the active voucher code to any BxGy bundle the customer
+    // dropped into the cart from /branches/{id}/promos/{code}. They can't
+    // forget to "apply" the code — having the bundle is the apply.
+    const bundleCode = lines.find((l) => l.voucher_code)?.voucher_code ?? null;
+    useEffect(() => {
+        if (bundleCode && voucherCode !== bundleCode) {
+            setVoucherCode(bundleCode);
+        }
+    }, [bundleCode, voucherCode]);
+
     const walletAffordable = is_authenticated && wallet_balance >= total;
 
     // <input type="datetime-local" min="..."> enforces the 15-minute lead
@@ -166,6 +176,8 @@ export default function Checkout({
                         quantity: line.quantity,
                         modifier_option_ids: line.modifiers.map((m) => m.option_id),
                         notes: line.notes,
+                        voucher_code: line.voucher_code,
+                        voucher_role: line.voucher_role,
                     })),
                 }),
             });
@@ -403,13 +415,21 @@ export default function Checkout({
                                 v.valid_from_time && v.valid_until_time
                                     ? `${trimSeconds(v.valid_from_time)}–${trimSeconds(v.valid_until_time)}`
                                     : null;
+                            const isBxgy = v.discount_type === 'buy_x_get_y';
+                            const hasBundle =
+                                isBxgy && lines.some((l) => l.voucher_code === v.code);
                             return (
                                 <button
                                     key={v.code}
                                     type="button"
-                                    onClick={() =>
-                                        setVoucherCode(active ? null : usable ? v.code : null)
-                                    }
+                                    onClick={() => {
+                                        if (isBxgy && !hasBundle) {
+                                            // Need explicit paid/free picks — send to picker.
+                                            router.visit(`/branches/${branch.id}/promos/${v.code}`);
+                                            return;
+                                        }
+                                        setVoucherCode(active ? null : usable ? v.code : null);
+                                    }}
                                     disabled={!usable && !active}
                                     className={cn(
                                         'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',

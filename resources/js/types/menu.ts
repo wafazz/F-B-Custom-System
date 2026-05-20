@@ -138,6 +138,17 @@ export interface CartLine {
     quantity: number;
     modifiers: SelectedModifier[];
     notes?: string;
+    /** Set when this line was added through the buy-X-get-Y picker page. */
+    voucher_code?: string;
+    voucher_role?: 'paid' | 'free';
+}
+
+/** Items chosen from the buy-X-get-Y picker, ready to splat into the cart. */
+export interface BxgyBundlePick {
+    product: MenuProduct;
+    modifiers: SelectedModifier[];
+    quantity: number;
+    role: 'paid' | 'free';
 }
 
 export interface StockChangedEvent {

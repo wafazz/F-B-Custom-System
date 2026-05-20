@@ -13,5 +13,8 @@ class OrderLinePayload
         public array $modifierOptionIds = [],
         public ?string $notes = null,
         public ?int $comboId = null,
+        /** Buy-X-Get-Y picker output: voucher code + 'paid'|'free' role. */
+        public ?string $voucherCode = null,
+        public ?string $voucherRole = null,
     ) {}
 }

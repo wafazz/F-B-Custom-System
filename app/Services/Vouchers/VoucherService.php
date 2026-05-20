@@ -114,11 +114,13 @@ class VoucherService
     }
 
     /**
-     * Buy N Free M: discount equals the unit_price sum of the M cheapest
-     * items inside the free pool (one unit per slot). Standard cafe rule
-     * — customers can't game it by gifting their most expensive line.
+     * Buy N Free M discount. Preferred path: items arrive pre-flagged by
+     * the customer through the promo picker page — discount equals the
+     * unit_price sum of every line whose voucher_role is 'free'. Fallback:
+     * if nothing's flagged, refuse with a hint to use the picker page so
+     * the customer goes through the explicit selection flow.
      *
-     * @param  list<array{product_id: int|null, combo_id: int|null, line_total: float, quantity?: int, unit_price?: float}>|null  $items
+     * @param  list<array{product_id: int|null, combo_id: int|null, line_total: float, quantity?: int, unit_price?: float, voucher_code?: string|null, voucher_role?: string|null}>|null  $items
      */
     private function bxgyDiscount(Voucher $voucher, float $subtotal, ?array $items): float
     {
@@ -128,93 +130,49 @@ class VoucherService
             throw new RuntimeException('This voucher is not configured correctly.');
         }
 
-        $productScope = array_map(static fn ($v): int => (int) $v, $voucher->product_ids ?? []);
-        $comboScope = array_map(static fn ($v): int => (int) $v, $voucher->combo_ids ?? []);
-        $hasQualifyingScope = ! empty($productScope) || ! empty($comboScope);
-
-        $isQualifying = function (array $row) use ($productScope, $comboScope, $hasQualifyingScope): bool {
-            if (! $hasQualifyingScope) {
-                return true; // No scope set → every cart line qualifies.
-            }
-            $productHit = ! empty($productScope)
-                && $row['product_id'] !== null
-                && in_array((int) $row['product_id'], $productScope, true);
-            $comboHit = ! empty($comboScope)
-                && $row['combo_id'] !== null
-                && in_array((int) $row['combo_id'], $comboScope, true);
-            return $productHit || $comboHit;
-        };
-
-        $qualifyingQty = 0;
+        // Picker-driven path: customer already chose paid + free lines on
+        // /branches/{id}/promos/{code}. Validate the bundle matches the
+        // voucher rules then sum the explicitly-marked free lines.
+        $bundlePaid = 0;
+        $bundleFreeTotal = 0.0;
         foreach ($items as $row) {
-            if ($isQualifying($row)) {
-                $qualifyingQty += (int) ($row['quantity'] ?? 0);
-            }
-        }
-
-        $groups = intdiv($qualifyingQty, $buyQty);
-        if ($groups <= 0) {
-            throw new RuntimeException(
-                sprintf('Add %d more qualifying item(s) to unlock this voucher.', $buyQty - $qualifyingQty),
-            );
-        }
-        $freeCount = $groups * $freeQty;
-
-        // Build free pool:
-        //   bxgy_free_product_ids null AND bxgy_free_combo_ids null
-        //     → free pool = qualifying lines (same scope)
-        //   bxgy_free_product_ids = [] AND bxgy_free_combo_ids = []
-        //     → free pool = every cart line (any item)
-        //   otherwise → use the bxgy_free_* lists
-        $freeProductScope = $voucher->bxgy_free_product_ids;
-        $freeComboScope = $voucher->bxgy_free_combo_ids;
-        $freePoolMode = match (true) {
-            $freeProductScope === null && $freeComboScope === null => 'same',
-            (is_array($freeProductScope) && $freeProductScope === [])
-                && (is_array($freeComboScope) && $freeComboScope === []) => 'any',
-            default => 'cross',
-        };
-
-        $crossProducts = array_map(static fn ($v): int => (int) $v, $freeProductScope ?? []);
-        $crossCombos = array_map(static fn ($v): int => (int) $v, $freeComboScope ?? []);
-        $inFreePool = function (array $row) use ($freePoolMode, $isQualifying, $crossProducts, $crossCombos): bool {
-            return match ($freePoolMode) {
-                'any' => true,
-                'same' => $isQualifying($row),
-                'cross' => (! empty($crossProducts)
-                        && $row['product_id'] !== null
-                        && in_array((int) $row['product_id'], $crossProducts, true))
-                    || (! empty($crossCombos)
-                        && $row['combo_id'] !== null
-                        && in_array((int) $row['combo_id'], $crossCombos, true)),
-            };
-        };
-
-        // Expand each pool line to one entry per unit so we can rank by unit
-        // price across qty boundaries.
-        $units = [];
-        foreach ($items as $row) {
-            if (! $inFreePool($row)) {
+            if (($row['voucher_code'] ?? null) !== $voucher->code) {
                 continue;
             }
             $qty = (int) ($row['quantity'] ?? 0);
-            $unitPrice = (float) ($row['unit_price'] ?? 0);
-            for ($i = 0; $i < $qty; $i++) {
-                $units[] = $unitPrice;
+            $unit = (float) ($row['unit_price'] ?? 0);
+            if (($row['voucher_role'] ?? null) === 'paid') {
+                $bundlePaid += $qty;
+            } elseif (($row['voucher_role'] ?? null) === 'free') {
+                $bundleFreeTotal += $unit * $qty;
             }
         }
-        if (empty($units)) {
-            throw new RuntimeException('No items in your cart qualify for the free reward.');
-        }
-        sort($units);
+        if ($bundlePaid > 0 || $bundleFreeTotal > 0) {
+            $bundleFreeQty = 0;
+            foreach ($items as $row) {
+                if (($row['voucher_code'] ?? null) === $voucher->code
+                    && ($row['voucher_role'] ?? null) === 'free') {
+                    $bundleFreeQty += (int) ($row['quantity'] ?? 0);
+                }
+            }
+            if ($bundlePaid !== $buyQty || $bundleFreeQty !== $freeQty) {
+                throw new RuntimeException(
+                    sprintf(
+                        'Bundle must contain exactly %d paid item(s) and %d free item(s).',
+                        $buyQty,
+                        $freeQty,
+                    ),
+                );
+            }
 
-        $take = min($freeCount, count($units));
-        $discount = 0.0;
-        for ($i = 0; $i < $take; $i++) {
-            $discount += $units[$i];
+            return min(round($bundleFreeTotal, 2), $subtotal);
         }
 
-        return min(round($discount, 2), $subtotal);
+        // No bundle in the cart → tell the customer to use the picker page
+        // so they make the choice explicitly.
+        throw new RuntimeException(
+            'Open this voucher\'s promo page to choose your paid and free items.',
+        );
     }
 
     public function commit(Voucher $voucher, Order $order, float $discount): VoucherRedemption

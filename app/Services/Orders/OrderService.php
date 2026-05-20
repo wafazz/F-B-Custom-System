@@ -127,6 +127,8 @@ class OrderService
                         'notes' => $line->notes,
                         'modifiers' => [],
                         'combo_snapshot' => $snapshot,
+                        'voucher_code' => $line->voucherCode,
+                        'voucher_role' => $line->voucherRole,
                     ];
                     continue;
                 }
@@ -178,6 +180,8 @@ class OrderService
                     'line_total' => $lineTotal,
                     'notes' => $line->notes,
                     'modifiers' => $modifiers,
+                    'voucher_code' => $line->voucherCode,
+                    'voucher_role' => $line->voucherRole,
                 ];
 
                 if ($stock && $stock->track_quantity) {
@@ -202,6 +206,8 @@ class OrderService
                         'line_total' => (float) $row['line_total'],
                         'quantity' => (int) $row['quantity'],
                         'unit_price' => (float) $row['unit_price'],
+                        'voucher_code' => $row['voucher_code'] ?? null,
+                        'voucher_role' => $row['voucher_role'] ?? null,
                     ],
                     $itemsToInsert,
                 );
@@ -309,6 +315,8 @@ class OrderService
                         'quantity' => $row['quantity'],
                         'line_total' => $row['line_total'],
                         'notes' => $row['notes'],
+                        'voucher_code' => $row['voucher_code'] ?? null,
+                        'voucher_role' => $row['voucher_role'] ?? null,
                     ]);
                     continue;
                 }
@@ -324,6 +332,8 @@ class OrderService
                     'quantity' => $row['quantity'],
                     'line_total' => $row['line_total'],
                     'notes' => $row['notes'],
+                    'voucher_code' => $row['voucher_code'] ?? null,
+                    'voucher_role' => $row['voucher_role'] ?? null,
                 ]);
                 foreach ($row['modifiers'] as $option) {
                     /** @var ModifierOption $option */

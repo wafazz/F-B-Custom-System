@@ -26,6 +26,7 @@ class SpinController extends Controller
                 'id' => $s->id,
                 'label' => $s->label,
                 'color' => $s->color,
+                'image_path' => $s->image_path,
             ])
             ->values();
 

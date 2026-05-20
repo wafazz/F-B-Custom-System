@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property string $label
  * @property string $color
+ * @property string|null $image_path
  * @property int $weight
  * @property string $prize_type
  * @property int|null $prize_points
@@ -21,6 +22,7 @@ class SpinWheelSegment extends Model
     protected $fillable = [
         'label',
         'color',
+        'image_path',
         'weight',
         'prize_type',
         'prize_points',

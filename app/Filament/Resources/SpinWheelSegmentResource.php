@@ -33,6 +33,16 @@ class SpinWheelSegmentResource extends Resource
                     Forms\Components\TextInput::make('label')->required()->maxLength(40)
                         ->helperText('Text shown on the slice — keep it short, e.g. "5 pts", "Free latte".'),
                     Forms\Components\ColorPicker::make('color')->default('#f59e0b'),
+                    Forms\Components\FileUpload::make('image_path')
+                        ->label('Slice image')
+                        ->image()
+                        ->imageEditor()
+                        ->imageResizeMode('cover')
+                        ->imageCropAspectRatio('1:1')
+                        ->directory('spin-wheel/segments')
+                        ->maxSize(1024)
+                        ->columnSpanFull()
+                        ->helperText('Optional. Square icon (PNG with transparent background works best) shown on the slice — e.g. coffee cup, gift, star.'),
                     Forms\Components\TextInput::make('weight')
                         ->numeric()->minValue(1)->default(1)->required()
                         ->helperText('Relative odds. e.g. 3 weight is 3x as likely as 1 weight.'),
@@ -69,6 +79,7 @@ class SpinWheelSegmentResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('image_path')->label('Image')->square()->size(40),
                 Tables\Columns\ColorColumn::make('color'),
                 Tables\Columns\TextColumn::make('label')->searchable(),
                 Tables\Columns\TextColumn::make('prize_type')->badge(),

@@ -160,7 +160,7 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                 </Link>
                 <button
                     type="button"
-                    disabled
+                    onClick={() => window.alert('Delivery is coming soon!')}
                     aria-label="Delivery — coming soon"
                     className="relative block cursor-not-allowed"
                 >
@@ -170,7 +170,7 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                         className="block h-auto w-full opacity-60"
                         loading="lazy"
                     />
-                    <span className="absolute top-2 right-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase shadow">
+                    <span className="absolute -top-2 right-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase shadow">
                         Coming soon
                     </span>
                 </button>

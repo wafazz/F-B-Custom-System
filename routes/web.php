@@ -54,7 +54,12 @@ Route::get('/', [StorefrontController::class, 'splash'])->name('home');
 Route::get('/branches', [StorefrontController::class, 'selectBranch'])->name('branches.select');
 Route::get('/branches/{branch}', [StorefrontController::class, 'branchHome'])->name('branches.home');
 Route::get('/branches/{branch}/menu', [StorefrontController::class, 'menu'])->name('branches.menu');
+// Voucher binding is intentionally NOT scoped to the parent branch — there's
+// no Branch::vouchers() relation and the controller does its own branch_ids
+// check. Without withoutScopedBindings() Laravel tries to call that relation
+// and 500s.
 Route::get('/branches/{branch}/promos/{voucher:code}', [PromoPickerController::class, 'show'])
+    ->withoutScopedBindings()
     ->name('branches.promo');
 Route::get('/branches/{branch}/cart', [OrderPagesController::class, 'cart'])->name('branches.cart');
 Route::get('/branches/{branch}/checkout', [OrderPagesController::class, 'checkout'])

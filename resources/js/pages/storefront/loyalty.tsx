@@ -1,7 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
-import { Gift, Heart, Sparkles, Ticket, Trophy } from 'lucide-react';
+import { Award, Check, Gift, Heart, Sparkles, Ticket, Trophy } from 'lucide-react';
 import { PushToggle } from '@/components/storefront/push-toggle';
 import StorefrontLayout from '@/layouts/storefront-layout';
+import { cn } from '@/lib/utils';
 
 interface PointRow {
     id: number;
@@ -12,6 +13,16 @@ interface PointRow {
     created_at: string | null;
 }
 
+interface MembershipTierCard {
+    id: number;
+    name: string;
+    min_lifetime_spend: number;
+    earn_multiplier: number;
+    color: string | null;
+    badge_image: string | null;
+    perks: string[];
+}
+
 interface Props {
     balance: number;
     redeem_value: number;
@@ -19,6 +30,7 @@ interface Props {
     current_tier: { name: string; multiplier: number; color: string | null } | null;
     next_tier: { name: string; min_spend: number; multiplier: number } | null;
     history: PointRow[];
+    membership_tiers: MembershipTierCard[];
 }
 
 export default function Loyalty({
@@ -28,12 +40,119 @@ export default function Loyalty({
     current_tier,
     next_tier,
     history,
+    membership_tiers,
 }: Props) {
     const progress = next_tier ? Math.min(100, (lifetime_spend / next_tier.min_spend) * 100) : 100;
+    const currentTierName = current_tier?.name ?? null;
 
     return (
         <StorefrontLayout>
             <Head title="Your Rewards" />
+
+            {membership_tiers.length > 0 && (
+                <section className="mb-5">
+                    <div className="mb-3 flex items-center justify-between">
+                        <h2 className="text-card-foreground flex items-center gap-1.5 text-lg font-bold">
+                            <Award className="size-4 text-amber-600" /> Membership Tiers
+                        </h2>
+                    </div>
+
+                    <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
+                        {membership_tiers.map((tier) => {
+                            const isCurrent = currentTierName === tier.name;
+                            const accent = tier.color ?? '#7c4a1e';
+                            const upperBound = (() => {
+                                const next = membership_tiers.find(
+                                    (t) => t.min_lifetime_spend > tier.min_lifetime_spend,
+                                );
+                                return next ? next.min_lifetime_spend - 1 : null;
+                            })();
+                            const rangeLabel = upperBound !== null
+                                ? `${Math.round(tier.min_lifetime_spend)} - ${Math.round(upperBound)}`
+                                : `${Math.round(tier.min_lifetime_spend)}+`;
+
+                            return (
+                                <div
+                                    key={tier.id}
+                                    className={cn(
+                                        'bg-card relative flex w-44 shrink-0 snap-start flex-col items-center overflow-hidden rounded-2xl border p-4 shadow-sm',
+                                        isCurrent
+                                            ? 'border-amber-400 ring-2 ring-amber-300'
+                                            : 'border-border',
+                                    )}
+                                    style={{
+                                        background: isCurrent
+                                            ? `linear-gradient(180deg, ${accent}1a 0%, transparent 60%)`
+                                            : undefined,
+                                    }}
+                                >
+                                    <div
+                                        className="relative flex size-16 items-center justify-center rounded-full shadow-inner"
+                                        style={{
+                                            background: `radial-gradient(circle at 30% 30%, #ffffffaa, ${accent} 70%)`,
+                                        }}
+                                    >
+                                        {tier.badge_image ? (
+                                            <img
+                                                src={`/storage/${tier.badge_image}`}
+                                                alt={tier.name}
+                                                className="size-12 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <Award className="size-7 text-white drop-shadow" />
+                                        )}
+                                    </div>
+
+                                    <p
+                                        className="mt-2 text-sm font-extrabold tracking-wider uppercase"
+                                        style={{ color: accent }}
+                                    >
+                                        {tier.name}
+                                    </p>
+                                    <p className="text-muted-foreground text-[10px]">
+                                        RM {rangeLabel}
+                                    </p>
+
+                                    <ul className="mt-3 w-full space-y-1.5 text-[10.5px] leading-snug">
+                                        <li className="flex items-start gap-1.5">
+                                            <Check
+                                                className="mt-0.5 size-3 shrink-0"
+                                                style={{ color: accent }}
+                                            />
+                                            <span>
+                                                Earn{' '}
+                                                <strong>
+                                                    {tier.earn_multiplier % 1 === 0
+                                                        ? tier.earn_multiplier.toFixed(0)
+                                                        : tier.earn_multiplier
+                                                              .toFixed(2)
+                                                              .replace(/0$/, '')}
+                                                </strong>{' '}
+                                                {tier.earn_multiplier === 1 ? 'point' : 'points'} for every RM1 spent
+                                            </span>
+                                        </li>
+                                        {tier.perks.map((perk, i) => (
+                                            <li key={i} className="flex items-start gap-1.5">
+                                                <Check
+                                                    className="mt-0.5 size-3 shrink-0"
+                                                    style={{ color: accent }}
+                                                />
+                                                <span>{perk}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    {isCurrent && (
+                                        <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase shadow">
+                                            Current Tier
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
 
             <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                 <div className="flex items-center justify-between gap-2 sm:justify-start">

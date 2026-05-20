@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowRight, Award, Check, Coffee } from 'lucide-react';
+import { ArrowRight, Coffee } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NotificationPrompt } from '@/components/storefront/notification-prompt';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -23,16 +23,6 @@ interface CategoryCard {
     icon: string | null;
 }
 
-interface MembershipTier {
-    id: number;
-    name: string;
-    min_lifetime_spend: number;
-    earn_multiplier: number;
-    color: string | null;
-    badge_image: string | null;
-    perks: string[];
-}
-
 interface BranchInfo {
     id: number;
     code: string;
@@ -47,7 +37,6 @@ interface Props {
     slides: Slide[];
     rewards_slides: Slide[];
     categories: CategoryCard[];
-    membership_tiers: MembershipTier[];
 }
 
 function resolveCtaUrl(url: string, branchId: number): string {
@@ -56,19 +45,9 @@ function resolveCtaUrl(url: string, branchId: number): string {
     return `/branches/${branchId}/${url}`;
 }
 
-export default function BranchHome({
-    branch,
-    slides,
-    rewards_slides,
-    categories,
-    membership_tiers,
-}: Props) {
+export default function BranchHome({ branch, slides, rewards_slides, categories }: Props) {
     const setBranch = useBranchStore((s) => s.setBranch);
-    const { auth, customer_stats } = usePage().props as unknown as {
-        auth: { user: { name: string } | null };
-        customer_stats: { tier: { name: string } | null } | null;
-    };
-    const currentTierName = customer_stats?.tier?.name ?? null;
+    const { auth } = usePage().props as unknown as { auth: { user: { name: string } | null } };
     const [active, setActive] = useState(0);
 
     useEffect(() => {
@@ -161,119 +140,6 @@ export default function BranchHome({
                                 ))}
                             </div>
                         )}
-                    </div>
-                </section>
-            )}
-
-            {/* Membership tiers — admin-managed perks + badge per tier.
-                Highlights the customer's current tier with a glowing ring. */}
-            {membership_tiers.length > 0 && (
-                <section className="mb-6">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h2 className="text-card-foreground flex items-center gap-1.5 text-lg font-bold">
-                            <Award className="size-4 text-amber-600" /> Membership Tiers
-                        </h2>
-                        <Link
-                            href="/loyalty"
-                            className="text-muted-foreground flex items-center gap-1 text-xs font-medium hover:text-amber-700"
-                        >
-                            Compare Tiers <ArrowRight className="size-3" />
-                        </Link>
-                    </div>
-
-                    <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
-                        {membership_tiers.map((tier) => {
-                            const isCurrent = currentTierName === tier.name;
-                            const accent = tier.color ?? '#7c4a1e';
-                            const upperBound = (() => {
-                                const next = membership_tiers.find(
-                                    (t) => t.min_lifetime_spend > tier.min_lifetime_spend,
-                                );
-                                return next ? next.min_lifetime_spend - 1 : null;
-                            })();
-                            const rangeLabel = upperBound !== null
-                                ? `${Math.round(tier.min_lifetime_spend)} - ${Math.round(upperBound)}`
-                                : `${Math.round(tier.min_lifetime_spend)}+`;
-
-                            return (
-                                <Link
-                                    key={tier.id}
-                                    href="/loyalty"
-                                    className={cn(
-                                        'group relative flex w-44 shrink-0 snap-start flex-col items-center overflow-hidden rounded-2xl border bg-card p-4 shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow',
-                                        isCurrent
-                                            ? 'border-amber-400 ring-2 ring-amber-300'
-                                            : 'border-border',
-                                    )}
-                                    style={{
-                                        background: isCurrent
-                                            ? `linear-gradient(180deg, ${accent}1a 0%, transparent 60%)`
-                                            : undefined,
-                                    }}
-                                >
-                                    {/* Tier badge */}
-                                    <div
-                                        className="relative flex size-16 items-center justify-center rounded-full shadow-inner"
-                                        style={{
-                                            background: `radial-gradient(circle at 30% 30%, #ffffffaa, ${accent} 70%)`,
-                                        }}
-                                    >
-                                        {tier.badge_image ? (
-                                            <img
-                                                src={`/storage/${tier.badge_image}`}
-                                                alt={tier.name}
-                                                className="size-12 rounded-full object-cover"
-                                            />
-                                        ) : (
-                                            <Award className="size-7 text-white drop-shadow" />
-                                        )}
-                                    </div>
-
-                                    <p
-                                        className="mt-2 text-sm font-extrabold tracking-wider uppercase"
-                                        style={{ color: accent }}
-                                    >
-                                        {tier.name}
-                                    </p>
-                                    <p className="text-muted-foreground text-[10px]">
-                                        RM {rangeLabel}
-                                    </p>
-
-                                    <ul className="mt-3 w-full space-y-1.5 text-[10.5px] leading-snug">
-                                        <li className="flex items-start gap-1.5">
-                                            <Check
-                                                className="mt-0.5 size-3 shrink-0"
-                                                style={{ color: accent }}
-                                            />
-                                            <span>
-                                                Earn{' '}
-                                                <strong>
-                                                    {tier.earn_multiplier % 1 === 0
-                                                        ? tier.earn_multiplier.toFixed(0)
-                                                        : tier.earn_multiplier.toFixed(2).replace(/0$/, '')}
-                                                </strong>{' '}
-                                                {tier.earn_multiplier === 1 ? 'point' : 'points'} for every RM1 spent
-                                            </span>
-                                        </li>
-                                        {tier.perks.map((perk, i) => (
-                                            <li key={i} className="flex items-start gap-1.5">
-                                                <Check
-                                                    className="mt-0.5 size-3 shrink-0"
-                                                    style={{ color: accent }}
-                                                />
-                                                <span>{perk}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-
-                                    {isCurrent && (
-                                        <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase shadow">
-                                            Current Tier
-                                        </span>
-                                    )}
-                                </Link>
-                            );
-                        })}
                     </div>
                 </section>
             )}

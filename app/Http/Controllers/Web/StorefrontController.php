@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\HomeSlide;
-use App\Models\MembershipTier;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -214,21 +213,6 @@ class StorefrontController extends Controller
             ];
         }
 
-        $tiers = MembershipTier::query()
-            ->orderBy('min_lifetime_spend')
-            ->orderBy('sort_order')
-            ->get(['id', 'name', 'min_lifetime_spend', 'earn_multiplier', 'color', 'badge_image', 'perks'])
-            ->map(fn (MembershipTier $t) => [
-                'id' => (int) $t->id,
-                'name' => $t->name,
-                'min_lifetime_spend' => (float) $t->min_lifetime_spend,
-                'earn_multiplier' => (float) $t->earn_multiplier,
-                'color' => $t->color,
-                'badge_image' => $t->badge_image,
-                'perks' => is_array($t->perks) ? array_values($t->perks) : [],
-            ])
-            ->values();
-
         return Inertia::render('storefront/branch-home', [
             'branch' => [
                 'id' => $branch->id,
@@ -241,7 +225,6 @@ class StorefrontController extends Controller
             'slides' => $hero,
             'rewards_slides' => $rewards,
             'categories' => $categories,
-            'membership_tiers' => $tiers,
         ]);
     }
 

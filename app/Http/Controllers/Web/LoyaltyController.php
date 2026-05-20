@@ -46,6 +46,21 @@ class LoyaltyController extends Controller
             ];
         }
 
+        $tiers = MembershipTier::query()
+            ->orderBy('min_lifetime_spend')
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'min_lifetime_spend', 'earn_multiplier', 'color', 'badge_image', 'perks'])
+            ->map(fn (MembershipTier $t) => [
+                'id' => (int) $t->id,
+                'name' => $t->name,
+                'min_lifetime_spend' => (float) $t->min_lifetime_spend,
+                'earn_multiplier' => (float) $t->earn_multiplier,
+                'color' => $t->color,
+                'badge_image' => $t->badge_image,
+                'perks' => is_array($t->perks) ? array_values($t->perks) : [],
+            ])
+            ->values();
+
         return Inertia::render('storefront/loyalty', [
             'balance' => $balance,
             'redeem_value' => $loyalty->dollarsForPoints($balance),
@@ -61,6 +76,7 @@ class LoyaltyController extends Controller
                 'multiplier' => (float) $next->earn_multiplier,
             ] : null,
             'history' => $rows,
+            'membership_tiers' => $tiers,
         ]);
     }
 }

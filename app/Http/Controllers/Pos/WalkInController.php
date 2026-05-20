@@ -228,6 +228,7 @@ class WalkInController extends Controller
             : 0;
 
         $receipt = [
+            'id' => (int) $fresh->id,
             'number' => $fresh->number,
             'order_type' => $fresh->order_type->value,
             'dine_in_table' => $fresh->dine_in_table,

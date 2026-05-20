@@ -8,6 +8,7 @@ import { printOrderReceipt, type ReceiptOrder } from '@/lib/print-receipt';
 import { isBridgeAvailable, printViaBridge } from '@/lib/sunmi-bridge';
 
 interface FlashReceipt extends ReceiptOrder {
+    id: number;
     branch: {
         name: string;
         address: string | null;
@@ -88,7 +89,30 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
         if (!receipt) return;
         if (printedRef.current === receipt.number) return;
         printedRef.current = receipt.number;
-        printOrderReceipt(receipt, receipt.branch, { size: receipt.branch.label_size });
+
+        // Auto-print after Confirm & place / Charge & place. Try the
+        // SUNMI built-in printer via the localhost bridge first — that
+        // path is silent and reliable on SUNMI tablets. If the bridge
+        // isn't reachable (desktop, or SUNMI without the bridge APK),
+        // fall back to the browser print dialog using the rich flash
+        // receipt we already have.
+        void (async () => {
+            if (await isBridgeAvailable()) {
+                try {
+                    const res = await fetch(`/pos/orders/${receipt.id}/receipt-payload`, {
+                        headers: { Accept: 'application/json' },
+                    });
+                    if (res.ok) {
+                        const payload = await res.json();
+                        await printViaBridge(payload);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('SUNMI bridge auto-print failed, falling back', err);
+                }
+            }
+            printOrderReceipt(receipt, receipt.branch, { size: receipt.branch.label_size });
+        })();
     }, [flash?.receipt]);
 
     useEffect(() => {

@@ -7,6 +7,7 @@ use App\Events\PrintReceiptRequested;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Services\Loyalty\LoyaltyService;
 use App\Services\Orders\OrderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,6 +71,61 @@ class QueueController extends Controller
         abort_unless($order->branch_id === $branchId, 403);
 
         return response()->json((new PrintReceiptRequested($order))->broadcastWith());
+    }
+
+    /**
+     * Rich receipt shape consumed by the browser-print fallback in queue.tsx
+     * (matches the flash receipt array built by WalkInController::store).
+     * Used when no SUNMI bridge is reachable so the cashier still gets a
+     * system print dialog for the receipt instead of nothing.
+     */
+    public function receiptData(Request $request, Order $order, LoyaltyService $loyalty): \Illuminate\Http\JsonResponse
+    {
+        $branchId = (int) $request->session()->get('pos.branch_id');
+        abort_unless($order->branch_id === $branchId, 403);
+
+        $order->loadMissing(['branch', 'items.modifiers', 'user']);
+        $branch = $order->branch;
+
+        $pointsEarned = $order->user_id
+            ? (int) floor((float) $order->subtotal * $loyalty->multiplierFor((int) $order->user_id))
+            : 0;
+
+        return response()->json([
+            'number' => $order->number,
+            'order_type' => $order->order_type->value,
+            'dine_in_table' => $order->dine_in_table,
+            'created_at' => $order->created_at?->toIso8601String(),
+            'paid_at' => $order->paid_at?->toIso8601String(),
+            'payment_method' => $order->payment_method,
+            'payment_reference' => $order->payment_reference,
+            'subtotal' => (float) $order->subtotal,
+            'sst_amount' => (float) $order->sst_amount,
+            'service_charge_amount' => (float) ($order->service_charge_amount ?? 0),
+            'discount_amount' => (float) ($order->discount_amount ?? 0),
+            'total' => (float) $order->total,
+            'customer_name' => $order->user?->name,
+            'points_earned' => $pointsEarned,
+            'items' => $order->items->map(fn ($i) => [
+                'name' => $i->product_name,
+                'quantity' => (int) $i->quantity,
+                'unit_price' => (float) $i->unit_price,
+                'line_total' => (float) $i->line_total,
+                'modifiers' => $i->modifiers
+                    ->map(fn ($m) => ['option_name' => $m->option_name])
+                    ->values()
+                    ->all(),
+            ])->values()->all(),
+            'branch' => [
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'receipt_header' => $branch->receipt_header,
+                'receipt_footer' => $branch->receipt_footer,
+                'sst_rate' => (float) $branch->sst_rate,
+                'service_charge_rate' => (float) $branch->service_charge_rate,
+                'label_size' => (string) ($branch->label_size ?? '58mm'),
+            ],
+        ]);
     }
 
     public function transition(Request $request, Order $order, OrderService $service): RedirectResponse

@@ -166,8 +166,10 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
 
     async function printReceipt(orderId: number) {
         // Try the SUNMI built-in printer first via the localhost bridge.
-        // If unreachable (no bridge installed, not on SUNMI), fall back to
-        // the Reverb -> WiFi printer path.
+        // If unreachable (no bridge installed, not on SUNMI), fan out to
+        // both the Reverb -> WiFi runner broadcast (for branches that have
+        // a print runner attached) AND a local browser print dialog so
+        // cashiers without dedicated hardware still get a receipt.
         if (await isBridgeAvailable()) {
             try {
                 const res = await fetch(`/pos/orders/${orderId}/receipt-payload`, {
@@ -178,10 +180,32 @@ export default function PosQueue({ branch, orders, reverb }: Props) {
                 await printViaBridge(payload);
                 return;
             } catch (err) {
-                console.warn('SUNMI bridge print failed, falling back to WiFi runner', err);
+                console.warn('SUNMI bridge print failed, falling back', err);
             }
         }
+
         router.post(`/pos/orders/${orderId}/print-receipt`, {}, { preserveScroll: true });
+
+        try {
+            const res = await fetch(`/pos/orders/${orderId}/receipt-data`, {
+                headers: { Accept: 'application/json' },
+            });
+            if (!res.ok) return;
+            const data = (await res.json()) as ReceiptOrder & {
+                branch: {
+                    name: string;
+                    address: string | null;
+                    receipt_header: string | null;
+                    receipt_footer: string | null;
+                    sst_rate: number;
+                    service_charge_rate: number;
+                    label_size: '58mm' | '80mm';
+                };
+            };
+            printOrderReceipt(data, data.branch, { size: data.branch.label_size });
+        } catch (err) {
+            console.warn('receipt browser-print fallback failed', err);
+        }
     }
 
     function cancel(orderId: number) {

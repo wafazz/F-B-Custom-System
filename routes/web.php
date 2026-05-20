@@ -147,6 +147,7 @@ Route::prefix('pos')->name('pos.')->group(function () {
         Route::post('orders/{order}/transition', [PosQueueController::class, 'transition'])->name('orders.transition');
         Route::post('orders/{order}/print-receipt', [PosQueueController::class, 'printReceipt'])->name('orders.print-receipt');
         Route::get('orders/{order}/receipt-payload', [PosQueueController::class, 'receiptPayload'])->name('orders.receipt-payload');
+        Route::get('orders/{order}/receipt-data', [PosQueueController::class, 'receiptData'])->name('orders.receipt-data');
         Route::get('stock', [PosStockController::class, 'index'])->name('stock');
         Route::post('stock/{product}/toggle', [PosStockController::class, 'toggle'])->name('stock.toggle');
         Route::get('walk-in', [WalkInController::class, 'index'])->name('walk-in');

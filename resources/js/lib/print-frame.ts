@@ -13,10 +13,17 @@
  *    screenshot of what's on screen, so display:none / visibility:hidden
  *    rules are ignored entirely.
  *
- * The fix: cover the visible viewport with the receipt while print() is
- * in flight. Whether Chrome reflows (uses @media print) or rasterizes
- * (uses the visible viewport), it only sees the receipt. Once
- * afterprint fires (or 30 s elapses) we remove the cover.
+ * The fix is layered:
+ *
+ * - An outer cover div (#sc-print-cover) goes full-viewport white over
+ *   the POS UI so neither code path can see the queue page underneath.
+ * - An inner area div (#sc-print-area) holds the receipt content at
+ *   its native 58/80mm width. Receipt CSS that targets `body` is
+ *   re-scoped here so it doesn't fight the cover's sizing.
+ * - @media print collapses the cover to natural flow and lays the
+ *   receipt at the top of the print page.
+ *
+ * Once afterprint fires (or 30 s elapses) the injected nodes are removed.
  */
 export function browserPrintHtml(html: string): void {
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -26,64 +33,74 @@ export function browserPrintHtml(html: string): void {
         .join('\n');
 
     // Receipt CSS targets `body` (e.g. `body { width: 58mm }`) — re-scope
-    // those rules to #sc-print-area so they apply to our injected node
-    // instead of clobbering the host POS body during print.
+    // those rules to the INNER #sc-print-area so they apply to the
+    // 58mm content, not the full-viewport cover.
     const scopedStyles = rawStyles
         .replace(/(^|[\s,}])html\s*,\s*body\s*\{/g, '$1#sc-print-area {')
         .replace(/(^|[\s,}])body\s*\{/g, '$1#sc-print-area {');
 
+    const COVER_ID = 'sc-print-cover';
     const AREA_ID = 'sc-print-area';
     const STYLE_ID = 'sc-print-style';
 
-    document.getElementById(AREA_ID)?.remove();
+    document.getElementById(COVER_ID)?.remove();
     document.getElementById(STYLE_ID)?.remove();
+
+    const cover = document.createElement('div');
+    cover.id = COVER_ID;
 
     const area = document.createElement('div');
     area.id = AREA_ID;
     area.innerHTML = bodyHTML;
-    // Cover the visible viewport so Android Chrome's rasterize-print
-    // path also sees only the receipt. Inside @media print we collapse
-    // back to natural flow so reflow-print engines (desktop Chrome,
-    // Safari) don't get a hard-pinned width.
-    area.style.cssText = [
-        'position: fixed',
-        'inset: 0',
-        'z-index: 2147483647',
-        'background: #fff',
-        'color: #000',
-        'overflow: auto',
-        'margin: 0',
-        'padding: 0',
-    ].join(';');
+    cover.appendChild(area);
 
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
+        /* Full-viewport white sheet that hides the POS UI while the
+           print dialog is open — defends against rasterize-print
+           engines that snapshot the visible viewport. */
+        #${COVER_ID} {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 2147483647 !important;
+            background: #fff !important;
+            color: #000 !important;
+            overflow: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+        }
         @media print {
             html, body {
                 background: #fff !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            body > *:not(#${AREA_ID}) {
+            body > *:not(#${COVER_ID}) {
                 display: none !important;
             }
-            #${AREA_ID} {
+            #${COVER_ID} {
                 position: static !important;
-                width: 100% !important;
-                height: auto !important;
-                overflow: visible !important;
+                display: block !important;
+                background: transparent !important;
                 z-index: auto !important;
+                overflow: visible !important;
+            }
+            #${AREA_ID} {
+                margin: 0 !important;
             }
         }
         ${scopedStyles}
     `;
 
     document.head.appendChild(style);
-    document.body.appendChild(area);
+    document.body.appendChild(cover);
 
     const cleanup = () => {
-        document.getElementById(AREA_ID)?.remove();
+        document.getElementById(COVER_ID)?.remove();
         document.getElementById(STYLE_ID)?.remove();
         window.removeEventListener('afterprint', cleanup);
     };

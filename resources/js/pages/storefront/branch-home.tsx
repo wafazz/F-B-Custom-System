@@ -154,6 +154,38 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                 </section>
             )}
 
+            {/* Order mode picker */}
+            <section className="mb-6 grid grid-cols-2 gap-3">
+                <Link
+                    href={`/branches/${branch.id}/menu`}
+                    aria-label="Pickup — order to pick up at store"
+                    className="block overflow-hidden rounded-2xl shadow-md transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
+                >
+                    <img
+                        src="/images/order-modes/pickup.png"
+                        alt="Pickup — Pick up at store"
+                        className="block h-auto w-full"
+                        loading="lazy"
+                    />
+                </Link>
+                <button
+                    type="button"
+                    disabled
+                    aria-label="Delivery — coming soon"
+                    className="relative block cursor-not-allowed overflow-hidden rounded-2xl shadow-md"
+                >
+                    <img
+                        src="/images/order-modes/delivery.png"
+                        alt="Delivery — Delivered to you"
+                        className="block h-auto w-full opacity-60"
+                        loading="lazy"
+                    />
+                    <span className="absolute top-2 right-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase shadow">
+                        Coming soon
+                    </span>
+                </button>
+            </section>
+
             {/* Explore Our Menu */}
             <section className="mb-6">
                 <div className="mb-3 flex items-center justify-between">

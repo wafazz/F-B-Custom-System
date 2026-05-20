@@ -1,5 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
+    Clock,
     Coffee,
     CreditCard,
     Hash,
@@ -71,6 +72,8 @@ export default function Checkout({
 
     const [orderType, setOrderType] = useState<OrderType>('pickup');
     const [tableNumber, setTableNumber] = useState('');
+    const [pickupMode, setPickupMode] = useState<'asap' | 'scheduled'>('asap');
+    const [scheduledAt, setScheduledAt] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gateway');
     const [voucherCode, setVoucherCode] = useState<string | null>(null);
     const [packaging, setPackaging] = useState<string[]>([]);
@@ -107,12 +110,18 @@ export default function Checkout({
 
     const walletAffordable = is_authenticated && wallet_balance >= total;
 
+    // <input type="datetime-local" min="..."> enforces the 15-minute lead
+    // time client-side, and StoreOrderRequest re-validates with
+    // after_or_equal:now server-side. Here we just require a value.
+    const scheduledValid = pickupMode === 'asap' || scheduledAt.trim() !== '';
+
     const canSubmit =
         lines.length > 0 &&
         (cartBranchId === null || cartBranchId === branch.id) &&
         branch.accepts_orders &&
         branch.is_open_now &&
         (orderType === 'pickup' || tableNumber.trim().length > 0) &&
+        (orderType !== 'pickup' || scheduledValid) &&
         (paymentMethod !== 'wallet' || walletAffordable);
 
     async function handlePlace() {
@@ -135,6 +144,10 @@ export default function Checkout({
                     branch_id: branch.id,
                     order_type: orderType,
                     dine_in_table: orderType === 'dine_in' ? tableNumber : null,
+                    pickup_at:
+                        orderType === 'pickup' && pickupMode === 'scheduled' && scheduledAt
+                            ? new Date(scheduledAt).toISOString()
+                            : null,
                     notes,
                     payment_method: paymentMethod,
                     voucher_code: voucherCode,
@@ -204,6 +217,53 @@ export default function Checkout({
                                 className="w-full bg-transparent text-sm outline-none"
                             />
                         </div>
+                    </div>
+                )}
+                {orderType === 'pickup' && (
+                    <div className="mt-4">
+                        <label className="text-muted-foreground text-xs">Pickup time</label>
+                        <div className="mt-1 grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPickupMode('asap')}
+                                className={cn(
+                                    'flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold transition-colors',
+                                    pickupMode === 'asap'
+                                        ? 'border-amber-500 bg-amber-50 text-amber-800'
+                                        : 'border-border bg-background text-muted-foreground hover:border-amber-300',
+                                )}
+                            >
+                                <Clock className="size-3.5" /> ASAP
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPickupMode('scheduled')}
+                                className={cn(
+                                    'flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold transition-colors',
+                                    pickupMode === 'scheduled'
+                                        ? 'border-amber-500 bg-amber-50 text-amber-800'
+                                        : 'border-border bg-background text-muted-foreground hover:border-amber-300',
+                                )}
+                            >
+                                <Clock className="size-3.5" /> Schedule
+                            </button>
+                        </div>
+                        {pickupMode === 'scheduled' && (
+                            <div className="mt-2">
+                                <input
+                                    type="datetime-local"
+                                    value={scheduledAt}
+                                    min={localDatetimeValue(addMinutes(new Date(), 15))}
+                                    max={localDatetimeValue(addMinutes(new Date(), 60 * 24 * 7))}
+                                    onChange={(e) => setScheduledAt(e.target.value)}
+                                    className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm outline-none focus:border-amber-500"
+                                />
+                                <p className="text-muted-foreground mt-1 text-[10px]">
+                                    Earliest 15 minutes from now. Latest 7 days ahead. Your order is
+                                    queued for the time you pick.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
             </section>
@@ -543,6 +603,23 @@ export default function Checkout({
                                         : `Dine-in · Table ${tableNumber || '—'}`}
                                 </dd>
                             </div>
+                            {orderType === 'pickup' && (
+                                <div className="flex justify-between">
+                                    <dt className="text-slate-500">Pickup time</dt>
+                                    <dd className="font-semibold">
+                                        {pickupMode === 'asap'
+                                            ? 'ASAP'
+                                            : scheduledAt
+                                              ? new Date(scheduledAt).toLocaleString('en-MY', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                })
+                                              : '—'}
+                                    </dd>
+                                </div>
+                            )}
                             <div className="flex justify-between">
                                 <dt className="text-slate-500">Payment</dt>
                                 <dd className="font-semibold capitalize">{paymentMethod}</dd>
@@ -577,6 +654,19 @@ export default function Checkout({
                 </div>
             )}
         </StorefrontLayout>
+    );
+}
+
+function addMinutes(d: Date, mins: number): Date {
+    return new Date(d.getTime() + mins * 60_000);
+}
+
+/** Format a Date as the local-timezone string an <input type="datetime-local"> expects. */
+function localDatetimeValue(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return (
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+        `T${pad(d.getHours())}:${pad(d.getMinutes())}`
     );
 }
 

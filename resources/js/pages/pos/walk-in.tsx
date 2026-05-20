@@ -1,9 +1,11 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
     Banknote,
     CreditCard,
     Eye,
     EyeOff,
+    GripHorizontal,
     Hash,
     Monitor,
     Plus,
@@ -623,23 +625,23 @@ export default function PosWalkIn({ branch, parents }: Props) {
                 </aside>
             </div>
 
-            <Sheet open={cashOpen} onOpenChange={setCashOpen}>
-                <SheetContent
-                    side="bottom"
-                    className="border-slate-700 bg-slate-900 text-slate-100 sm:mx-auto sm:max-w-md sm:rounded-xl"
-                >
+            <DialogPrimitive.Root open={cashOpen} onOpenChange={setCashOpen}>
+                <DialogPrimitive.Portal>
+                    <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
                     {cashOpen && (
-                        <CashTender
-                            total={total}
-                            onCancel={() => setCashOpen(false)}
-                            onConfirm={() => {
-                                setCashOpen(false);
-                                submit();
-                            }}
-                        />
+                        <DraggableCashPanel onClose={() => setCashOpen(false)}>
+                            <CashTender
+                                total={total}
+                                onCancel={() => setCashOpen(false)}
+                                onConfirm={() => {
+                                    setCashOpen(false);
+                                    submit();
+                                }}
+                            />
+                        </DraggableCashPanel>
                     )}
-                </SheetContent>
-            </Sheet>
+                </DialogPrimitive.Portal>
+            </DialogPrimitive.Root>
 
             <Sheet open={picker !== null} onOpenChange={(o) => !o && setPicker(null)}>
                 <SheetContent
@@ -884,6 +886,70 @@ function PayBtn({
             {icon}
             <span>{label}</span>
         </button>
+    );
+}
+
+function DraggableCashPanel({
+    children,
+    onClose,
+}: {
+    children: React.ReactNode;
+    onClose: () => void;
+}) {
+    const [pos, setPos] = useState({ x: 0, y: 0 });
+    const dragStart = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+
+    function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+        dragStart.current = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
+        e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+        if (!dragStart.current) return;
+        setPos({
+            x: dragStart.current.px + (e.clientX - dragStart.current.x),
+            y: dragStart.current.py + (e.clientY - dragStart.current.y),
+        });
+    }
+    function endDrag(e: React.PointerEvent<HTMLDivElement>) {
+        dragStart.current = null;
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+    }
+
+    return (
+        <DialogPrimitive.Content
+            aria-describedby={undefined}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed top-1/2 left-1/2 z-50 w-[min(28rem,95vw)] outline-none"
+            style={{
+                transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`,
+            }}
+        >
+            <div className="rounded-xl border border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
+                <div
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                    className="flex cursor-grab touch-none items-center justify-between rounded-t-xl border-b border-slate-800 bg-slate-950/60 px-3 py-2 select-none active:cursor-grabbing"
+                >
+                    <GripHorizontal className="size-4 text-slate-500" />
+                    <span className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
+                        drag to move
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                        aria-label="Close"
+                    >
+                        <X className="size-4" />
+                    </button>
+                </div>
+                <div className="p-4">{children}</div>
+            </div>
+        </DialogPrimitive.Content>
     );
 }
 

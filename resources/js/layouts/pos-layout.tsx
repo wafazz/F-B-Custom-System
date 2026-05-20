@@ -61,7 +61,7 @@ export default function PosLayout({ children }: { children: ReactNode }) {
     }
 
     return (
-        <div className="flex h-screen flex-col bg-slate-950 text-slate-100">
+        <div className="flex h-screen flex-col bg-slate-900 text-slate-100">
             <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-6 py-3">
                 <div className="flex items-center gap-3">
                     <img
@@ -144,7 +144,7 @@ export default function PosLayout({ children }: { children: ReactNode }) {
                     </button>
                 </div>
             </header>
-            <main className="mx-auto min-h-0 w-full max-w-7xl flex-1 p-6">{children}</main>
+            <main className="mx-auto min-h-0 w-full max-w-7xl flex-1 p-4">{children}</main>
         </div>
     );
 }

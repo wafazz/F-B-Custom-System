@@ -279,16 +279,16 @@ export default function PosWalkIn({ branch, parents }: Props) {
         <PosLayout>
             <Head title="POS · Walk-in" />
 
-            <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
+            <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-[1fr_300px]">
                 <section className="flex min-h-0 flex-col">
-                    <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
+                    <div className="-mx-1 mb-2 flex flex-wrap gap-1.5 px-1">
                         {parents.map((p) => (
                             <button
                                 key={p.name}
                                 type="button"
                                 onClick={() => selectParent(p.name)}
                                 className={cn(
-                                    'flex-shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
+                                    'rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors',
                                     activeParent === p.name
                                         ? 'bg-amber-600 text-white shadow'
                                         : 'bg-slate-800 text-slate-200 hover:bg-slate-700',
@@ -299,14 +299,14 @@ export default function PosWalkIn({ branch, parents }: Props) {
                         ))}
                     </div>
                     {showChildBar && (
-                        <div className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 pb-1">
+                        <div className="-mx-1 mb-3 flex flex-wrap gap-1.5 px-1">
                             {childCats.map((c) => (
                                 <button
                                     key={c.name}
                                     type="button"
                                     onClick={() => setActiveChild(c.name)}
                                     className={cn(
-                                        'flex-shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors',
+                                        'rounded-full border px-3 py-1 text-[11px] font-medium transition-colors',
                                         activeChild === c.name
                                             ? 'border-amber-500 bg-amber-900/30 text-amber-200'
                                             : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200',
@@ -318,13 +318,13 @@ export default function PosWalkIn({ branch, parents }: Props) {
                         </div>
                     )}
 
-                    <div className="-mr-1 grid grid-cols-2 gap-2 overflow-y-auto pr-1 md:grid-cols-3">
+                    <div className="-mr-1 grid grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4">
                         {visibleProducts.map((p) => (
                             <button
                                 key={p.id}
                                 type="button"
                                 onClick={() => tap(p)}
-                                className="flex flex-col gap-1 rounded-lg border border-slate-700 bg-slate-900 p-3 text-left hover:border-amber-500"
+                                className="flex flex-col gap-1 rounded-lg border border-slate-700 bg-slate-800/60 p-3 text-left hover:border-amber-500"
                             >
                                 <span className="text-sm font-semibold">{p.name}</span>
                                 <span className="text-xs text-slate-400">{p.sku}</span>
@@ -339,7 +339,7 @@ export default function PosWalkIn({ branch, parents }: Props) {
                     </div>
                 </section>
 
-                <aside className="flex min-h-0 flex-col overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-4">
+                <aside className="flex min-h-0 flex-col overflow-y-auto rounded-xl border border-slate-700 bg-slate-800/60 p-4">
                     <div className="mb-3 flex items-center justify-between">
                         <h2 className="text-sm font-bold">Cart</h2>
                         <button

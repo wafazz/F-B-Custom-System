@@ -1,16 +1,18 @@
 /**
  * Print arbitrary HTML reliably on Android Chrome (incl. SUNMI tablets).
  *
- * Why not an iframe? `iframe.contentWindow.print()` is supposed to print
- * only the iframe's document, but Android Chrome — including the
+ * Iframes don't work: `iframe.contentWindow.print()` is supposed to
+ * print only the iframe's document, but Android Chrome — including the
  * Chromium build on SUNMI's stock browser — escalates the print intent
- * to the parent window regardless. Result: the POS queue page comes out
- * of the printer instead of the receipt / labels.
+ * to the parent window. The POS queue page came out of the printer.
  *
- * Instead, we render the receipt body into the PARENT document and use
- * `@media print` to hide everything else. `window.print()` then targets
- * the only visible element — the receipt — and the queue page is
- * suppressed by CSS. Works in every browser, no iframe quirks.
+ * Instead, we render the receipt body into the PARENT document, then
+ * use the classic `visibility: hidden` print trick to hide everything
+ * except our print zone. visibility:hidden is more reliable than
+ * display:none in print engines because elements still occupy layout —
+ * Chrome won't reflow the page mid-print and fall back to showing the
+ * original DOM. We pair it with position:absolute on the print area
+ * so the receipt occupies the page from top-left.
  */
 export function browserPrintHtml(html: string): void {
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -19,9 +21,9 @@ export function browserPrintHtml(html: string): void {
         .map((s) => s.textContent ?? '')
         .join('\n');
 
-    // Re-scope "body" / "html,body" rules to our #sc-print-area so the
-    // receipt's body-level dimensions (e.g. `body { width: 58mm }`) don't
-    // clobber the parent POS body during print.
+    // Receipt CSS targets `body` (e.g. `body { width: 58mm }`) — re-scope
+    // those rules to #sc-print-area so they apply to our injected node
+    // instead of clobbering the host POS body during print.
     const scopedStyles = rawStyles
         .replace(/(^|[\s,}])html\s*,\s*body\s*\{/g, '$1#sc-print-area {')
         .replace(/(^|[\s,}])body\s*\{/g, '$1#sc-print-area {');
@@ -39,10 +41,30 @@ export function browserPrintHtml(html: string): void {
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-        #${AREA_ID} { display: none; }
+        #${AREA_ID} {
+            position: absolute;
+            left: -10000px;
+            top: 0;
+        }
         @media print {
-            body > *:not(#${AREA_ID}) { display: none !important; }
-            #${AREA_ID} { display: block !important; }
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            body * {
+                visibility: hidden !important;
+            }
+            #${AREA_ID},
+            #${AREA_ID} * {
+                visibility: visible !important;
+            }
+            #${AREA_ID} {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+            }
         }
         ${scopedStyles}
     `;
@@ -60,7 +82,9 @@ export function browserPrintHtml(html: string): void {
     // (e.g. when the user cancels via the system back gesture).
     window.setTimeout(cleanup, 30_000);
 
-    // Defer one tick so the injected DOM is committed before the print
-    // engine snapshots the page.
-    window.setTimeout(() => window.print(), 50);
+    // Two rAFs guarantee the injected DOM + style have been laid out
+    // before the print engine snapshots the page.
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => window.print());
+    });
 }

@@ -28,8 +28,23 @@ class MembershipTierResource extends Resource
             Forms\Components\TextInput::make('name')->required(),
             Forms\Components\TextInput::make('min_lifetime_spend')->numeric()->prefix('RM')->required(),
             Forms\Components\TextInput::make('earn_multiplier')->numeric()->step(0.01)->default(1.00)->required(),
-            Forms\Components\TextInput::make('color')->placeholder('#cd7f32'),
+            Forms\Components\ColorPicker::make('color')->default('#cd7f32'),
             Forms\Components\TextInput::make('sort_order')->numeric()->default(0),
+            Forms\Components\FileUpload::make('badge_image')
+                ->label('Tier badge')
+                ->image()
+                ->imageEditor()
+                ->imageResizeMode('cover')
+                ->imageCropAspectRatio('1:1')
+                ->directory('membership-tiers/badges')
+                ->maxSize(1024)
+                ->columnSpanFull()
+                ->helperText('Square badge icon shown on the storefront tier cards (donut/medal/crown style PNG works best).'),
+            Forms\Components\TagsInput::make('perks')
+                ->label('Perks')
+                ->placeholder('e.g. Birthday treat')
+                ->helperText('Bullet points shown under the tier card on the storefront. One perk per chip.')
+                ->columnSpanFull(),
         ])->columns(2);
     }
 

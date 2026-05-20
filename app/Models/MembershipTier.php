@@ -15,6 +15,8 @@ use Illuminate\Support\Str;
  * @property string $min_lifetime_spend
  * @property string $earn_multiplier
  * @property string|null $color
+ * @property string|null $badge_image
+ * @property array<int, string>|null $perks
  * @property int $sort_order
  */
 class MembershipTier extends Model
@@ -28,6 +30,8 @@ class MembershipTier extends Model
         'min_lifetime_spend',
         'earn_multiplier',
         'color',
+        'badge_image',
+        'perks',
         'sort_order',
     ];
 
@@ -36,6 +40,7 @@ class MembershipTier extends Model
         return [
             'min_lifetime_spend' => 'decimal:2',
             'earn_multiplier' => 'decimal:2',
+            'perks' => 'array',
         ];
     }
 

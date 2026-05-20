@@ -29,25 +29,19 @@ export function printOrderLabels(order: LabelOrder, opts: PrintOptions = {}) {
     const size = opts.size ?? '58mm';
     const html = renderLabelsHtml(order, copies, size, opts.branchName ?? '');
 
+    // Use srcdoc + an off-screen iframe with real size. A 0x0 iframe built
+    // via doc.open/write/close has no proper navigable scope, so Chrome
+    // (incl. Android Chrome on SUNMI) falls through and prints the PARENT
+    // document — the POS queue page. srcdoc gives the iframe its own
+    // document and print() targets it reliably.
     const iframe = document.createElement('iframe');
     iframe.setAttribute('aria-hidden', 'true');
     iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
+    iframe.style.left = '-10000px';
+    iframe.style.top = '0';
+    iframe.style.width = '210mm';
+    iframe.style.height = '297mm';
     iframe.style.border = '0';
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentDocument;
-    if (!doc) {
-        document.body.removeChild(iframe);
-        return;
-    }
-    doc.open();
-    doc.write(html);
-    doc.close();
-
     iframe.onload = () => {
         try {
             iframe.contentWindow?.focus();
@@ -58,6 +52,8 @@ export function printOrderLabels(order: LabelOrder, opts: PrintOptions = {}) {
             }, 1000);
         }
     };
+    iframe.srcdoc = html;
+    document.body.appendChild(iframe);
 }
 
 function renderLabelsHtml(

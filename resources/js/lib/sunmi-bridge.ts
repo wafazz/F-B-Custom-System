@@ -8,26 +8,32 @@
 
 const BRIDGE_URL = 'http://127.0.0.1:8765';
 
-let cachedAvailable: boolean | null = null;
+// Cache only the success case. A previous `false` would lock the whole
+// session into browser-print fallback even after the cashier finally
+// starts the bridge APK — re-probe so the bridge is picked up as soon
+// as it comes online. The 800 ms abort keeps the re-probe cheap.
+let bridgeUpSince: number | null = null;
 
 export interface BridgePrintPayload {
     order: unknown;
     branch: unknown;
 }
 
-/** Probe the bridge once per session. Cached after the first call. */
 export async function isBridgeAvailable(): Promise<boolean> {
-    if (cachedAvailable !== null) return cachedAvailable;
+    if (bridgeUpSince !== null) return true;
     try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 800);
         const res = await fetch(`${BRIDGE_URL}/ping`, { signal: controller.signal });
         clearTimeout(timer);
-        cachedAvailable = res.ok;
+        if (res.ok) {
+            bridgeUpSince = Date.now();
+            return true;
+        }
     } catch {
-        cachedAvailable = false;
+        // bridge unreachable; fall through to false and re-probe next call
     }
-    return cachedAvailable;
+    return false;
 }
 
 /** Send a receipt to the SUNMI bridge. Throws on network/printer failure. */

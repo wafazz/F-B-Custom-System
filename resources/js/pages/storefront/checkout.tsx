@@ -306,53 +306,6 @@ export default function Checkout({
             </section>
 
             <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
-                <h2 className="text-sm font-semibold">Payment</h2>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button
-                        type="button"
-                        onClick={() => walletAffordable && setPaymentMethod('wallet')}
-                        disabled={!walletAffordable}
-                        className={cn(
-                            'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
-                            paymentMethod === 'wallet' && walletAffordable
-                                ? 'border-primary bg-primary/5 text-primary'
-                                : 'border-border hover:bg-secondary/50',
-                            !walletAffordable && 'cursor-not-allowed opacity-50',
-                        )}
-                    >
-                        <div className="flex items-center gap-2">
-                            <WalletIcon className="size-4" />
-                            <span className="text-sm font-medium">Wallet</span>
-                        </div>
-                        <span className="text-muted-foreground text-[10px]">
-                            {is_authenticated
-                                ? `Balance RM${wallet_balance.toFixed(2)}`
-                                : 'Login required'}
-                        </span>
-                        {is_authenticated && !walletAffordable && (
-                            <span className="text-[10px] text-red-500">Insufficient</span>
-                        )}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setPaymentMethod('gateway')}
-                        className={cn(
-                            'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
-                            paymentMethod === 'gateway'
-                                ? 'border-primary bg-primary/5 text-primary'
-                                : 'border-border hover:bg-secondary/50',
-                        )}
-                    >
-                        <div className="flex items-center gap-2">
-                            <CreditCard className="size-4" />
-                            <span className="text-sm font-medium">Billplz</span>
-                        </div>
-                        <span className="text-muted-foreground text-[10px]">FPX / e-wallet</span>
-                    </button>
-                </div>
-            </section>
-
-            <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
                 <h2 className="flex items-center gap-1.5 text-sm font-semibold">
                     <MessageSquare className="size-3.5" /> Special remarks
                 </h2>
@@ -515,6 +468,53 @@ export default function Checkout({
                     </section>
                 );
             })()}
+
+            <section className="border-border bg-card mb-4 rounded-xl border p-4 shadow-sm">
+                <h2 className="text-sm font-semibold">Payment</h2>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                        type="button"
+                        onClick={() => walletAffordable && setPaymentMethod('wallet')}
+                        disabled={!walletAffordable}
+                        className={cn(
+                            'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
+                            paymentMethod === 'wallet' && walletAffordable
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-border hover:bg-secondary/50',
+                            !walletAffordable && 'cursor-not-allowed opacity-50',
+                        )}
+                    >
+                        <div className="flex items-center gap-2">
+                            <WalletIcon className="size-4" />
+                            <span className="text-sm font-medium">Wallet</span>
+                        </div>
+                        <span className="text-muted-foreground text-[10px]">
+                            {is_authenticated
+                                ? `Balance RM${wallet_balance.toFixed(2)}`
+                                : 'Login required'}
+                        </span>
+                        {is_authenticated && !walletAffordable && (
+                            <span className="text-[10px] text-red-500">Insufficient</span>
+                        )}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setPaymentMethod('gateway')}
+                        className={cn(
+                            'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
+                            paymentMethod === 'gateway'
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-border hover:bg-secondary/50',
+                        )}
+                    >
+                        <div className="flex items-center gap-2">
+                            <CreditCard className="size-4" />
+                            <span className="text-sm font-medium">Billplz</span>
+                        </div>
+                        <span className="text-muted-foreground text-[10px]">FPX / e-wallet</span>
+                    </button>
+                </div>
+            </section>
 
             <section className="border-border bg-card mb-4 space-y-2 rounded-xl border p-4 text-sm shadow-sm">
                 <div className="text-muted-foreground flex justify-between">

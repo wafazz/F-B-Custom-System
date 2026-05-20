@@ -159,7 +159,7 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                 <Link
                     href={`/branches/${branch.id}/menu`}
                     aria-label="Pickup — order to pick up at store"
-                    className="block overflow-hidden rounded-2xl shadow-md transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
+                    className="block transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
                 >
                     <img
                         src="/images/order-modes/pickup.png"
@@ -172,7 +172,7 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
                     type="button"
                     disabled
                     aria-label="Delivery — coming soon"
-                    className="relative block cursor-not-allowed overflow-hidden rounded-2xl shadow-md"
+                    className="relative block cursor-not-allowed"
                 >
                     <img
                         src="/images/order-modes/delivery.png"

@@ -3,7 +3,14 @@ import { ArrowRight, Award, Check, Copy, Gift, Share2, Trophy } from 'lucide-rea
 import { useEffect, useState } from 'react';
 import { PushToggle } from '@/components/storefront/push-toggle';
 import StorefrontLayout from '@/layouts/storefront-layout';
+import { useBranchStore } from '@/stores/branch-store';
 import { cn } from '@/lib/utils';
+
+function resolveSlideUrl(url: string, branchId: number | null): string {
+    if (/^(https?:)?\/\//i.test(url)) return url;
+    if (url.startsWith('/')) return url;
+    return branchId ? `/branches/${branchId}/${url}` : '/branches';
+}
 
 interface Slide {
     type: 'cover' | 'product' | 'managed';
@@ -58,6 +65,7 @@ export default function Loyalty({
 }: Props) {
     const progress = next_tier ? Math.min(100, (lifetime_spend / next_tier.min_spend) * 100) : 100;
     const currentTierName = current_tier?.name ?? null;
+    const selectedBranch = useBranchStore((s) => s.selected);
     const [active, setActive] = useState(0);
     const [copied, setCopied] = useState(false);
 
@@ -123,7 +131,7 @@ export default function Loyalty({
                                     )}
                                     {s.cta_label && s.cta_url && (
                                         <a
-                                            href={s.cta_url}
+                                            href={resolveSlideUrl(s.cta_url, selectedBranch?.id ?? null)}
                                             className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-bold tracking-wider text-neutral-900 uppercase shadow transition-transform hover:scale-105"
                                         >
                                             {s.cta_label} <ArrowRight className="size-3" />

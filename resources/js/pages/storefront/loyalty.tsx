@@ -70,6 +70,68 @@ export default function Loyalty({
         <StorefrontLayout>
             <Head title="Your Rewards" />
 
+            {slide && (
+                <section className="mb-5 overflow-hidden rounded-2xl shadow-md">
+                    <div className="relative h-52 sm:h-60">
+                        {slides.map((s, i) => (
+                            <div
+                                key={i}
+                                className={cn(
+                                    'absolute inset-0 transition-opacity duration-700',
+                                    active === i ? 'opacity-100' : 'opacity-0',
+                                )}
+                                style={{
+                                    backgroundImage: s.image
+                                        ? `linear-gradient(110deg, rgba(20,15,12,0.85) 0%, rgba(20,15,12,0.55) 45%, rgba(20,15,12,0.1) 70%), url(/storage/${s.image})`
+                                        : 'linear-gradient(135deg, #2a1d14, #4a2c18)',
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                }}
+                            >
+                                <div className="flex h-full flex-col justify-center p-6 text-white">
+                                    <p className="text-2xl leading-none font-bold drop-shadow-lg sm:text-3xl">
+                                        {s.title.split(' ')[0]}
+                                    </p>
+                                    <p className="-mt-1 font-serif text-3xl text-amber-100 italic drop-shadow-lg sm:text-4xl">
+                                        {s.title.split(' ').slice(1).join(' ') || ''}
+                                    </p>
+                                    {s.subtitle && (
+                                        <p className="mt-3 max-w-[55%] text-xs leading-snug text-amber-50/90 sm:text-sm">
+                                            {s.subtitle}
+                                        </p>
+                                    )}
+                                    {s.cta_label && s.cta_url && (
+                                        <a
+                                            href={s.cta_url}
+                                            className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-bold tracking-wider text-neutral-900 uppercase shadow transition-transform hover:scale-105"
+                                        >
+                                            {s.cta_label} <ArrowRight className="size-3" />
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        {slides.length > 1 && (
+                            <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+                                {slides.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => setActive(i)}
+                                        aria-label={`Slide ${i + 1}`}
+                                        className={cn(
+                                            'h-1.5 rounded-full transition-all',
+                                            active === i ? 'w-5 bg-white' : 'w-1.5 bg-white/50',
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
+
             {membership_tiers.length > 0 && (
                 <section className="mb-5">
                     <div className="mb-3 flex items-center justify-between">
@@ -201,68 +263,6 @@ export default function Loyalty({
                     </Link>
                 ))}
             </div>
-
-            {slide && (
-                <section className="mb-4 overflow-hidden rounded-2xl shadow-md">
-                    <div className="relative h-52 sm:h-60">
-                        {slides.map((s, i) => (
-                            <div
-                                key={i}
-                                className={cn(
-                                    'absolute inset-0 transition-opacity duration-700',
-                                    active === i ? 'opacity-100' : 'opacity-0',
-                                )}
-                                style={{
-                                    backgroundImage: s.image
-                                        ? `linear-gradient(110deg, rgba(20,15,12,0.85) 0%, rgba(20,15,12,0.55) 45%, rgba(20,15,12,0.1) 70%), url(/storage/${s.image})`
-                                        : 'linear-gradient(135deg, #2a1d14, #4a2c18)',
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                }}
-                            >
-                                <div className="flex h-full flex-col justify-center p-6 text-white">
-                                    <p className="text-2xl leading-none font-bold drop-shadow-lg sm:text-3xl">
-                                        {s.title.split(' ')[0]}
-                                    </p>
-                                    <p className="-mt-1 font-serif text-3xl text-amber-100 italic drop-shadow-lg sm:text-4xl">
-                                        {s.title.split(' ').slice(1).join(' ') || ''}
-                                    </p>
-                                    {s.subtitle && (
-                                        <p className="mt-3 max-w-[55%] text-xs leading-snug text-amber-50/90 sm:text-sm">
-                                            {s.subtitle}
-                                        </p>
-                                    )}
-                                    {s.cta_label && s.cta_url && (
-                                        <a
-                                            href={s.cta_url}
-                                            className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-bold tracking-wider text-neutral-900 uppercase shadow transition-transform hover:scale-105"
-                                        >
-                                            {s.cta_label} <ArrowRight className="size-3" />
-                                        </a>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-
-                        {slides.length > 1 && (
-                            <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
-                                {slides.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        type="button"
-                                        onClick={() => setActive(i)}
-                                        aria-label={`Slide ${i + 1}`}
-                                        className={cn(
-                                            'h-1.5 rounded-full transition-all',
-                                            active === i ? 'w-5 bg-white' : 'w-1.5 bg-white/50',
-                                        )}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </section>
-            )}
 
             <section className="border-border mb-4 rounded-2xl border bg-gradient-to-br from-amber-50 to-orange-100 p-5 shadow-sm">
                 <div className="flex items-center justify-between gap-3">

@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { Coffee, Heart } from 'lucide-react';
+import { Coffee, Heart, Star } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { MenuProduct } from '@/types/menu';
@@ -125,6 +125,13 @@ export function ProductCard({ product, onSelect, isAvailable = true }: Props) {
             </div>
             <div className={cn('mt-2 flex flex-1 flex-col', !isAvailable && 'opacity-60')}>
                 <h3 className="line-clamp-2 text-sm leading-tight font-semibold">{product.name}</h3>
+                {product.reviews_count > 0 && (
+                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-neutral-600">
+                        <Star className="size-3 fill-amber-400 text-amber-400" />
+                        <span className="font-semibold">{product.avg_rating.toFixed(1)}</span>
+                        <span className="text-muted-foreground">({product.reviews_count})</span>
+                    </div>
+                )}
                 {product.description && (
                     <p className="text-muted-foreground mt-1 line-clamp-2 text-[11px] leading-snug">
                         {product.description}

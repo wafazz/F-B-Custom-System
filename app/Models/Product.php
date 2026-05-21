@@ -36,6 +36,8 @@ class Product extends Model
         'available_mobile',
         'is_featured',
         'badge_label',
+        'avg_rating',
+        'reviews_count',
         'sort_order',
     ];
 

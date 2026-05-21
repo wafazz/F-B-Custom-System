@@ -2,11 +2,13 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Check, Clock, CreditCard, Package, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { ReviewForm } from '@/components/storefront/review-form';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { getEcho } from '@/lib/echo';
 
 interface OrderItem {
     id: number;
+    product_id: number | null;
     product_name: string;
     unit_price: number;
     quantity: number;
@@ -214,6 +216,27 @@ export default function Order({ order, reverb }: Props) {
                 <section className="border-border bg-card rounded-xl border p-4 text-xs shadow-sm">
                     <p className="font-semibold">Notes</p>
                     <p className="text-muted-foreground mt-1">{order.notes}</p>
+                </section>
+            )}
+
+            {status === 'completed' && (
+                <section className="mt-4 space-y-3">
+                    <h2 className="text-sm font-semibold">Rate your experience</h2>
+                    {order.branch.id && (
+                        <ReviewForm
+                            endpoint={`/branches/${order.branch.id}/reviews`}
+                            label={`Rate ${order.branch.name ?? 'this branch'}`}
+                        />
+                    )}
+                    {order.items
+                        .filter((it) => it.product_id !== null)
+                        .map((it) => (
+                            <ReviewForm
+                                key={it.id}
+                                endpoint={`/products/${it.product_id}/reviews`}
+                                label={`Rate ${it.product_name}`}
+                            />
+                        ))}
                 </section>
             )}
 

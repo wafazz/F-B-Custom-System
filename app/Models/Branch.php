@@ -43,6 +43,8 @@ class Branch extends Model
         'auto_print_labels',
         'label_copies',
         'label_size',
+        'avg_rating',
+        'reviews_count',
     ];
 
     protected function casts(): array

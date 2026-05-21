@@ -342,6 +342,7 @@ class OrderPagesController extends Controller
             }
             $items[] = [
                 'id' => $item->id,
+                'product_id' => $item->product_id,
                 'product_name' => $item->product_name,
                 'unit_price' => (float) $item->unit_price,
                 'quantity' => $item->quantity,

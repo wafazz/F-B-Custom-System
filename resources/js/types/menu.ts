@@ -30,6 +30,8 @@ export interface MenuProduct {
     prep_time_minutes: number;
     is_featured: boolean;
     badge_label: string | null;
+    avg_rating: number;
+    reviews_count: number;
     sst_applicable: boolean;
     in_stock: boolean;
     modifier_groups: MenuModifierGroup[];

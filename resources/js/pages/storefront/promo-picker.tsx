@@ -314,6 +314,8 @@ function toMenuProduct(p: PickableProduct): import('@/types/menu').MenuProduct {
         prep_time_minutes: 0,
         is_featured: false,
         badge_label: null,
+        avg_rating: 0,
+        reviews_count: 0,
         sst_applicable: true,
         in_stock: true,
         modifier_groups: [],

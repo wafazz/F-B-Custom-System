@@ -24,6 +24,7 @@ use App\Http\Controllers\Web\OrderPagesController;
 use App\Http\Controllers\Web\PromoPickerController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\ReferralController;
+use App\Http\Controllers\Web\ReviewController;
 use App\Http\Controllers\Web\StorefrontController;
 use App\Http\Controllers\Web\VoucherClaimController;
 use App\Http\Controllers\Web\WalletController;
@@ -148,7 +149,19 @@ Route::middleware('auth')->group(function () {
     Route::post('vouchers/{voucher}/claim', [VoucherClaimController::class, 'store'])
         ->middleware('throttle:20,1')
         ->name('vouchers.claim');
+
+    Route::post('products/{product}/reviews', [ReviewController::class, 'storeProductReview'])
+        ->middleware('throttle:20,1')
+        ->name('products.reviews.store');
+    Route::post('branches/{branch}/reviews', [ReviewController::class, 'storeBranchReview'])
+        ->middleware('throttle:20,1')
+        ->name('branches.reviews.store');
 });
+
+Route::get('products/{product}/reviews', [ReviewController::class, 'productReviews'])
+    ->name('products.reviews');
+Route::get('branches/{branch}/reviews', [ReviewController::class, 'branchReviews'])
+    ->name('branches.reviews');
 
 // POS (Branch staff)
 Route::prefix('pos')->name('pos.')->group(function () {

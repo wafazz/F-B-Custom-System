@@ -12,6 +12,7 @@ use App\Http\Controllers\Pos\ShiftController as PosShiftController;
 use App\Http\Controllers\Pos\StockController as PosStockController;
 use App\Http\Controllers\Pos\WalkInController;
 use App\Http\Controllers\Web\AccountController;
+use App\Http\Controllers\Web\DailyCheckInController;
 use App\Http\Controllers\Web\DisplayController;
 use App\Http\Controllers\Web\FavouriteController;
 use App\Http\Controllers\Web\InfoPagesController;
@@ -130,6 +131,11 @@ Route::middleware('auth')->group(function () {
     Route::post('spin', [SpinController::class, 'spin'])
         ->middleware('throttle:10,1')
         ->name('spin.spin');
+
+    Route::get('check-in', [DailyCheckInController::class, 'index'])->name('check-in.index');
+    Route::post('check-in', [DailyCheckInController::class, 'checkIn'])
+        ->middleware('throttle:10,1')
+        ->name('check-in.store');
 
     Route::get('wallet', [WalletController::class, 'show'])->name('wallet');
     Route::post('wallet/topup', [WalletController::class, 'topup'])

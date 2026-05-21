@@ -30,6 +30,7 @@ class VoucherClaimController extends Controller
 
         $available = Voucher::active()
             ->where('is_spin_only', false)
+            ->where('is_check_in_only', false)
             ->whereNotIn('id', $claimedIds)
             ->orderBy('valid_until')
             ->get()

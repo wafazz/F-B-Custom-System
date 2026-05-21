@@ -198,6 +198,10 @@ class VoucherResource extends Resource
                         ->label('Spin wheel reward only')
                         ->helperText('Hide from the public /vouchers page. Voucher can only be obtained by winning it on the Spin Wheel.')
                         ->columnSpanFull(),
+                    Forms\Components\Toggle::make('is_check_in_only')
+                        ->label('Daily check-in reward only')
+                        ->helperText('Hide from the public /vouchers page. Voucher can only be obtained by earning it through the Daily Check-in streak.')
+                        ->columnSpanFull(),
                     Forms\Components\Select::make('tier_ids')
                         ->label('Member tiers')
                         ->multiple()

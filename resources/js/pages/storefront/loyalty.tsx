@@ -266,6 +266,7 @@ export default function Loyalty({
             <div className="-mx-1 mb-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-2">
                 {[
                     { href: '/spin', label: 'Spin & Win', emoji: '🎡' },
+                    { href: '/check-in', label: 'Check-in', emoji: '📅' },
                     { href: '/rewards', label: 'Claim Points', emoji: '🪙' },
                     { href: '/favourites', label: 'Favourites', emoji: '❤️' },
                     { href: '/vouchers', label: 'Vouchers', emoji: '🎟️' },

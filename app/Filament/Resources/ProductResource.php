@@ -91,36 +91,12 @@ class ProductResource extends Resource
                         ->default('active'),
                     Forms\Components\Toggle::make('is_featured')
                         ->helperText('Include in the home featured carousel.'),
-                    Forms\Components\Select::make('badge_label_preset')
-                        ->label('Visibility badge')
-                        ->options([
-                            '' => 'No badge',
-                            'Feature' => 'Feature',
-                            'Best Seller' => 'Best Seller',
-                            'New' => 'New',
-                            '__custom__' => 'Custom text…',
-                        ])
-                        ->dehydrated(false)
-                        ->live()
-                        ->afterStateHydrated(function (Forms\Components\Select $component, ?string $state, ?Product $record) {
-                            $current = $record?->badge_label;
-                            if ($current === null || $current === '') {
-                                $component->state('');
-                                return;
-                            }
-                            $preset = ['Feature', 'Best Seller', 'New'];
-                            $component->state(in_array($current, $preset, true) ? $current : '__custom__');
-                        })
-                        ->afterStateUpdated(function (callable $set, ?string $state) {
-                            if ($state === '__custom__' || $state === null) return;
-                            $set('badge_label', $state === '' ? null : $state);
-                        })
-                        ->helperText('Pick a preset or "Custom text…" to type your own.'),
                     Forms\Components\TextInput::make('badge_label')
-                        ->label('Custom badge text')
+                        ->label('Visibility badge')
                         ->maxLength(30)
-                        ->placeholder('e.g. Limited, Chef\'s pick')
-                        ->visible(fn (Forms\Get $get) => $get('badge_label_preset') === '__custom__'),
+                        ->placeholder('e.g. Feature, Best Seller, New, Limited')
+                        ->datalist(['Feature', 'Best Seller', 'New', 'Limited', "Chef's pick"])
+                        ->helperText('Free text shown as a pill on the product card. Leave blank for no badge. Suggestions: Feature, Best Seller, New.'),
                     Forms\Components\TextInput::make('sort_order')
                         ->numeric()
                         ->default(0),

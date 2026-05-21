@@ -1,6 +1,7 @@
 import { Coffee, Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { ProductReviewsSlider } from '@/components/storefront/product-reviews-slider';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import type { MenuProduct, SelectedModifier } from '@/types/menu';
 import { cn } from '@/lib/utils';
@@ -172,6 +173,7 @@ function SheetBody({
 
                 <div className="flex min-h-0 flex-1 flex-col">
                     <div className="flex-1 space-y-5 overflow-y-auto pr-1">
+                        <ProductReviewsSlider productId={product.id} />
                         {product.modifier_groups.map((group) => (
                             <div key={group.id}>
                                 <div className="mb-2 flex items-center justify-between">

@@ -252,12 +252,12 @@ export default function Loyalty({
                     <Link
                         key={item.href}
                         href={item.href}
-                        className="flex w-20 shrink-0 snap-start flex-col items-center gap-1.5 rounded-2xl border border-stone-700/40 bg-gradient-to-b from-stone-800 to-stone-900 px-2 py-3 shadow-md transition active:scale-95"
+                        className="bg-primary flex w-20 shrink-0 snap-start flex-col items-center gap-1.5 rounded-2xl px-2 py-3 shadow-md transition active:scale-95"
                     >
-                        <span className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-b from-stone-700 to-stone-800 text-3xl shadow-inner ring-1 ring-stone-600/40">
+                        <span className="bg-primary/70 ring-primary-foreground/10 flex size-12 items-center justify-center rounded-xl text-3xl shadow-inner ring-1">
                             {item.emoji}
                         </span>
-                        <span className="text-center text-[10.5px] leading-tight font-semibold text-stone-100">
+                        <span className="text-primary-foreground text-center text-[10.5px] leading-tight font-semibold">
                             {item.label}
                         </span>
                     </Link>

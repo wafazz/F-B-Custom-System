@@ -319,12 +319,25 @@ class VoucherService
      */
     public function notifyEligibleMembers(Voucher $voucher, PushService $push): int
     {
-        $query = User::query()
-            ->whereNull('deleted_at')
-            ->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', [
-                'super_admin', 'hq_admin', 'ops_manager', 'mkt_manager',
-                'branch_manager', 'cashier', 'barista',
-            ]));
+        $staffRoles = [
+            'super_admin', 'hq_admin', 'ops_manager', 'mkt_manager',
+            'branch_manager', 'cashier', 'barista',
+        ];
+
+        $query = User::query()->whereNull('deleted_at');
+
+        if ($voucher->staff_only) {
+            // Only staff inboxes — customers are excluded.
+            $query->whereHas('roles', fn ($q) => $q->whereIn('name', $staffRoles));
+        } else {
+            // Default — customers only, staff inboxes spared marketing.
+            $query->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', $staffRoles));
+        }
+
+        // Per-user whitelist — overrides everything else when populated.
+        if (! empty($voucher->user_ids)) {
+            $query->whereIn('id', $voucher->user_ids);
+        }
 
         if (! empty($voucher->tier_ids)) {
             $tierUserIds = CustomerTier::query()

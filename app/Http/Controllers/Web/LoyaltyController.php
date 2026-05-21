@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\CustomerTier;
+use App\Models\HomeSlide;
 use App\Models\MembershipTier;
 use App\Models\PointTransaction;
 use App\Models\User;
@@ -61,7 +62,37 @@ class LoyaltyController extends Controller
             ])
             ->values();
 
+        $slides = HomeSlide::query()
+            ->active()
+            ->placement('hero')
+            ->where('is_global', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (HomeSlide $row) => [
+                'type' => 'managed',
+                'image' => $row->image,
+                'title' => $row->title,
+                'subtitle' => $row->subtitle,
+                'cta_label' => $row->cta_label,
+                'cta_url' => $row->cta_url,
+            ])
+            ->values()
+            ->all();
+
+        if (count($slides) === 0) {
+            $slides[] = [
+                'type' => 'cover',
+                'image' => null,
+                'title' => 'Brew More, Earn More',
+                'subtitle' => 'Collect points and enjoy exclusive rewards.',
+                'cta_label' => null,
+                'cta_url' => null,
+            ];
+        }
+
         return Inertia::render('storefront/loyalty', [
+            'slides' => $slides,
             'balance' => $balance,
             'redeem_value' => $loyalty->dollarsForPoints($balance),
             'lifetime_spend' => $tier ? (float) $tier->lifetime_spend : 0.0,

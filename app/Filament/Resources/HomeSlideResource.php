@@ -198,11 +198,28 @@ class HomeSlideResource extends Resource
     protected static function ctaOptions(): array
     {
         $pages = [
+            // Branch-scoped (relative — resolved against current branch on the
+            // storefront — fall back to /branches when no branch is selected).
             'menu' => 'Menu — full catalog',
             'cart' => 'Cart',
-            '/loyalty' => 'Loyalty & rewards',
+            'checkout' => 'Checkout',
+            'orders' => 'My orders',
+
+            // Loyalty & rewards
+            '/loyalty' => 'Loyalty & rewards — home',
+            '/spin' => 'Spin & Win wheel',
+            '/check-in' => 'Daily Check-in',
+            '/rewards' => 'Claim Points — point rewards catalogue',
+            '/vouchers' => 'Vouchers — claim list',
+            '/favourites' => 'Favourites',
+            '/referral' => 'Referral — invite friends',
+
+            // Account & wallet
             '/wallet' => 'Wallet',
-            '/referral' => 'Referral',
+            '/notifications' => 'Notifications',
+            '/profile' => 'Profile',
+
+            // Public
             '/branches' => 'Branch picker',
             '/register' => 'Sign up — registration',
             '/login' => 'Sign in — login',

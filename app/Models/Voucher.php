@@ -29,6 +29,8 @@ use Illuminate\Support\Carbon;
  * @property array<int, int>|null $branch_ids
  * @property array<int, int>|null $tier_ids
  * @property array<int, int>|null $birthday_months
+ * @property array<int, int>|null $user_ids
+ * @property bool $staff_only
  * @property array<int, int>|null $product_ids
  * @property array<int, int>|null $combo_ids
  * @property int|null $bxgy_buy_qty
@@ -65,6 +67,8 @@ class Voucher extends Model
         'branch_ids',
         'tier_ids',
         'birthday_months',
+        'user_ids',
+        'staff_only',
         'product_ids',
         'combo_ids',
         'bxgy_buy_qty',
@@ -89,6 +93,8 @@ class Voucher extends Model
             'branch_ids' => 'array',
             'tier_ids' => 'array',
             'birthday_months' => 'array',
+            'user_ids' => 'array',
+            'staff_only' => 'boolean',
             'product_ids' => 'array',
             'combo_ids' => 'array',
             'bxgy_buy_qty' => 'integer',
@@ -135,6 +141,19 @@ class Voucher extends Model
             }
             $month = (int) Carbon::parse($dob)->format('n');
             if (! in_array($month, $this->intArray($this->birthday_months), true)) {
+                return false;
+            }
+        }
+
+        if (! empty($this->user_ids)) {
+            if (! in_array((int) $user->getKey(), $this->intArray($this->user_ids), true)) {
+                return false;
+            }
+        }
+
+        if ($this->staff_only) {
+            $isStaff = $user->roles()->where('name', '!=', 'customer')->exists();
+            if (! $isStaff) {
                 return false;
             }
         }

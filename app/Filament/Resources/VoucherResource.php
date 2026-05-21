@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Combo;
 use App\Models\MembershipTier;
 use App\Models\Product;
+use App\Models\User;
 use App\Models\Voucher;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -201,6 +202,32 @@ class VoucherResource extends Resource
                     Forms\Components\Toggle::make('is_check_in_only')
                         ->label('Daily check-in reward only')
                         ->helperText('Hide from the public /vouchers page. Voucher can only be obtained by earning it through the Daily Check-in streak.')
+                        ->columnSpanFull(),
+                    Forms\Components\Toggle::make('staff_only')
+                        ->label('Staff only')
+                        ->helperText('Only users with a staff role (cashier, barista, manager, admin, etc.) can claim. Customers are excluded.')
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('user_ids')
+                        ->label('Specific customers')
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->getSearchResultsUsing(fn (string $search) => User::query()
+                            ->where(function ($q) use ($search) {
+                                $q->where('name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%")
+                                    ->orWhere('phone', 'like', "%{$search}%");
+                            })
+                            ->limit(50)
+                            ->get()
+                            ->mapWithKeys(fn (User $u) => [$u->id => "{$u->name} — {$u->email}"])
+                            ->all())
+                        ->getOptionLabelsUsing(fn (array $values) => User::query()
+                            ->whereIn('id', $values)
+                            ->get()
+                            ->mapWithKeys(fn (User $u) => [$u->id => "{$u->name} — {$u->email}"])
+                            ->all())
+                        ->helperText('Pick individual users who can claim this voucher. Leave empty for no per-user restriction. Search by name, email, or phone.')
                         ->columnSpanFull(),
                     Forms\Components\Select::make('tier_ids')
                         ->label('Member tiers')

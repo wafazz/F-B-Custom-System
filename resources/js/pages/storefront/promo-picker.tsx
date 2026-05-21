@@ -313,6 +313,7 @@ function toMenuProduct(p: PickableProduct): import('@/types/menu').MenuProduct {
         calories: null,
         prep_time_minutes: 0,
         is_featured: false,
+        badge_label: null,
         sst_applicable: true,
         in_stock: true,
         modifier_groups: [],

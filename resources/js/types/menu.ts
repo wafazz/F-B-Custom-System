@@ -29,6 +29,7 @@ export interface MenuProduct {
     calories: number | null;
     prep_time_minutes: number;
     is_featured: boolean;
+    badge_label: string | null;
     sst_applicable: boolean;
     in_stock: boolean;
     modifier_groups: MenuModifierGroup[];

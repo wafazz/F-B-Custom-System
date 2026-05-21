@@ -35,6 +35,7 @@ class Product extends Model
         'available_pwa',
         'available_mobile',
         'is_featured',
+        'badge_label',
         'sort_order',
     ];
 

@@ -83,9 +83,9 @@ export function ProductCard({ product, onSelect, isAvailable = true }: Props) {
                         <Coffee className="size-8" />
                     </div>
                 )}
-                {product.is_featured && isAvailable && (
+                {isAvailable && (product.badge_label || product.is_featured) && (
                     <Badge variant="warning" className="absolute top-1.5 left-1.5 text-[9px]">
-                        Featured
+                        {product.badge_label ?? 'Featured'}
                     </Badge>
                 )}
                 <span

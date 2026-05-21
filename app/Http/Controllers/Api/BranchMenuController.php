@@ -154,6 +154,7 @@ class BranchMenuController extends Controller
             'calories' => $product->calories,
             'prep_time_minutes' => $product->prep_time_minutes,
             'is_featured' => $product->is_featured,
+            'badge_label' => $product->badge_label,
             'sst_applicable' => $product->sst_applicable,
             'in_stock' => $product->inStockAtBranch($branchId),
             'modifier_groups' => $modifierGroups,

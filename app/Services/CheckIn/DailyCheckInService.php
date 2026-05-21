@@ -42,14 +42,12 @@ class DailyCheckInService
                 ->where('is_active', true)
                 ->where('day_number', $dayNumber)
                 ->first();
-            if ($reward === null) {
-                throw new RuntimeException('No reward configured for day '.$dayNumber.'.');
-            }
 
             $awardedPoints = 0;
             $voucherClaimId = null;
+            $rewardType = $reward?->reward_type ?? 'points';
 
-            if ($reward->reward_type === 'points' && $reward->points !== null && $reward->points > 0) {
+            if ($reward && $reward->reward_type === 'points' && $reward->points !== null && $reward->points > 0) {
                 $balance = $this->loyalty->balance($userId);
                 PointTransaction::create([
                     'user_id' => $userId,
@@ -61,7 +59,7 @@ class DailyCheckInService
                 $awardedPoints = $reward->points;
             }
 
-            if ($reward->reward_type === 'voucher' && $reward->voucher_id !== null && $reward->voucher !== null) {
+            if ($reward && $reward->reward_type === 'voucher' && $reward->voucher_id !== null && $reward->voucher !== null) {
                 $alreadyClaimed = VoucherClaim::query()
                     ->where('voucher_id', $reward->voucher_id)
                     ->where('user_id', $userId)
@@ -81,7 +79,7 @@ class DailyCheckInService
                 'user_id' => $userId,
                 'check_in_date' => $today,
                 'day_number_awarded' => $dayNumber,
-                'reward_type' => $reward->reward_type,
+                'reward_type' => $rewardType,
                 'awarded_points' => $awardedPoints,
                 'voucher_claim_id' => $voucherClaimId,
             ]);

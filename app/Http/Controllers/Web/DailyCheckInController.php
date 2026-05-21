@@ -93,6 +93,6 @@ class DailyCheckInController extends Controller
             return "Day {$row->day_number_awarded} — voucher added to your wallet!";
         }
 
-        return "Checked in for day {$row->day_number_awarded}!";
+        return "Checked in for day {$row->day_number_awarded}. Come back tomorrow!";
     }
 }

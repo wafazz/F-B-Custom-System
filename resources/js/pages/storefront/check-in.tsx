@@ -80,8 +80,11 @@ export default function CheckIn({
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                setError((data as { message?: string }).message ?? `HTTP ${res.status}`);
+                const msg = (data as { message?: string }).message ?? `HTTP ${res.status}`;
+                window.alert(msg);
+                setError(msg);
                 setBusy(false);
+                setDone(true);
                 return;
             }
             const r = data as CheckInResult;
@@ -154,13 +157,13 @@ export default function CheckIn({
             <div className="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {Array.from({ length: settings.max_days }, (_, i) => i + 1).map((day) => {
                     const reward = rewardsByDay.get(day);
-                    const isPast = day <= streak && (done || day < streak);
+                    const isPast = day <= streak;
                     const isToday = !done && day === nextDay;
                     return (
                         <div
                             key={day}
                             className={cn(
-                                'flex flex-col items-center gap-1 rounded-xl border p-2.5 text-center',
+                                'relative flex flex-col items-center gap-1 rounded-xl border p-2.5 text-center transition-all',
                                 isPast
                                     ? 'border-emerald-300 bg-emerald-50'
                                     : isToday
@@ -216,7 +219,14 @@ export default function CheckIn({
                                     {reward.label}
                                 </p>
                             )}
-                            {isPast && <Check className="absolute -top-1 -right-1 size-3 text-emerald-600" />}
+                            {isPast && (
+                                <span
+                                    className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow ring-2 ring-white"
+                                    aria-label="Checked in"
+                                >
+                                    <Check className="size-3" strokeWidth={3} />
+                                </span>
+                            )}
                         </div>
                     );
                 })}

@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Award, Check, Gift, Heart, Sparkles, Ticket, Trophy } from 'lucide-react';
+import { Award, Check, Trophy } from 'lucide-react';
 import { PushToggle } from '@/components/storefront/push-toggle';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cn } from '@/lib/utils';
@@ -154,42 +154,31 @@ export default function Loyalty({
                 </section>
             )}
 
-            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-                <div className="flex items-center justify-between gap-2 sm:justify-start">
-                    <h1 className="text-xl font-bold">Your Rewards</h1>
-                    <div className="sm:hidden">
-                        <PushToggle />
-                    </div>
-                </div>
-                <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-                    <div className="hidden sm:inline-flex">
-                        <PushToggle />
-                    </div>
+            <div className="mb-3 flex items-center justify-between gap-2">
+                <h1 className="text-xl font-bold">Your Rewards</h1>
+                <PushToggle />
+            </div>
+
+            <div className="-mx-1 mb-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-2">
+                {[
+                    { href: '/spin', label: 'Spin & Win', emoji: '🎡' },
+                    { href: '/rewards', label: 'Claim Points', emoji: '🪙' },
+                    { href: '/favourites', label: 'Favourites', emoji: '❤️' },
+                    { href: '/vouchers', label: 'Vouchers', emoji: '🎟️' },
+                ].map((item) => (
                     <Link
-                        href="/spin"
-                        className="flex shrink-0 items-center gap-1.5 rounded-full bg-fuchsia-500/10 px-3 py-1.5 text-xs font-semibold text-fuchsia-600 hover:bg-fuchsia-500/20"
+                        key={item.href}
+                        href={item.href}
+                        className="flex w-20 shrink-0 snap-start flex-col items-center gap-1.5 rounded-2xl border border-stone-700/40 bg-gradient-to-b from-stone-800 to-stone-900 px-2 py-3 shadow-md transition active:scale-95"
                     >
-                        <Sparkles className="size-3.5" /> Spin
+                        <span className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-b from-stone-700 to-stone-800 text-3xl shadow-inner ring-1 ring-stone-600/40">
+                            {item.emoji}
+                        </span>
+                        <span className="text-center text-[10.5px] leading-tight font-semibold text-stone-100">
+                            {item.label}
+                        </span>
                     </Link>
-                    <Link
-                        href="/rewards"
-                        className="flex shrink-0 items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-500/20"
-                    >
-                        <Gift className="size-3.5" /> Claim pts
-                    </Link>
-                    <Link
-                        href="/favourites"
-                        className="flex shrink-0 items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-500/20"
-                    >
-                        <Heart className="size-3.5" /> Favourites
-                    </Link>
-                    <Link
-                        href="/vouchers"
-                        className="bg-primary/10 text-primary hover:bg-primary/20 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-                    >
-                        <Ticket className="size-3.5" /> Vouchers
-                    </Link>
-                </div>
+                ))}
             </div>
 
             <section className="border-border mb-4 rounded-2xl border bg-gradient-to-br from-amber-50 to-orange-100 p-5 shadow-sm">

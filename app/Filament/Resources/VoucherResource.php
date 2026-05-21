@@ -194,6 +194,10 @@ class VoucherResource extends Resource
                         ->label('New customers only')
                         ->helperText('Only customers who have not placed any orders yet can claim. Great for welcome offers.')
                         ->columnSpanFull(),
+                    Forms\Components\Toggle::make('is_spin_only')
+                        ->label('Spin wheel reward only')
+                        ->helperText('Hide from the public /vouchers page. Voucher can only be obtained by winning it on the Spin Wheel.')
+                        ->columnSpanFull(),
                     Forms\Components\Select::make('tier_ids')
                         ->label('Member tiers')
                         ->multiple()

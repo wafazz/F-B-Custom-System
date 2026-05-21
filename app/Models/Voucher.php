@@ -36,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property array<int, int>|null $bxgy_free_product_ids
  * @property array<int, int>|null $bxgy_free_combo_ids
  * @property bool $new_users_only
+ * @property bool $is_spin_only
  * @property int|null $points_cost
  * @property string $status
  */
@@ -70,6 +71,7 @@ class Voucher extends Model
         'bxgy_free_product_ids',
         'bxgy_free_combo_ids',
         'new_users_only',
+        'is_spin_only',
         'points_cost',
         'status',
     ];
@@ -92,6 +94,7 @@ class Voucher extends Model
             'bxgy_free_product_ids' => 'array',
             'bxgy_free_combo_ids' => 'array',
             'new_users_only' => 'boolean',
+            'is_spin_only' => 'boolean',
         ];
     }
 

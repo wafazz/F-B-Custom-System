@@ -29,6 +29,7 @@ class VoucherClaimController extends Controller
         $claimedIds = $claims->pluck('voucher_id')->all();
 
         $available = Voucher::active()
+            ->where('is_spin_only', false)
             ->whereNotIn('id', $claimedIds)
             ->orderBy('valid_until')
             ->get()

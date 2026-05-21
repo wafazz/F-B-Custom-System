@@ -119,23 +119,36 @@ export default function BranchHome({ branch, slides, rewards_slides, popup_slide
                             <X className="size-4" />
                         </button>
 
-                        <div className="relative h-64">
-                            {popup_slides.map((s, i) => (
-                                <div
-                                    key={i}
-                                    className={cn(
-                                        'absolute inset-0 transition-opacity duration-500',
-                                        popupActive === i ? 'opacity-100' : 'opacity-0',
-                                    )}
-                                    style={{
-                                        backgroundImage: s.image
-                                            ? `linear-gradient(180deg, rgba(20,15,12,0.05) 0%, rgba(20,15,12,0.7) 100%), url(/storage/${s.image})`
-                                            : 'linear-gradient(135deg, #2a1d14, #4a2c18)',
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                    }}
-                                />
-                            ))}
+                        <div className="relative w-full bg-neutral-100">
+                            {popup_slides.map((s, i) =>
+                                s.image ? (
+                                    <img
+                                        key={i}
+                                        src={`/storage/${s.image}`}
+                                        alt={s.title}
+                                        className={cn(
+                                            'block w-full h-auto transition-opacity duration-500',
+                                            popupActive === i
+                                                ? 'relative opacity-100'
+                                                : 'absolute inset-0 opacity-0',
+                                        )}
+                                    />
+                                ) : (
+                                    <div
+                                        key={i}
+                                        className={cn(
+                                            'aspect-[4/3] w-full transition-opacity duration-500',
+                                            popupActive === i
+                                                ? 'relative opacity-100'
+                                                : 'absolute inset-0 opacity-0',
+                                        )}
+                                        style={{
+                                            background:
+                                                'linear-gradient(135deg, #2a1d14, #4a2c18)',
+                                        }}
+                                    />
+                                ),
+                            )}
                         </div>
 
                         <div className="space-y-2 p-4">

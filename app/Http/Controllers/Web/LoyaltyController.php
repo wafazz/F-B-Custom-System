@@ -93,6 +93,11 @@ class LoyaltyController extends Controller
 
         return Inertia::render('storefront/loyalty', [
             'slides' => $slides,
+            'referral' => [
+                'code' => $user->referral_code,
+                'share_url' => url('/register').'?ref='.$user->referral_code,
+                'referrer_bonus' => (int) config('services.referral.referrer_bonus_points', 100),
+            ],
             'balance' => $balance,
             'redeem_value' => $loyalty->dollarsForPoints($balance),
             'lifetime_spend' => $tier ? (float) $tier->lifetime_spend : 0.0,

@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight, Award, Check, Trophy } from 'lucide-react';
+import { ArrowRight, Award, Check, Copy, Gift, Share2, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PushToggle } from '@/components/storefront/push-toggle';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -35,6 +35,7 @@ interface MembershipTierCard {
 
 interface Props {
     slides: Slide[];
+    referral: { code: string; share_url: string; referrer_bonus: number };
     balance: number;
     redeem_value: number;
     lifetime_spend: number;
@@ -46,6 +47,7 @@ interface Props {
 
 export default function Loyalty({
     slides,
+    referral,
     balance,
     redeem_value,
     lifetime_spend,
@@ -57,6 +59,25 @@ export default function Loyalty({
     const progress = next_tier ? Math.min(100, (lifetime_spend / next_tier.min_spend) * 100) : 100;
     const currentTierName = current_tier?.name ?? null;
     const [active, setActive] = useState(0);
+    const [copied, setCopied] = useState(false);
+
+    function copyReferral() {
+        navigator.clipboard.writeText(referral.share_url).then(() => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+        });
+    }
+
+    function shareReferral() {
+        const text = `Join me on Star Coffee — sign up with my code ${referral.code} and we both get bonus points!`;
+        if (typeof navigator !== 'undefined' && 'share' in navigator) {
+            navigator
+                .share({ title: 'Star Coffee', text, url: referral.share_url })
+                .catch(() => copyReferral());
+        } else {
+            copyReferral();
+        }
+    }
 
     useEffect(() => {
         if (slides.length <= 1) return;
@@ -248,6 +269,7 @@ export default function Loyalty({
                     { href: '/rewards', label: 'Claim Points', emoji: '🪙' },
                     { href: '/favourites', label: 'Favourites', emoji: '❤️' },
                     { href: '/vouchers', label: 'Vouchers', emoji: '🎟️' },
+                    { href: '/referral', label: 'Invite', emoji: '🎁' },
                 ].map((item) => (
                     <Link
                         key={item.href}
@@ -303,6 +325,41 @@ export default function Loyalty({
                         </div>
                     </div>
                 )}
+            </section>
+
+            <section className="border-border mb-4 overflow-hidden rounded-2xl border bg-linear-to-br from-rose-50 to-amber-50 p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                    <div className="bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-xl text-xl shadow">
+                        <Gift className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-neutral-900">Invite friends, earn points</p>
+                        <p className="text-muted-foreground text-[11px] leading-snug">
+                            Get <strong>{referral.referrer_bonus} pts</strong> each time a friend signs up with your code.
+                        </p>
+                    </div>
+                </div>
+                <div className="mt-3 flex items-stretch gap-2">
+                    <div className="border-border flex flex-1 items-center justify-between gap-2 rounded-lg border border-dashed bg-white px-3 py-2">
+                        <span className="font-mono text-sm font-bold tracking-wider text-neutral-800">
+                            {referral.code}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={copyReferral}
+                            className="text-muted-foreground hover:text-primary inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold"
+                        >
+                            <Copy className="size-3.5" /> {copied ? 'Copied!' : 'Copy'}
+                        </button>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={shareReferral}
+                        className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold shadow active:scale-95"
+                    >
+                        <Share2 className="size-3.5" /> Share
+                    </button>
+                </div>
             </section>
 
             <h2 className="mb-2 text-sm font-semibold">Recent activity</h2>

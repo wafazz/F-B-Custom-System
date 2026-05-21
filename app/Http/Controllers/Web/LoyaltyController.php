@@ -64,7 +64,7 @@ class LoyaltyController extends Controller
 
         $slides = HomeSlide::query()
             ->active()
-            ->placement('hero')
+            ->placement('loyalty')
             ->where('is_global', true)
             ->orderBy('sort_order')
             ->orderBy('id')

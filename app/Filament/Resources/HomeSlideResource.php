@@ -36,9 +36,10 @@ class HomeSlideResource extends Resource
                         ->required()
                         ->default('hero')
                         ->options([
-                            'hero' => 'Top — Hero carousel (above categories)',
-                            'rewards' => 'Bottom — Rewards / promo carousel',
-                            'popup' => 'Popup — modal on branch page (shows once per visit)',
+                            'hero' => 'Branch top — Hero carousel (above categories)',
+                            'rewards' => 'Branch bottom — Rewards / promo carousel',
+                            'popup' => 'Branch popup — modal (shows once per visit)',
+                            'loyalty' => 'Loyalty page — top slider on /loyalty',
                         ])
                         ->helperText('Pick which storefront banner this slide belongs to. The two carousels rotate independently.'),
                     Forms\Components\TextInput::make('title')
@@ -129,13 +130,15 @@ class HomeSlideResource extends Resource
                     ->label('Slot')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'rewards' => 'Bottom',
-                        'popup' => 'Popup',
-                        default => 'Top',
+                        'rewards' => 'Branch bottom',
+                        'popup' => 'Branch popup',
+                        'loyalty' => 'Loyalty page',
+                        default => 'Branch top',
                     })
                     ->color(fn (string $state): string => match ($state) {
                         'rewards' => 'warning',
                         'popup' => 'success',
+                        'loyalty' => 'danger',
                         default => 'info',
                     }),
                 Tables\Columns\TextColumn::make('subtitle')->limit(40)->toggleable(),
@@ -155,9 +158,10 @@ class HomeSlideResource extends Resource
                 Tables\Filters\SelectFilter::make('placement')
                     ->label('Slot')
                     ->options([
-                        'hero' => 'Top — Hero',
-                        'rewards' => 'Bottom — Rewards',
-                        'popup' => 'Popup',
+                        'hero' => 'Branch top — Hero',
+                        'rewards' => 'Branch bottom — Rewards',
+                        'popup' => 'Branch popup',
+                        'loyalty' => 'Loyalty page',
                     ]),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
                 Tables\Filters\TernaryFilter::make('is_global')->label('Global'),

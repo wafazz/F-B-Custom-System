@@ -38,14 +38,16 @@ interface OrderProp {
 
 interface Props {
     order: OrderProp;
+    has_reviewed: boolean;
     reverb: { channel: string; event: string };
 }
 
 const STAGES: OrderProp['status'][] = ['pending', 'preparing', 'ready', 'completed'];
 
-export default function Order({ order, reverb }: Props) {
+export default function Order({ order, has_reviewed, reverb }: Props) {
     const [status, setStatus] = useState<OrderProp['status']>(order.status);
     const [statusLabel, setStatusLabel] = useState(order.status_label);
+    const [reviewSubmitted, setReviewSubmitted] = useState(has_reviewed);
     const [paying, setPaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -220,24 +222,37 @@ export default function Order({ order, reverb }: Props) {
             )}
 
             {status === 'completed' && (
-                <section className="mt-4 space-y-3">
-                    <h2 className="text-sm font-semibold">Rate your experience</h2>
-                    {order.branch.id && (
-                        <ReviewForm
-                            endpoint={`/branches/${order.branch.id}/reviews`}
-                            label={`Rate ${order.branch.name ?? 'this branch'}`}
-                        />
-                    )}
-                    {order.items
-                        .filter((it) => it.product_id !== null)
-                        .map((it) => (
+                reviewSubmitted ? (
+                    <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center shadow-sm">
+                        <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-emerald-700">
+                            <Check className="size-4" /> Review successfully submitted
+                        </p>
+                        <p className="mt-1 text-xs text-emerald-700/80">
+                            Thanks for sharing your feedback!
+                        </p>
+                    </section>
+                ) : (
+                    <section className="mt-4 space-y-3">
+                        <h2 className="text-sm font-semibold">Rate your experience</h2>
+                        {order.branch.id && (
                             <ReviewForm
-                                key={it.id}
-                                endpoint={`/products/${it.product_id}/reviews`}
-                                label={`Rate ${it.product_name}`}
+                                endpoint={`/branches/${order.branch.id}/reviews`}
+                                label={`Rate ${order.branch.name ?? 'this branch'}`}
+                                onDone={() => setReviewSubmitted(true)}
                             />
-                        ))}
-                </section>
+                        )}
+                        {order.items
+                            .filter((it) => it.product_id !== null)
+                            .map((it) => (
+                                <ReviewForm
+                                    key={it.id}
+                                    endpoint={`/products/${it.product_id}/reviews`}
+                                    label={`Rate ${it.product_name}`}
+                                    onDone={() => setReviewSubmitted(true)}
+                                />
+                            ))}
+                    </section>
+                )
             )}
 
             <p className="text-muted-foreground mt-4 flex items-center gap-1 text-[10px]">

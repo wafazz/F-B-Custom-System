@@ -40,6 +40,28 @@ export default function Spin({ segments, can_spin }: Props) {
     const segmentTextColor = (i: number) => (i % 2 === 0 ? '#ffffff' : '#1f1300');
     const cardBg = (i: number) => (i % 2 === 0 ? '#fde68a' : '#fca5a5');
 
+    const maxCharsPerLine = Math.max(7, Math.floor(80 / Math.max(1, segmentCount)));
+    const baseFontSize =
+        segmentCount <= 6 ? 10 : segmentCount <= 8 ? 8.5 : segmentCount <= 10 ? 7.5 : 6.8;
+
+    function wrapLabel(label: string, maxChars: number, maxLines = 3): string[] {
+        const words = label.split(/\s+/).filter(Boolean);
+        const lines: string[] = [];
+        let line = '';
+        for (const word of words) {
+            const next = line ? `${line} ${word}` : word;
+            if (next.length <= maxChars) {
+                line = next;
+            } else {
+                if (line) lines.push(line);
+                line = word.length > maxChars ? word.slice(0, maxChars - 1) + '…' : word;
+                if (lines.length >= maxLines) break;
+            }
+        }
+        if (line && lines.length < maxLines) lines.push(line);
+        return lines.slice(0, maxLines);
+    }
+
     const confetti = useMemo(() => {
         const colors = ['#ef4444', '#f59e0b', '#facc15', '#10b981', '#3b82f6', '#a855f7', '#ec4899'];
         return Array.from({ length: 32 }, (_, i) => ({
@@ -317,25 +339,46 @@ export default function Spin({ segments, can_spin }: Props) {
                                                     }}
                                                 />
                                             )}
-                                            <text
-                                                x={tx}
-                                                y={ty}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                                fontSize="8.5"
-                                                fontWeight="800"
-                                                fill={txtColor}
-                                                transform={`rotate(${midAngle + 90} ${tx} ${ty})`}
-                                                style={{
-                                                    textShadow:
-                                                        txtColor === '#ffffff'
-                                                            ? '0 1px 2px rgba(0,0,0,0.55)'
-                                                            : 'none',
-                                                    letterSpacing: '0.02em',
-                                                }}
-                                            >
-                                                {s.label}
-                                            </text>
+                                            {(() => {
+                                                const lines = wrapLabel(s.label, maxCharsPerLine);
+                                                const lineCount = lines.length;
+                                                const fontSize =
+                                                    lineCount === 3
+                                                        ? baseFontSize * 0.85
+                                                        : lineCount === 2
+                                                          ? baseFontSize * 0.95
+                                                          : baseFontSize;
+                                                const firstDy = -(lineCount - 1) * 0.55;
+                                                return (
+                                                    <text
+                                                        x={tx}
+                                                        y={ty}
+                                                        textAnchor="middle"
+                                                        dominantBaseline="middle"
+                                                        fontSize={fontSize}
+                                                        fontWeight="800"
+                                                        fill={txtColor}
+                                                        transform={`rotate(${midAngle + 90} ${tx} ${ty})`}
+                                                        style={{
+                                                            textShadow:
+                                                                txtColor === '#ffffff'
+                                                                    ? '0 1px 2px rgba(0,0,0,0.55)'
+                                                                    : 'none',
+                                                            letterSpacing: '0.02em',
+                                                        }}
+                                                    >
+                                                        {lines.map((line, li) => (
+                                                            <tspan
+                                                                key={li}
+                                                                x={tx}
+                                                                dy={`${li === 0 ? firstDy : 1.1}em`}
+                                                            >
+                                                                {line}
+                                                            </tspan>
+                                                        ))}
+                                                    </text>
+                                                );
+                                            })()}
                                         </g>
                                     );
                                 })}

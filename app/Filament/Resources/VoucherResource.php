@@ -210,15 +210,37 @@ class VoucherResource extends Resource
                     Forms\Components\Select::make('user_ids')
                         ->label('Specific customers')
                         ->multiple()
-                        ->searchable(['name', 'email', 'phone'])
-                        ->options(fn () => User::query()
-                            ->whereHas('roles', fn ($q) => $q->where('name', 'customer'))
-                            ->orderBy('name')
-                            ->limit(500)
+                        ->searchable()
+                        ->searchDebounce(300)
+                        ->searchPrompt('Type at least 2 characters — name, email, or phone')
+                        ->getSearchResultsUsing(function (string $search): array {
+                            if (strlen(trim($search)) < 2) {
+                                return [];
+                            }
+
+                            return User::query()
+                                ->whereHas('roles', fn ($q) => $q->where('name', 'customer'))
+                                ->where(function ($q) use ($search) {
+                                    $q->where('name', 'like', "%{$search}%")
+                                        ->orWhere('email', 'like', "%{$search}%")
+                                        ->orWhere('phone', 'like', "%{$search}%");
+                                })
+                                ->orderBy('name')
+                                ->limit(50)
+                                ->get()
+                                ->mapWithKeys(fn (User $u) => [
+                                    $u->id => trim("{$u->name} — {$u->email}".($u->phone ? " · {$u->phone}" : '')),
+                                ])
+                                ->all();
+                        })
+                        ->getOptionLabelsUsing(fn (array $values): array => User::query()
+                            ->whereIn('id', $values)
                             ->get()
-                            ->mapWithKeys(fn (User $u) => [$u->id => "{$u->name} — {$u->email}"])
+                            ->mapWithKeys(fn (User $u) => [
+                                $u->id => trim("{$u->name} — {$u->email}".($u->phone ? " · {$u->phone}" : '')),
+                            ])
                             ->all())
-                        ->helperText('Pick individual customers who can claim this voucher. Leave empty for no per-user restriction. (Showing first 500 customers — use search box to find others.)')
+                        ->helperText('Search by name, email, or phone (2+ chars). Picks individual customers who can claim this voucher. Leave empty for no per-user restriction.')
                         ->columnSpanFull(),
                     Forms\Components\Select::make('tier_ids')
                         ->label('Member tiers')

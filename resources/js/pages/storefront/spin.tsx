@@ -123,17 +123,55 @@ export default function Spin({ segments, can_spin }: Props) {
                     25% { transform: translate(-54%, 0) rotate(-6deg); }
                     75% { transform: translate(-46%, 0) rotate(6deg); }
                 }
+                @keyframes spin-wheel-pointer-bob {
+                    0%, 100% { transform: translate(-50%, -2px); }
+                    50% { transform: translate(-50%, 3px); }
+                }
                 @keyframes spin-wheel-pop {
                     0% { transform: scale(0.6); opacity: 0; }
                     60% { transform: scale(1.08); opacity: 1; }
                     100% { transform: scale(1); opacity: 1; }
                 }
-                .spin-grid-bg {
-                    background-color: #eef2f6;
-                    background-image:
-                        linear-gradient(to right, rgba(148,163,184,0.35) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(148,163,184,0.35) 1px, transparent 1px);
-                    background-size: 28px 28px;
+                @keyframes spin-wheel-idle {
+                    0%, 100% { transform: rotate(-1.5deg); }
+                    50% { transform: rotate(1.5deg); }
+                }
+                @keyframes spin-wheel-halo {
+                    0%, 100% { opacity: 0.55; transform: scale(1); }
+                    50% { opacity: 0.85; transform: scale(1.04); }
+                }
+                @keyframes spin-wheel-float {
+                    0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+                    10% { opacity: 0.9; }
+                    100% { transform: translateY(-180px) rotate(220deg); opacity: 0; }
+                }
+                @keyframes spin-wheel-twinkle {
+                    0%, 100% { opacity: 0.15; transform: scale(0.7); }
+                    50% { opacity: 0.95; transform: scale(1.1); }
+                }
+                .spin-stage {
+                    background:
+                        radial-gradient(circle at 18% 12%, rgba(253,224,71,0.22), transparent 45%),
+                        radial-gradient(circle at 82% 88%, rgba(236,72,153,0.18), transparent 50%),
+                        radial-gradient(circle at 50% 50%, #3b1f15 0%, #1c0e08 70%);
+                }
+                .spin-bokeh::before, .spin-bokeh::after {
+                    content: '';
+                    position: absolute;
+                    border-radius: 9999px;
+                    filter: blur(40px);
+                    opacity: 0.55;
+                    pointer-events: none;
+                }
+                .spin-bokeh::before {
+                    width: 200px; height: 200px;
+                    background: #f59e0b;
+                    top: -60px; left: -40px;
+                }
+                .spin-bokeh::after {
+                    width: 240px; height: 240px;
+                    background: #a855f7;
+                    bottom: -80px; right: -60px;
                 }
             `}</style>
 
@@ -142,10 +180,33 @@ export default function Spin({ segments, can_spin }: Props) {
                     The wheel is being prepared. Check back soon!
                 </div>
             ) : (
-                <div className="spin-grid-bg relative -mx-4 overflow-hidden rounded-2xl px-4 pt-4 pb-6 sm:-mx-6 sm:px-6">
+                <div className="spin-stage spin-bokeh relative -mx-4 overflow-hidden rounded-3xl px-4 pt-5 pb-6 sm:-mx-6 sm:px-6">
+                    {/* Ambient twinkles */}
+                    <div aria-hidden className="pointer-events-none absolute inset-0">
+                        {[
+                            { top: '10%', left: '8%', delay: '0s' },
+                            { top: '18%', left: '88%', delay: '0.7s' },
+                            { top: '38%', left: '4%', delay: '1.4s' },
+                            { top: '52%', left: '94%', delay: '0.3s' },
+                            { top: '72%', left: '10%', delay: '1.1s' },
+                            { top: '84%', left: '86%', delay: '0.5s' },
+                        ].map((s, i) => (
+                            <span
+                                key={i}
+                                className="absolute size-1.5 rounded-full bg-amber-200"
+                                style={{
+                                    top: s.top,
+                                    left: s.left,
+                                    boxShadow: '0 0 8px #fde68a, 0 0 16px #f59e0b',
+                                    animation: `spin-wheel-twinkle 2.4s ${s.delay} ease-in-out infinite`,
+                                }}
+                            />
+                        ))}
+                    </div>
+
                     {/* Title */}
-                    <h1 className="mb-2 text-center text-sm font-extrabold tracking-[0.18em] text-neutral-800 uppercase">
-                        Loyalty Rewards Wheel
+                    <h1 className="relative mb-3 text-center text-sm font-extrabold tracking-[0.22em] text-amber-100/95 uppercase drop-shadow">
+                        ✦ Loyalty Rewards Wheel ✦
                     </h1>
 
                     {/* Confetti */}
@@ -171,6 +232,18 @@ export default function Spin({ segments, can_spin }: Props) {
                     )}
 
                     <div className="relative mx-auto w-fit">
+                        {/* Glow halo behind the wheel */}
+                        <div
+                            aria-hidden
+                            className="absolute inset-0 -m-6 rounded-full"
+                            style={{
+                                background:
+                                    'radial-gradient(circle, rgba(253,224,71,0.55) 0%, rgba(245,158,11,0.25) 45%, transparent 70%)',
+                                animation: 'spin-wheel-halo 3.2s ease-in-out infinite',
+                                filter: 'blur(12px)',
+                            }}
+                        />
+
                         {/* Pointer — beige downward arrow on top */}
                         <div
                             aria-hidden
@@ -178,34 +251,46 @@ export default function Spin({ segments, can_spin }: Props) {
                             style={{
                                 animation: spinning
                                     ? 'spin-wheel-pointer-shake 0.18s linear infinite'
-                                    : 'none',
+                                    : 'spin-wheel-pointer-bob 1.8s ease-in-out infinite',
                                 transform: 'translateX(-50%)',
                                 transformOrigin: '50% 0%',
                             }}
                         >
                             <svg
-                                width="46"
-                                height="58"
-                                viewBox="0 0 46 58"
-                                style={{ filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.25))' }}
+                                width="48"
+                                height="60"
+                                viewBox="0 0 48 60"
+                                style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.45))' }}
                             >
+                                <defs>
+                                    <linearGradient id="pointer-grad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#fef3c7" />
+                                        <stop offset="55%" stopColor="#fbbf24" />
+                                        <stop offset="100%" stopColor="#92400e" />
+                                    </linearGradient>
+                                </defs>
                                 <path
-                                    d="M23 56 L8 12 Q23 4 38 12 Z"
-                                    fill="#d6c5a8"
-                                    stroke="#a08a6a"
-                                    strokeWidth="1.5"
+                                    d="M24 58 L7 12 Q24 2 41 12 Z"
+                                    fill="url(#pointer-grad)"
+                                    stroke="#5b2c0a"
+                                    strokeWidth="1.8"
                                 />
+                                <circle cx="24" cy="16" r="3.5" fill="#fffbeb" opacity="0.85" />
                             </svg>
                         </div>
 
-                        {/* Wheel — thick black border, no outer ring */}
+                        {/* Wheel — thick black border with subtle wobble idle */}
                         <div
-                            className="relative aspect-square w-88 max-w-[88vw] overflow-hidden rounded-full border-[3px] border-black bg-white shadow-xl"
+                            className="relative aspect-square w-88 max-w-[88vw] overflow-hidden rounded-full border-[3px] border-black bg-white shadow-2xl"
                             style={{
                                 transform: `rotate(${rotation}deg)`,
                                 transition: spinning
                                     ? 'transform 4.4s cubic-bezier(0.16, 0.68, 0.18, 0.995)'
                                     : 'none',
+                                animation:
+                                    !spinning && !done
+                                        ? 'spin-wheel-idle 4.5s ease-in-out infinite'
+                                        : 'none',
                             }}
                         >
                             <svg viewBox="-100 -100 200 200" className="size-full" aria-hidden>
@@ -268,6 +353,17 @@ export default function Spin({ segments, can_spin }: Props) {
                                     );
                                 })}
                             </svg>
+                        </div>
+
+                        {/* Glossy centre hub — stays still while wheel rotates */}
+                        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                            <div className="relative flex size-14 items-center justify-center rounded-full bg-linear-to-br from-amber-200 via-amber-400 to-amber-800 shadow-lg ring-[3px] ring-black">
+                                <Sparkles className="size-6 text-white drop-shadow" />
+                                <span
+                                    aria-hidden
+                                    className="absolute top-1.5 left-2.5 size-2.5 rounded-full bg-white/70 blur-[1px]"
+                                />
+                            </div>
                         </div>
                     </div>
 

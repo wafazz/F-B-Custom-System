@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowRight, Coffee } from 'lucide-react';
+import { ArrowRight, Coffee, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NotificationPrompt } from '@/components/storefront/notification-prompt';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -36,6 +36,7 @@ interface Props {
     branch: BranchInfo;
     slides: Slide[];
     rewards_slides: Slide[];
+    popup_slides: Slide[];
     categories: CategoryCard[];
 }
 
@@ -45,10 +46,29 @@ function resolveCtaUrl(url: string, branchId: number): string {
     return `/branches/${branchId}/${url}`;
 }
 
-export default function BranchHome({ branch, slides, rewards_slides, categories }: Props) {
+export default function BranchHome({ branch, slides, rewards_slides, popup_slides, categories }: Props) {
     const setBranch = useBranchStore((s) => s.setBranch);
     const { auth } = usePage().props as unknown as { auth: { user: { name: string } | null } };
     const [active, setActive] = useState(0);
+    const [popupOpen, setPopupOpen] = useState(false);
+    const [popupActive, setPopupActive] = useState(0);
+
+    useEffect(() => {
+        if (popup_slides.length === 0) return;
+        const key = `popup-seen:${branch.id}`;
+        if (window.sessionStorage.getItem(key)) return;
+        setPopupOpen(true);
+        window.sessionStorage.setItem(key, '1');
+    }, [branch.id, popup_slides.length]);
+
+    useEffect(() => {
+        if (!popupOpen || popup_slides.length <= 1) return;
+        const t = window.setInterval(
+            () => setPopupActive((i) => (i + 1) % popup_slides.length),
+            4500,
+        );
+        return () => window.clearInterval(t);
+    }, [popupOpen, popup_slides.length]);
 
     useEffect(() => {
         setBranch({
@@ -78,6 +98,92 @@ export default function BranchHome({ branch, slides, rewards_slides, categories 
     return (
         <StorefrontLayout>
             <Head title={branch.name} />
+
+            {popupOpen && popup_slides.length > 0 && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={() => setPopupOpen(false)}
+                >
+                    <div
+                        className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setPopupOpen(false)}
+                            aria-label="Close"
+                            className="absolute top-2 right-2 z-10 flex size-8 items-center justify-center rounded-full bg-black/55 text-white shadow hover:bg-black/75"
+                        >
+                            <X className="size-4" />
+                        </button>
+
+                        <div className="relative h-64">
+                            {popup_slides.map((s, i) => (
+                                <div
+                                    key={i}
+                                    className={cn(
+                                        'absolute inset-0 transition-opacity duration-500',
+                                        popupActive === i ? 'opacity-100' : 'opacity-0',
+                                    )}
+                                    style={{
+                                        backgroundImage: s.image
+                                            ? `linear-gradient(180deg, rgba(20,15,12,0.05) 0%, rgba(20,15,12,0.7) 100%), url(/storage/${s.image})`
+                                            : 'linear-gradient(135deg, #2a1d14, #4a2c18)',
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="space-y-2 p-4">
+                            <h2 className="text-lg font-bold text-neutral-900">
+                                {popup_slides[popupActive]?.title}
+                            </h2>
+                            {popup_slides[popupActive]?.subtitle && (
+                                <p className="text-sm text-neutral-600">
+                                    {popup_slides[popupActive]?.subtitle}
+                                </p>
+                            )}
+                            {popup_slides[popupActive]?.cta_label &&
+                                popup_slides[popupActive]?.cta_url && (
+                                    <a
+                                        href={resolveCtaUrl(
+                                            popup_slides[popupActive]!.cta_url!,
+                                            branch.id,
+                                        )}
+                                        onClick={() => setPopupOpen(false)}
+                                        className="bg-primary text-primary-foreground mt-1 inline-flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold tracking-wider uppercase shadow"
+                                    >
+                                        {popup_slides[popupActive]!.cta_label}{' '}
+                                        <ArrowRight className="size-3.5" />
+                                    </a>
+                                )}
+                        </div>
+
+                        {popup_slides.length > 1 && (
+                            <div className="flex justify-center gap-1.5 pb-3">
+                                {popup_slides.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => setPopupActive(i)}
+                                        aria-label={`Slide ${i + 1}`}
+                                        className={cn(
+                                            'h-1.5 rounded-full transition-all',
+                                            popupActive === i
+                                                ? 'bg-primary w-5'
+                                                : 'w-1.5 bg-neutral-300',
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <NotificationPrompt isAuthenticated={auth.user !== null} />
 

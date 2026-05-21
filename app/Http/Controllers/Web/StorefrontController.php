@@ -213,6 +213,18 @@ class StorefrontController extends Controller
             ];
         }
 
+        $popup = [];
+        foreach (($managed['popup'] ?? collect()) as $row) {
+            $popup[] = [
+                'type' => 'managed',
+                'image' => $row->image,
+                'title' => $row->title,
+                'subtitle' => $row->subtitle,
+                'cta_label' => $row->cta_label,
+                'cta_url' => $row->cta_url,
+            ];
+        }
+
         return Inertia::render('storefront/branch-home', [
             'branch' => [
                 'id' => $branch->id,
@@ -224,6 +236,7 @@ class StorefrontController extends Controller
             ],
             'slides' => $hero,
             'rewards_slides' => $rewards,
+            'popup_slides' => $popup,
             'categories' => $categories,
         ]);
     }

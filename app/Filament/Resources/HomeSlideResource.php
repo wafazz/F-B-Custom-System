@@ -38,6 +38,7 @@ class HomeSlideResource extends Resource
                         ->options([
                             'hero' => 'Top — Hero carousel (above categories)',
                             'rewards' => 'Bottom — Rewards / promo carousel',
+                            'popup' => 'Popup — modal on branch page (shows once per visit)',
                         ])
                         ->helperText('Pick which storefront banner this slide belongs to. The two carousels rotate independently.'),
                     Forms\Components\TextInput::make('title')
@@ -127,8 +128,16 @@ class HomeSlideResource extends Resource
                 Tables\Columns\TextColumn::make('placement')
                     ->label('Slot')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => $state === 'rewards' ? 'Bottom' : 'Top')
-                    ->color(fn (string $state): string => $state === 'rewards' ? 'warning' : 'info'),
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'rewards' => 'Bottom',
+                        'popup' => 'Popup',
+                        default => 'Top',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'rewards' => 'warning',
+                        'popup' => 'success',
+                        default => 'info',
+                    }),
                 Tables\Columns\TextColumn::make('subtitle')->limit(40)->toggleable(),
                 Tables\Columns\IconColumn::make('is_global')
                     ->label('All branches')
@@ -148,6 +157,7 @@ class HomeSlideResource extends Resource
                     ->options([
                         'hero' => 'Top — Hero',
                         'rewards' => 'Bottom — Rewards',
+                        'popup' => 'Popup',
                     ]),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
                 Tables\Filters\TernaryFilter::make('is_global')->label('Global'),

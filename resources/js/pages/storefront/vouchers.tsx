@@ -1,6 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { ArrowRight, Check, Copy, Gift, Info, Sparkles, Tag, Ticket, TimerReset } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     VoucherDetailsSheet,
@@ -33,6 +33,26 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
     const [claiming, setClaiming] = useState<number | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
     const [detailsVoucher, setDetailsVoucher] = useState<Voucher | null>(null);
+    const [highlightedId, setHighlightedId] = useState<number | null>(null);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        if (!code) return;
+        const target =
+            available.find((v) => v.code === code) ??
+            claimed.find((c) => c.voucher?.code === code)?.voucher ??
+            null;
+        if (!target) return;
+        setHighlightedId(target.id);
+        setDetailsVoucher(target);
+        window.setTimeout(() => {
+            document
+                .getElementById(`voucher-${target.id}`)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+        window.setTimeout(() => setHighlightedId(null), 2400);
+    }, [available, claimed]);
 
     function handlePickBxgy(voucher: Voucher) {
         // BxGy vouchers can't be redeemed with a copy-paste code — the customer
@@ -103,7 +123,12 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
                             c.voucher ? (
                                 <li
                                     key={c.id}
-                                    className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
+                                    id={`voucher-${c.voucher.id}`}
+                                    className={cn(
+                                        'border-border bg-card overflow-hidden rounded-xl border shadow-sm transition-all',
+                                        highlightedId === c.voucher.id &&
+                                            'ring-2 ring-amber-400 ring-offset-2',
+                                    )}
                                 >
                                     <VoucherBanner
                                         image={c.voucher.banner_image}
@@ -178,7 +203,12 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
                                 return (
                                     <li
                                         key={v.id}
-                                        className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
+                                        id={`voucher-${v.id}`}
+                                        className={cn(
+                                            'border-border bg-card overflow-hidden rounded-xl border shadow-sm transition-all',
+                                            highlightedId === v.id &&
+                                                'ring-2 ring-amber-400 ring-offset-2',
+                                        )}
                                     >
                                         <VoucherBanner
                                             image={v.banner_image}
@@ -227,7 +257,12 @@ export default function Vouchers({ available, claimed, points_balance }: Props) 
                             {free.map((v) => (
                                 <li
                                     key={v.id}
-                                    className="border-border bg-card overflow-hidden rounded-xl border shadow-sm"
+                                    id={`voucher-${v.id}`}
+                                    className={cn(
+                                        'border-border bg-card overflow-hidden rounded-xl border shadow-sm transition-all',
+                                        highlightedId === v.id &&
+                                            'ring-2 ring-amber-400 ring-offset-2',
+                                    )}
                                 >
                                     <VoucherBanner
                                         image={v.banner_image}

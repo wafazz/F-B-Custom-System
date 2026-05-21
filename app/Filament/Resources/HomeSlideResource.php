@@ -224,7 +224,7 @@ class HomeSlideResource extends Resource
             ->where('status', 'active')
             ->orderBy('code')
             ->get(['code', 'name'])
-            ->mapWithKeys(fn (Voucher $v) => ["/loyalty?voucher={$v->code}" => "Voucher: {$v->code} — {$v->name}"])
+            ->mapWithKeys(fn (Voucher $v) => ["/vouchers?code={$v->code}" => "Voucher: {$v->code} — {$v->name}"])
             ->all();
 
         return array_filter([

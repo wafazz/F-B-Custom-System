@@ -179,21 +179,36 @@ export default function Loyalty({
                                 <div
                                     key={tier.id}
                                     className={cn(
-                                        'bg-card relative flex w-44 shrink-0 snap-start flex-col items-center overflow-hidden rounded-2xl border p-4 shadow-sm',
+                                        'group relative flex w-48 shrink-0 snap-start flex-col items-center overflow-hidden rounded-2xl border bg-white p-4 pt-7 transition-all duration-300 hover:-translate-y-1 active:scale-[0.98]',
                                         isCurrent
-                                            ? 'border-amber-400 ring-2 ring-amber-300'
-                                            : 'border-border',
+                                            ? 'border-amber-300 shadow-[0_10px_30px_-8px_rgba(245,158,11,0.45)] ring-2 ring-amber-300'
+                                            : 'border-neutral-200 shadow-[0_6px_18px_-6px_rgba(0,0,0,0.18)] hover:shadow-[0_14px_30px_-10px_rgba(0,0,0,0.25)]',
                                     )}
                                     style={{
                                         background: isCurrent
-                                            ? `linear-gradient(180deg, ${accent}1a 0%, transparent 60%)`
-                                            : undefined,
+                                            ? `linear-gradient(180deg, ${accent}1f 0%, #ffffff 55%)`
+                                            : `linear-gradient(180deg, ${accent}10 0%, #ffffff 50%)`,
                                     }}
                                 >
+                                    {/* Accent top stripe */}
+                                    <span
+                                        aria-hidden
+                                        className="absolute inset-x-0 top-0 h-1.5"
+                                        style={{ background: accent }}
+                                    />
+
+                                    {/* Decorative shimmer ring behind badge */}
+                                    <span
+                                        aria-hidden
+                                        className="absolute top-3 left-1/2 size-20 -translate-x-1/2 rounded-full opacity-50 blur-xl transition-opacity duration-300 group-hover:opacity-80"
+                                        style={{ background: `${accent}55` }}
+                                    />
+
+                                    {/* Badge medallion */}
                                     <div
-                                        className="relative flex size-16 items-center justify-center rounded-full shadow-inner"
+                                        className="relative flex size-16 items-center justify-center rounded-full ring-2 ring-white shadow-lg transition-transform duration-300 group-hover:scale-105"
                                         style={{
-                                            background: `radial-gradient(circle at 30% 30%, #ffffffaa, ${accent} 70%)`,
+                                            background: `radial-gradient(circle at 30% 28%, #ffffffcc, ${accent} 68%)`,
                                         }}
                                     >
                                         {tier.badge_image ? (
@@ -205,23 +220,36 @@ export default function Loyalty({
                                         ) : (
                                             <Award className="size-7 text-white drop-shadow" />
                                         )}
+                                        <span
+                                            aria-hidden
+                                            className="absolute top-2 left-2.5 size-3 rounded-full bg-white/70 blur-[1px]"
+                                        />
                                     </div>
 
                                     <p
-                                        className="mt-2 text-sm font-extrabold tracking-wider uppercase"
+                                        className="mt-3 text-sm font-extrabold tracking-wider uppercase"
                                         style={{ color: accent }}
                                     >
                                         {tier.name}
                                     </p>
-                                    <p className="text-muted-foreground text-[10px]">
+                                    <p className="text-muted-foreground mt-0.5 text-[10px] font-medium">
                                         RM {rangeLabel}
                                     </p>
 
-                                    <ul className="mt-3 w-full space-y-1.5 text-[10.5px] leading-snug">
+                                    <div
+                                        aria-hidden
+                                        className="my-2.5 h-px w-2/3"
+                                        style={{
+                                            background: `linear-gradient(90deg, transparent, ${accent}55, transparent)`,
+                                        }}
+                                    />
+
+                                    <ul className="w-full space-y-1.5 text-[10.5px] leading-snug text-neutral-700">
                                         <li className="flex items-start gap-1.5">
                                             <Check
                                                 className="mt-0.5 size-3 shrink-0"
                                                 style={{ color: accent }}
+                                                strokeWidth={3}
                                             />
                                             <span>
                                                 Earn{' '}
@@ -240,6 +268,7 @@ export default function Loyalty({
                                                 <Check
                                                     className="mt-0.5 size-3 shrink-0"
                                                     style={{ color: accent }}
+                                                    strokeWidth={3}
                                                 />
                                                 <span>{perk}</span>
                                             </li>
@@ -247,8 +276,8 @@ export default function Loyalty({
                                     </ul>
 
                                     {isCurrent && (
-                                        <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase shadow">
-                                            Current Tier
+                                        <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-linear-to-r from-amber-500 to-amber-600 px-2.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase shadow-md ring-1 ring-amber-300">
+                                            ★ Current Tier
                                         </span>
                                     )}
                                 </div>

@@ -35,6 +35,11 @@ export default function Spin({ segments, can_spin }: Props) {
     const segmentAngle = segmentCount > 0 ? 360 / segmentCount : 0;
     const won = result !== null && (result.awarded_points > 0 || result.voucher_claimed);
 
+    const ALT_COLORS = ['#dc2626', '#facc15'];
+    const segmentFill = (i: number) => ALT_COLORS[i % ALT_COLORS.length];
+    const segmentTextColor = (i: number) => (i % 2 === 0 ? '#ffffff' : '#1f1300');
+    const cardBg = (i: number) => (i % 2 === 0 ? '#fde68a' : '#fca5a5');
+
     const confetti = useMemo(() => {
         const colors = ['#ef4444', '#f59e0b', '#facc15', '#10b981', '#3b82f6', '#a855f7', '#ec4899'];
         return Array.from({ length: 32 }, (_, i) => ({
@@ -287,13 +292,16 @@ export default function Spin({ segments, can_spin }: Props) {
                                     const ix = 76 * Math.cos((midAngle * Math.PI) / 180);
                                     const iy = 76 * Math.sin((midAngle * Math.PI) / 180);
 
+                                    const fill = segmentFill(i);
+                                    const txtColor = segmentTextColor(i);
+
                                     return (
                                         <g key={s.id}>
                                             <path
                                                 d={path}
-                                                fill={s.color}
-                                                stroke="#000"
-                                                strokeWidth={1.5}
+                                                fill={fill}
+                                                stroke="#1a0f08"
+                                                strokeWidth={1.6}
                                             />
                                             {s.image_path && (
                                                 <image
@@ -316,10 +324,13 @@ export default function Spin({ segments, can_spin }: Props) {
                                                 dominantBaseline="middle"
                                                 fontSize="8.5"
                                                 fontWeight="800"
-                                                fill="white"
+                                                fill={txtColor}
                                                 transform={`rotate(${midAngle + 90} ${tx} ${ty})`}
                                                 style={{
-                                                    textShadow: '0 1px 2px rgba(0,0,0,0.55)',
+                                                    textShadow:
+                                                        txtColor === '#ffffff'
+                                                            ? '0 1px 2px rgba(0,0,0,0.55)'
+                                                            : 'none',
                                                     letterSpacing: '0.02em',
                                                 }}
                                             >
@@ -398,16 +409,13 @@ export default function Spin({ segments, can_spin }: Props) {
                 <section className="mt-5">
                     <h2 className="mb-2 px-1 text-sm font-bold text-neutral-800">Prizes to win</h2>
                     <div className="-mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-2">
-                        {segments.map((s) => (
+                        {segments.map((s, i) => (
                             <div
                                 key={s.id}
                                 className="flex w-28 shrink-0 snap-start flex-col items-center gap-2 rounded-2xl border border-black/10 p-3 shadow-sm"
-                                style={{ background: `${s.color}26` }}
+                                style={{ background: cardBg(i) }}
                             >
-                                <div
-                                    className="flex size-14 items-center justify-center overflow-hidden rounded-xl"
-                                    style={{ background: `${s.color}40` }}
-                                >
+                                <div className="flex size-14 items-center justify-center overflow-hidden rounded-xl bg-white/60">
                                     {s.image_path ? (
                                         <img
                                             src={`/storage/${s.image_path}`}
@@ -415,13 +423,10 @@ export default function Spin({ segments, can_spin }: Props) {
                                             className="size-full object-cover"
                                         />
                                     ) : (
-                                        <Sparkles
-                                            className="size-6"
-                                            style={{ color: s.color }}
-                                        />
+                                        <Sparkles className="size-6 text-neutral-700" />
                                     )}
                                 </div>
-                                <p className="line-clamp-2 text-center text-[11px] leading-tight font-semibold text-neutral-800">
+                                <p className="line-clamp-2 text-center text-[11px] leading-tight font-semibold text-neutral-900">
                                     {s.label}
                                 </p>
                             </div>

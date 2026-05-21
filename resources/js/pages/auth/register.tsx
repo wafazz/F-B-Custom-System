@@ -7,14 +7,18 @@ const FIELD_CLASS =
 const LABEL_CLASS = 'text-xs font-medium text-white/70';
 const ERR_CLASS = 'text-xs text-red-400';
 
-export default function Register() {
+interface Props {
+    referral_code?: string;
+}
+
+export default function Register({ referral_code = '' }: Props) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
         phone: '',
         password: '',
         password_confirmation: '',
-        referral_code: '',
+        referral_code: referral_code,
     });
 
     const submit = (e: FormEvent) => {

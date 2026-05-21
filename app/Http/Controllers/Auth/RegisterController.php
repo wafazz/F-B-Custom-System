@@ -15,9 +15,14 @@ use Inertia\Response;
 
 class RegisterController extends Controller
 {
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('auth/register');
+        $ref = $request->query('ref');
+        $referralCode = is_string($ref) ? strtoupper(trim($ref)) : '';
+
+        return Inertia::render('auth/register', [
+            'referral_code' => $referralCode,
+        ]);
     }
 
     public function store(Request $request, VoucherService $vouchers): RedirectResponse

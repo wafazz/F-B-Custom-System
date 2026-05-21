@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Sparkles } from 'lucide-react';
+import { Coins, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import StorefrontLayout from '@/layouts/storefront-layout';
 
@@ -44,6 +44,17 @@ export default function Spin({ segments, can_spin }: Props) {
             color: colors[i % colors.length],
             rotate: Math.random() * 360,
             size: 6 + Math.random() * 6,
+        }));
+    }, []);
+
+    const bgConfetti = useMemo(() => {
+        const colors = ['#ef4444', '#f59e0b', '#facc15', '#10b981', '#a855f7', '#ec4899', '#ffffff'];
+        return Array.from({ length: 60 }, (_, i) => ({
+            top: Math.random() * 100,
+            left: Math.random() * 100,
+            color: colors[i % colors.length],
+            size: 3 + Math.random() * 4,
+            rotate: Math.random() * 360,
         }));
     }, []);
 
@@ -110,7 +121,7 @@ export default function Spin({ segments, can_spin }: Props) {
 
     return (
         <StorefrontLayout hideStats>
-            <Head title="Spin the wheel" />
+            <Head title="Spin & Win" />
 
             <style>{`
                 @keyframes spin-wheel-confetti {
@@ -136,42 +147,12 @@ export default function Spin({ segments, can_spin }: Props) {
                     0%, 100% { transform: rotate(-1.5deg); }
                     50% { transform: rotate(1.5deg); }
                 }
-                @keyframes spin-wheel-halo {
-                    0%, 100% { opacity: 0.55; transform: scale(1); }
-                    50% { opacity: 0.85; transform: scale(1.04); }
-                }
-                @keyframes spin-wheel-float {
-                    0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-                    10% { opacity: 0.9; }
-                    100% { transform: translateY(-180px) rotate(220deg); opacity: 0; }
-                }
-                @keyframes spin-wheel-twinkle {
-                    0%, 100% { opacity: 0.15; transform: scale(0.7); }
-                    50% { opacity: 0.95; transform: scale(1.1); }
+                @keyframes spin-wheel-pulse {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+                    70% { box-shadow: 0 0 0 18px rgba(255,255,255,0); }
                 }
                 .spin-stage {
-                    background:
-                        radial-gradient(circle at 18% 12%, rgba(253,224,71,0.22), transparent 45%),
-                        radial-gradient(circle at 82% 88%, rgba(236,72,153,0.18), transparent 50%),
-                        radial-gradient(circle at 50% 50%, #3b1f15 0%, #1c0e08 70%);
-                }
-                .spin-bokeh::before, .spin-bokeh::after {
-                    content: '';
-                    position: absolute;
-                    border-radius: 9999px;
-                    filter: blur(40px);
-                    opacity: 0.55;
-                    pointer-events: none;
-                }
-                .spin-bokeh::before {
-                    width: 200px; height: 200px;
-                    background: #f59e0b;
-                    top: -60px; left: -40px;
-                }
-                .spin-bokeh::after {
-                    width: 240px; height: 240px;
-                    background: #a855f7;
-                    bottom: -80px; right: -60px;
+                    background: linear-gradient(180deg, #7fc4e8 0%, #5fa9d4 100%);
                 }
             `}</style>
 
@@ -180,36 +161,42 @@ export default function Spin({ segments, can_spin }: Props) {
                     The wheel is being prepared. Check back soon!
                 </div>
             ) : (
-                <div className="spin-stage spin-bokeh relative -mx-4 overflow-hidden rounded-3xl px-4 pt-5 pb-6 sm:-mx-6 sm:px-6">
-                    {/* Ambient twinkles */}
+                <div className="spin-stage relative -mx-4 overflow-hidden rounded-3xl px-4 pt-5 pb-5 sm:-mx-6 sm:px-6">
+                    {/* Background confetti specks */}
                     <div aria-hidden className="pointer-events-none absolute inset-0">
-                        {[
-                            { top: '10%', left: '8%', delay: '0s' },
-                            { top: '18%', left: '88%', delay: '0.7s' },
-                            { top: '38%', left: '4%', delay: '1.4s' },
-                            { top: '52%', left: '94%', delay: '0.3s' },
-                            { top: '72%', left: '10%', delay: '1.1s' },
-                            { top: '84%', left: '86%', delay: '0.5s' },
-                        ].map((s, i) => (
+                        {bgConfetti.map((c, i) => (
                             <span
                                 key={i}
-                                className="absolute size-1.5 rounded-full bg-amber-200"
+                                className="absolute rounded-[1px]"
                                 style={{
-                                    top: s.top,
-                                    left: s.left,
-                                    boxShadow: '0 0 8px #fde68a, 0 0 16px #f59e0b',
-                                    animation: `spin-wheel-twinkle 2.4s ${s.delay} ease-in-out infinite`,
+                                    top: `${c.top}%`,
+                                    left: `${c.left}%`,
+                                    width: `${c.size}px`,
+                                    height: `${c.size * 0.4}px`,
+                                    background: c.color,
+                                    transform: `rotate(${c.rotate}deg)`,
+                                    opacity: 0.7,
                                 }}
                             />
                         ))}
                     </div>
 
-                    {/* Title */}
-                    <h1 className="relative mb-3 text-center text-sm font-extrabold tracking-[0.22em] text-amber-100/95 uppercase drop-shadow">
-                        ✦ Loyalty Rewards Wheel ✦
-                    </h1>
+                    {/* Hero header */}
+                    <div className="relative mb-3 flex items-start justify-between gap-3 px-1">
+                        <div>
+                            <h1 className="text-3xl leading-tight font-extrabold text-amber-300 drop-shadow-md sm:text-4xl">
+                                Spin &amp; Win
+                            </h1>
+                            <p className="mt-1 max-w-[14rem] text-xs leading-snug text-white/95 drop-shadow">
+                                One free spin every day — points, vouchers, and surprise prizes.
+                            </p>
+                            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-neutral-800 shadow">
+                                <Coins className="size-3.5 text-amber-500" /> 1 spin / day
+                            </span>
+                        </div>
+                    </div>
 
-                    {/* Confetti */}
+                    {/* Winning confetti */}
                     {showConfetti && (
                         <div className="pointer-events-none absolute inset-x-0 top-0 z-30 h-96 overflow-hidden">
                             {confetti.map((c, i) => (
@@ -231,19 +218,8 @@ export default function Spin({ segments, can_spin }: Props) {
                         </div>
                     )}
 
-                    <div className="relative mx-auto w-fit">
-                        {/* Glow halo behind the wheel */}
-                        <div
-                            aria-hidden
-                            className="absolute inset-0 -m-6 rounded-full"
-                            style={{
-                                background:
-                                    'radial-gradient(circle, rgba(253,224,71,0.55) 0%, rgba(245,158,11,0.25) 45%, transparent 70%)',
-                                animation: 'spin-wheel-halo 3.2s ease-in-out infinite',
-                                filter: 'blur(12px)',
-                            }}
-                        />
-
+                    {/* Wheel */}
+                    <div className="relative mx-auto mt-2 w-fit">
                         {/* Pointer — beige downward arrow on top */}
                         <div
                             aria-hidden
@@ -257,10 +233,10 @@ export default function Spin({ segments, can_spin }: Props) {
                             }}
                         >
                             <svg
-                                width="48"
-                                height="60"
-                                viewBox="0 0 48 60"
-                                style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.45))' }}
+                                width="44"
+                                height="56"
+                                viewBox="0 0 44 56"
+                                style={{ filter: 'drop-shadow(0 4px 5px rgba(0,0,0,0.35))' }}
                             >
                                 <defs>
                                     <linearGradient id="pointer-grad" x1="0" y1="0" x2="0" y2="1">
@@ -270,18 +246,18 @@ export default function Spin({ segments, can_spin }: Props) {
                                     </linearGradient>
                                 </defs>
                                 <path
-                                    d="M24 58 L7 12 Q24 2 41 12 Z"
+                                    d="M22 54 L6 10 Q22 1 38 10 Z"
                                     fill="url(#pointer-grad)"
                                     stroke="#5b2c0a"
                                     strokeWidth="1.8"
                                 />
-                                <circle cx="24" cy="16" r="3.5" fill="#fffbeb" opacity="0.85" />
+                                <circle cx="22" cy="14" r="3.5" fill="#fffbeb" opacity="0.85" />
                             </svg>
                         </div>
 
-                        {/* Wheel — thick black border with subtle wobble idle */}
+                        {/* Wheel disc */}
                         <div
-                            className="relative aspect-square w-88 max-w-[88vw] overflow-hidden rounded-full border-[3px] border-black bg-white shadow-2xl"
+                            className="relative aspect-square w-80 max-w-[86vw] overflow-hidden rounded-full border-[4px] border-black bg-white shadow-2xl"
                             style={{
                                 transform: `rotate(${rotation}deg)`,
                                 transition: spinning
@@ -304,12 +280,12 @@ export default function Spin({ segments, can_spin }: Props) {
                                     const y2 = 100 * Math.sin((endAngle * Math.PI) / 180);
                                     const path = `M 0 0 L ${x1.toFixed(3)} ${y1.toFixed(3)} A 100 100 0 ${largeArc} 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z`;
                                     const midAngle = startAngle + segmentAngle / 2;
-                                    const labelRadius = s.image_path ? 48 : 60;
+                                    const labelRadius = s.image_path ? 50 : 62;
                                     const tx = labelRadius * Math.cos((midAngle * Math.PI) / 180);
                                     const ty = labelRadius * Math.sin((midAngle * Math.PI) / 180);
-                                    const imgSize = Math.min(36, segmentAngle * 0.7);
-                                    const ix = 75 * Math.cos((midAngle * Math.PI) / 180);
-                                    const iy = 75 * Math.sin((midAngle * Math.PI) / 180);
+                                    const imgSize = Math.min(34, segmentAngle * 0.65);
+                                    const ix = 76 * Math.cos((midAngle * Math.PI) / 180);
+                                    const iy = 76 * Math.sin((midAngle * Math.PI) / 180);
 
                                     return (
                                         <g key={s.id}>
@@ -317,7 +293,7 @@ export default function Spin({ segments, can_spin }: Props) {
                                                 d={path}
                                                 fill={s.color}
                                                 stroke="#000"
-                                                strokeWidth={1.4}
+                                                strokeWidth={1.5}
                                             />
                                             {s.image_path && (
                                                 <image
@@ -355,36 +331,37 @@ export default function Spin({ segments, can_spin }: Props) {
                             </svg>
                         </div>
 
-                        {/* Glossy centre hub — stays still while wheel rotates */}
-                        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-                            <div className="relative flex size-14 items-center justify-center rounded-full bg-linear-to-br from-amber-200 via-amber-400 to-amber-800 shadow-lg ring-[3px] ring-black">
-                                <Sparkles className="size-6 text-white drop-shadow" />
-                                <span
-                                    aria-hidden
-                                    className="absolute top-1.5 left-2.5 size-2.5 rounded-full bg-white/70 blur-[1px]"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Spin button — dark pill, bottom-right corner like image */}
-                    <div className="mt-6 flex justify-end">
+                        {/* Centre Spin button — clickable, stays still */}
                         <button
                             type="button"
                             onClick={handleSpin}
                             disabled={spinning || done}
-                            className="rounded-full bg-[#3d2817] px-5 py-2.5 text-xs font-bold tracking-wider text-white uppercase shadow-md transition-transform hover:scale-[1.03] disabled:opacity-60"
+                            aria-label="Spin"
+                            className="absolute top-1/2 left-1/2 z-10 flex size-24 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-[3px] border-black bg-white shadow-xl transition-transform active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+                            style={{
+                                animation:
+                                    !spinning && !done
+                                        ? 'spin-wheel-pulse 1.8s ease-in-out infinite'
+                                        : 'none',
+                            }}
                         >
-                            {spinning ? 'Spinning…' : done ? 'Come back tomorrow' : 'Spin for 10 points'}
+                            <span className="text-xl leading-none font-extrabold tracking-wide text-neutral-900">
+                                {spinning ? '…' : done ? '✓' : 'Spin'}
+                            </span>
+                            {!spinning && !done && (
+                                <span className="mt-0.5 flex items-center gap-0.5 text-[10px] font-semibold text-neutral-500">
+                                    1 / day
+                                </span>
+                            )}
                         </button>
                     </div>
 
                     {result && (
                         <div
-                            className={`mx-auto mt-6 w-full max-w-xs rounded-2xl border p-5 text-center shadow-lg ${
+                            className={`mx-auto mt-5 w-full max-w-xs rounded-2xl border p-4 text-center shadow-lg ${
                                 won
                                     ? 'border-amber-300 bg-linear-to-br from-amber-50 via-yellow-50 to-amber-100'
-                                    : 'border-neutral-200 bg-neutral-50'
+                                    : 'border-neutral-200 bg-white'
                             }`}
                             style={{ animation: 'spin-wheel-pop 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) both' }}
                         >
@@ -398,22 +375,59 @@ export default function Spin({ segments, can_spin }: Props) {
                                 {won && <Sparkles className="size-3.5" />}
                             </p>
                             <p
-                                className={`mt-1 text-2xl font-extrabold ${
+                                className={`mt-1 text-xl font-extrabold ${
                                     won ? 'text-amber-900' : 'text-neutral-700'
                                 }`}
                             >
                                 {result.label}
                             </p>
-                            <p className="text-muted-foreground mt-2 text-xs">{result.message}</p>
+                            <p className="text-muted-foreground mt-1 text-xs">{result.message}</p>
                         </div>
                     )}
 
                     {error && (
-                        <p className="mx-auto mt-4 w-full max-w-xs rounded-md border border-red-200 bg-red-50 px-3 py-2 text-center text-xs text-red-700">
+                        <p className="mx-auto mt-3 w-full max-w-xs rounded-md border border-red-200 bg-red-50 px-3 py-2 text-center text-xs text-red-700">
                             {error}
                         </p>
                     )}
                 </div>
+            )}
+
+            {/* Prizes to win — horizontal scrollable list */}
+            {segments.length > 0 && (
+                <section className="mt-5">
+                    <h2 className="mb-2 px-1 text-sm font-bold text-neutral-800">Prizes to win</h2>
+                    <div className="-mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-2">
+                        {segments.map((s) => (
+                            <div
+                                key={s.id}
+                                className="flex w-28 shrink-0 snap-start flex-col items-center gap-2 rounded-2xl border border-black/10 p-3 shadow-sm"
+                                style={{ background: `${s.color}26` }}
+                            >
+                                <div
+                                    className="flex size-14 items-center justify-center overflow-hidden rounded-xl"
+                                    style={{ background: `${s.color}40` }}
+                                >
+                                    {s.image_path ? (
+                                        <img
+                                            src={`/storage/${s.image_path}`}
+                                            alt={s.label}
+                                            className="size-full object-cover"
+                                        />
+                                    ) : (
+                                        <Sparkles
+                                            className="size-6"
+                                            style={{ color: s.color }}
+                                        />
+                                    )}
+                                </div>
+                                <p className="line-clamp-2 text-center text-[11px] leading-tight font-semibold text-neutral-800">
+                                    {s.label}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
             )}
         </StorefrontLayout>
     );

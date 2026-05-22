@@ -146,8 +146,19 @@ export default function Checkout({
         setSubmitting(true);
         setError(null);
         try {
-            const csrf =
+            // Laravel rotates XSRF-TOKEN on every response, so the cookie
+            // is always live; the <meta> token can be stale after SPA
+            // navigation (e.g., login → checkout) and triggers 419.
+            const cookieToken = document.cookie
+                .split('; ')
+                .find((c) => c.startsWith('XSRF-TOKEN='))
+                ?.substring('XSRF-TOKEN='.length);
+            const metaToken =
                 document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+            const csrfHeaders: Record<string, string> = {};
+            if (cookieToken) csrfHeaders['X-XSRF-TOKEN'] = decodeURIComponent(cookieToken);
+            if (metaToken) csrfHeaders['X-CSRF-TOKEN'] = metaToken;
+
             const response = await fetch('/api/orders', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -155,7 +166,7 @@ export default function Checkout({
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrf,
+                    ...csrfHeaders,
                 },
                 body: JSON.stringify({
                     branch_id: branch.id,

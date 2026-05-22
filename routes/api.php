@@ -142,6 +142,7 @@ Route::middleware(['auth:sanctum', 'pos.token'])->group(function () {
 
     // Queue + orders
     Route::get('/pos/branches/{branch}/queue', [\App\Http\Controllers\Api\PosApiController::class, 'queue'])->name('api.pos.queue');
+    Route::get('/pos/branches/{branch}/recent', [\App\Http\Controllers\Api\PosApiController::class, 'recent'])->name('api.pos.recent');
     Route::post('/pos/orders/{order}/transition', [\App\Http\Controllers\Api\PosApiController::class, 'transition'])->name('api.pos.transition');
     Route::post('/pos/orders/{order}/print', [\App\Http\Controllers\Api\PosApiController::class, 'print'])->name('api.pos.print');
     Route::get('/pos/orders/{order}/receipt', [\App\Http\Controllers\Api\PosApiController::class, 'receipt'])->name('api.pos.receipt');

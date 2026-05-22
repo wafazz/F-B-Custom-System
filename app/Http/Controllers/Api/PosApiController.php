@@ -95,6 +95,43 @@ class PosApiController extends Controller
         return response()->json(['orders' => $orders]);
     }
 
+    /**
+     * Recent orders for the branch — preparing, ready, completed, cancelled.
+     * Optional ?status=<one> narrows to a single bucket; ?limit caps the
+     * page size (default 50, max 100). Sorted newest first.
+     */
+    public function recent(Request $request, Branch $branch): JsonResponse
+    {
+        $statuses = [
+            OrderStatus::Preparing,
+            OrderStatus::Ready,
+            OrderStatus::Completed,
+            OrderStatus::Cancelled,
+        ];
+
+        $data = $request->validate([
+            'status' => ['nullable', 'string', 'in:preparing,ready,completed,cancelled'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $filterStatuses = isset($data['status'])
+            ? [OrderStatus::from($data['status'])]
+            : $statuses;
+        $limit = (int) ($data['limit'] ?? 50);
+
+        $orders = Order::query()
+            ->where('branch_id', $branch->id)
+            ->whereIn('status', $filterStatuses)
+            ->with(['items.modifiers'])
+            ->latest()
+            ->limit($limit)
+            ->get()
+            ->map(fn (Order $o) => $this->presentOrder($o))
+            ->values();
+
+        return response()->json(['orders' => $orders]);
+    }
+
     /** Fire a broadcast that the branch print runner picks up and forwards to the WiFi printer. */
     public function print(Request $request, Order $order): JsonResponse
     {

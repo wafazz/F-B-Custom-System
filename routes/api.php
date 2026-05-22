@@ -124,15 +124,48 @@ Route::middleware('auth:sanctum')->group(function () {
 /*
 |--------------------------------------------------------------------------
 | Native POS (React Native app) — Sanctum-token authed
+|
+| Token name is `pos:{branch_code}` and the `pos.token` middleware
+| enforces that any {branch} URL binding matches that scope. Endpoints
+| that don't take {branch} (orders, shifts, pickups) check the resource
+| owner's branch against the token's branch instead.
 |--------------------------------------------------------------------------
 */
 Route::post('/pos/login', [\App\Http\Controllers\Api\PosApiController::class, 'login'])
     ->middleware('throttle:10,1')
     ->name('api.pos.login');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'pos.token'])->group(function () {
+    // Session
     Route::post('/pos/logout', [\App\Http\Controllers\Api\PosApiController::class, 'logout'])->name('api.pos.logout');
+    Route::get('/pos/me', [\App\Http\Controllers\Api\PosApiController::class, 'me'])->name('api.pos.me');
+
+    // Queue + orders
     Route::get('/pos/branches/{branch}/queue', [\App\Http\Controllers\Api\PosApiController::class, 'queue'])->name('api.pos.queue');
     Route::post('/pos/orders/{order}/transition', [\App\Http\Controllers\Api\PosApiController::class, 'transition'])->name('api.pos.transition');
     Route::post('/pos/orders/{order}/print', [\App\Http\Controllers\Api\PosApiController::class, 'print'])->name('api.pos.print');
+    Route::get('/pos/orders/{order}/receipt', [\App\Http\Controllers\Api\PosApiController::class, 'receipt'])->name('api.pos.receipt');
+
+    // Walk-in
+    Route::get('/pos/branches/{branch}/menu', [\App\Http\Controllers\Api\Pos\WalkInController::class, 'menu'])->name('api.pos.menu');
+    Route::get('/pos/branches/{branch}/customers/search', [\App\Http\Controllers\Api\Pos\WalkInController::class, 'searchCustomers'])->name('api.pos.customers.search');
+    Route::post('/pos/branches/{branch}/walk-in', [\App\Http\Controllers\Api\Pos\WalkInController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('api.pos.walk-in');
+
+    // Shift
+    Route::get('/pos/branches/{branch}/shift', [\App\Http\Controllers\Api\Pos\ShiftController::class, 'current'])->name('api.pos.shift.current');
+    Route::post('/pos/branches/{branch}/shift/open', [\App\Http\Controllers\Api\Pos\ShiftController::class, 'open'])->name('api.pos.shift.open');
+    Route::post('/pos/shifts/{shift}/close', [\App\Http\Controllers\Api\Pos\ShiftController::class, 'close'])->name('api.pos.shift.close');
+    Route::post('/pos/shifts/{shift}/movements', [\App\Http\Controllers\Api\Pos\ShiftController::class, 'recordMovement'])->name('api.pos.shift.movements');
+    Route::get('/pos/shifts/{shift}', [\App\Http\Controllers\Api\Pos\ShiftController::class, 'report'])->name('api.pos.shift.report');
+
+    // Stock
+    Route::get('/pos/branches/{branch}/stock', [\App\Http\Controllers\Api\Pos\StockController::class, 'index'])->name('api.pos.stock.index');
+    Route::post('/pos/branches/{branch}/stock/{product}/toggle', [\App\Http\Controllers\Api\Pos\StockController::class, 'toggle'])->name('api.pos.stock.toggle');
+
+    // Reward pickups (cross-branch, scoped by pickup code)
+    Route::get('/pos/reward-pickups', [\App\Http\Controllers\Api\Pos\RewardPickupController::class, 'index'])->name('api.pos.reward-pickups.index');
+    Route::get('/pos/reward-pickups/lookup', [\App\Http\Controllers\Api\Pos\RewardPickupController::class, 'lookup'])->name('api.pos.reward-pickups.lookup');
+    Route::post('/pos/reward-pickups/{pickup}/fulfil', [\App\Http\Controllers\Api\Pos\RewardPickupController::class, 'fulfil'])->name('api.pos.reward-pickups.fulfil');
 });

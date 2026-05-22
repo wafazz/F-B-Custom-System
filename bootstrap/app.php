@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->alias([
             'pos' => \App\Http\Middleware\EnsurePosSession::class,
+            'pos.token' => \App\Http\Middleware\EnsurePosToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

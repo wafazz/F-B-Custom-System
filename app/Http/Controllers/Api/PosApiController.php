@@ -9,6 +9,7 @@ use App\Models\Branch;
 use App\Models\BranchStaff;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Loyalty\LoyaltyService;
 use App\Services\Orders\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -57,6 +58,27 @@ class PosApiController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /** Currently authenticated POS staff + the branch their token is scoped to. */
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $code = (string) $request->attributes->get('pos_branch_code');
+        $branch = Branch::query()->where('code', $code)->firstOrFail();
+
+        return response()->json([
+            'staff' => ['id' => $user->id, 'name' => $user->name],
+            'branch' => [
+                'id' => $branch->id,
+                'code' => $branch->code,
+                'name' => $branch->name,
+                'sst_rate' => (float) $branch->sst_rate,
+                'sst_enabled' => (bool) $branch->sst_enabled,
+                'service_charge_rate' => (float) $branch->service_charge_rate,
+                'service_charge_enabled' => (bool) $branch->service_charge_enabled,
+            ],
+        ]);
+    }
+
     /** Live queue list — pending + preparing + ready, scoped to a branch. */
     public function queue(Branch $branch): JsonResponse
     {
@@ -74,15 +96,70 @@ class PosApiController extends Controller
     }
 
     /** Fire a broadcast that the branch print runner picks up and forwards to the WiFi printer. */
-    public function print(Order $order): JsonResponse
+    public function print(Request $request, Order $order): JsonResponse
     {
+        $this->authorizeOrderBranch($request, $order);
         PrintReceiptRequested::dispatch($order);
 
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * Rich receipt payload the mobile app feeds to its native printer
+     * library (or renders for an on-screen PDF). Same shape as the web
+     * `/pos/orders/{order}/receipt-data` endpoint so the two clients can
+     * share serialisers.
+     */
+    public function receipt(Request $request, Order $order, LoyaltyService $loyalty): JsonResponse
+    {
+        $this->authorizeOrderBranch($request, $order);
+        $order->loadMissing(['branch', 'items.modifiers', 'user']);
+        $branch = $order->branch;
+
+        $pointsEarned = $order->user_id
+            ? (int) floor((float) $order->subtotal * $loyalty->multiplierFor((int) $order->user_id))
+            : 0;
+
+        return response()->json([
+            'number' => $order->number,
+            'order_type' => $order->order_type->value,
+            'dine_in_table' => $order->dine_in_table,
+            'created_at' => $order->created_at?->toIso8601String(),
+            'paid_at' => $order->paid_at?->toIso8601String(),
+            'payment_method' => $order->payment_method,
+            'payment_reference' => $order->payment_reference,
+            'subtotal' => (float) $order->subtotal,
+            'sst_amount' => (float) $order->sst_amount,
+            'service_charge_amount' => (float) ($order->service_charge_amount ?? 0),
+            'discount_amount' => (float) ($order->discount_amount ?? 0),
+            'total' => (float) $order->total,
+            'customer_name' => $order->user?->name,
+            'points_earned' => $pointsEarned,
+            'items' => $order->items->map(fn ($i) => [
+                'name' => $i->product_name,
+                'quantity' => (int) $i->quantity,
+                'unit_price' => (float) $i->unit_price,
+                'line_total' => (float) $i->line_total,
+                'modifiers' => $i->modifiers
+                    ->map(fn ($m) => ['option_name' => $m->option_name])
+                    ->values()
+                    ->all(),
+            ])->values()->all(),
+            'branch' => [
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'receipt_header' => $branch->receipt_header,
+                'receipt_footer' => $branch->receipt_footer,
+                'sst_rate' => (float) $branch->sst_rate,
+                'service_charge_rate' => (float) $branch->service_charge_rate,
+                'label_size' => (string) ($branch->label_size ?? '58mm'),
+            ],
+        ]);
+    }
+
     public function transition(Request $request, Order $order, OrderService $service): JsonResponse
     {
+        $this->authorizeOrderBranch($request, $order);
         $data = $request->validate([
             'status' => ['required', 'string', 'in:preparing,ready,completed,cancelled'],
         ]);
@@ -93,6 +170,14 @@ class PosApiController extends Controller
         $fresh = $order->fresh(['items.modifiers']);
 
         return response()->json(['order' => $this->presentOrder($fresh)]);
+    }
+
+    /** Guard cross-branch order access via the token's branch scope. */
+    protected function authorizeOrderBranch(Request $request, Order $order): void
+    {
+        $code = (string) $request->attributes->get('pos_branch_code');
+        $branch = Branch::query()->where('code', $code)->first();
+        abort_unless($branch && $order->branch_id === $branch->id, 403, 'Order belongs to another branch.');
     }
 
     /** @return array<string, mixed> */

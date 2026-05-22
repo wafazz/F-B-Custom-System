@@ -327,10 +327,31 @@ export default function Order({ order, has_reviewed, reverb }: Props) {
                 )
             )}
 
-            <p className="text-muted-foreground mt-4 flex items-center gap-1 text-[10px]">
-                <Clock className="size-3" /> Placed{' '}
-                {order.created_at ? new Date(order.created_at).toLocaleString() : '—'}
-            </p>
+            <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="text-muted-foreground flex items-center gap-1 text-[10px]">
+                    <Clock className="size-3" /> Placed{' '}
+                    {order.created_at ? new Date(order.created_at).toLocaleString() : '—'}
+                </p>
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (refreshingRef.current) return;
+                        refreshingRef.current = true;
+                        setRefreshing(true);
+                        router.reload({
+                            onFinish: () => {
+                                refreshingRef.current = false;
+                                setRefreshing(false);
+                            },
+                        });
+                    }}
+                    disabled={refreshing}
+                    aria-label="Refresh order"
+                    className="bg-card text-card-foreground inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-100 shadow-sm transition-colors hover:bg-amber-50 disabled:opacity-60"
+                >
+                    <RefreshCw className={`size-4 text-amber-700 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+            </div>
         </StorefrontLayout>
     );
 }

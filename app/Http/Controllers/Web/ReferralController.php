@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\ReferralReward;
 use App\Models\User;
+use App\Services\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ReferralController extends Controller
 {
-    public function show(Request $request): Response
+    public function show(Request $request, SettingsRepository $settings): Response
     {
         /** @var User $user */
         $user = $request->user();
@@ -36,8 +37,20 @@ class ReferralController extends Controller
         return Inertia::render('storefront/referral', [
             'code' => $user->referral_code,
             'share_url' => url('/register').'?ref='.$user->referral_code,
-            'referrer_bonus' => (int) config('services.referral.referrer_bonus_points', 100),
-            'referee_bonus' => (int) config('services.referral.referee_bonus_points', 100),
+            'enabled' => $settings->get('referral.enabled', '1') === '1',
+            'referrer_bonus' => (int) $settings->get(
+                'referral.referrer_points',
+                (string) config('services.referral.referrer_bonus_points', 100),
+            ),
+            'referee_bonus' => (int) $settings->get(
+                'referral.referee_points',
+                (string) config('services.referral.referee_bonus_points', 100),
+            ),
+            'min_first_order_amount' => (float) $settings->get('referral.min_first_order_amount', '0'),
+            'share_text_template' => $settings->get(
+                'referral.share_text',
+                'Join me on Star Coffee — use my code {code} to get {points} bonus points on your first order: {url}',
+            ),
             'rewards' => $rows,
             'total_earned' => array_sum(array_column($rows, 'points_earned')),
         ]);

@@ -9,11 +9,15 @@ use App\Models\ReferralReward;
 use App\Models\User;
 use App\Notifications\ReferralBonusNotification;
 use App\Services\Loyalty\LoyaltyService;
+use App\Services\Settings\SettingsRepository;
 use Illuminate\Support\Facades\DB;
 
 class ReferralService
 {
-    public function __construct(protected LoyaltyService $loyalty) {}
+    public function __construct(
+        protected LoyaltyService $loyalty,
+        protected SettingsRepository $settings,
+    ) {}
 
     /**
      * Award referrer + referee bonus on the referee's first completed order.
@@ -27,6 +31,16 @@ class ReferralService
 
         // Referral bonus only fires on orders that were actually paid for.
         if ($order->payment_status !== PaymentStatus::Paid) {
+            return null;
+        }
+
+        // Admin can pause the program from Filament without losing history.
+        if ($this->settings->get('referral.enabled', '1') !== '1') {
+            return null;
+        }
+
+        $minAmount = (float) $this->settings->get('referral.min_first_order_amount', '0');
+        if ($minAmount > 0 && (float) $order->total < $minAmount) {
             return null;
         }
 
@@ -45,8 +59,18 @@ class ReferralService
             return null;
         }
 
-        $referrerPoints = (int) config('services.referral.referrer_bonus_points', 100);
-        $refereePoints = (int) config('services.referral.referee_bonus_points', 100);
+        $referrerPoints = (int) $this->settings->get(
+            'referral.referrer_points',
+            (string) config('services.referral.referrer_bonus_points', 100),
+        );
+        $refereePoints = (int) $this->settings->get(
+            'referral.referee_points',
+            (string) config('services.referral.referee_bonus_points', 100),
+        );
+
+        if ($referrerPoints <= 0 && $refereePoints <= 0) {
+            return null;
+        }
 
         return DB::transaction(function () use ($referrer, $referee, $order, $referrerPoints, $refereePoints) {
             /** @var ReferralReward $reward */

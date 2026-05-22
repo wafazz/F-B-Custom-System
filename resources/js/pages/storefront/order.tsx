@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Check, Clock, CreditCard, Package, X } from 'lucide-react';
+import { ArrowLeft, Check, Clock, CreditCard, Package, RefreshCw, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ReviewForm } from '@/components/storefront/review-form';
@@ -51,6 +51,13 @@ export default function Order({ order, has_reviewed, reverb }: Props) {
     const [paying, setPaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
+    const PULL_THRESHOLD = 70;
+    const [pullDistance, setPullDistance] = useState(0);
+    const [refreshing, setRefreshing] = useState(false);
+    const pullDistanceRef = useRef(0);
+    const refreshingRef = useRef(false);
+    const startYRef = useRef<number | null>(null);
+
     function payAgain() {
         setPaying(true);
         router.post(
@@ -62,6 +69,50 @@ export default function Order({ order, has_reviewed, reverb }: Props) {
             },
         );
     }
+
+    useEffect(() => {
+        function onTouchStart(e: TouchEvent) {
+            if (window.scrollY > 0 || refreshingRef.current) return;
+            startYRef.current = e.touches[0].clientY;
+        }
+        function onTouchMove(e: TouchEvent) {
+            if (startYRef.current === null) return;
+            const diff = e.touches[0].clientY - startYRef.current;
+            if (diff <= 0) return;
+            // Rubber-band: halve the raw drag so the spinner trails the
+            // finger and tops out around ~110px no matter how far they pull.
+            const d = Math.min(diff * 0.5, 110);
+            pullDistanceRef.current = d;
+            setPullDistance(d);
+        }
+        function onTouchEnd() {
+            if (startYRef.current === null) return;
+            startYRef.current = null;
+            if (pullDistanceRef.current >= PULL_THRESHOLD) {
+                refreshingRef.current = true;
+                setRefreshing(true);
+                router.reload({
+                    onFinish: () => {
+                        refreshingRef.current = false;
+                        setRefreshing(false);
+                        pullDistanceRef.current = 0;
+                        setPullDistance(0);
+                    },
+                });
+            } else {
+                pullDistanceRef.current = 0;
+                setPullDistance(0);
+            }
+        }
+        window.addEventListener('touchstart', onTouchStart, { passive: true });
+        window.addEventListener('touchmove', onTouchMove, { passive: true });
+        window.addEventListener('touchend', onTouchEnd);
+        return () => {
+            window.removeEventListener('touchstart', onTouchStart);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+        };
+    }, []);
 
     useEffect(() => {
         const echo = getEcho();
@@ -85,10 +136,31 @@ export default function Order({ order, has_reviewed, reverb }: Props) {
     const progressIndex = STAGES.indexOf(status);
     const isCancelled = status === 'cancelled' || status === 'refunded';
 
+    const pullProgress = Math.min(pullDistance / PULL_THRESHOLD, 1);
+    const indicatorVisible = pullDistance > 0 || refreshing;
+
     return (
         <StorefrontLayout hideStats>
             <Head title={`Order ${order.number}`} />
             <audio ref={audioRef} preload="auto" src="/sounds/sc7.mp3" />
+
+            {indicatorVisible && (
+                <div
+                    className="pointer-events-none fixed top-2 left-1/2 z-40 -translate-x-1/2"
+                    style={{
+                        transform: `translate(-50%, ${refreshing ? 0 : Math.max(pullDistance - 50, -10)}px)`,
+                        opacity: refreshing ? 1 : pullProgress,
+                        transition: startYRef.current === null ? 'transform 200ms, opacity 200ms' : 'none',
+                    }}
+                >
+                    <div className="flex size-10 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-amber-100">
+                        <RefreshCw
+                            className={`size-5 text-amber-600 ${refreshing ? 'animate-spin' : ''}`}
+                            style={refreshing ? undefined : { transform: `rotate(${pullDistance * 4}deg)` }}
+                        />
+                    </div>
+                </div>
+            )}
 
             <div className="mb-2 flex items-center gap-3">
                 <Link

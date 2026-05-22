@@ -20,11 +20,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->statefulApi();
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
-        // PWA push subscribe is session-authenticated and SameSite=Lax already
-        // blocks cross-site forging; the CSRF round-trip is fragile on iOS PWAs
-        // where cached HTML serves a stale meta-token after login.
+        // PWA push subscribe + order placement are session-authenticated and
+        // SameSite=Lax already blocks cross-site forging; the CSRF round-trip
+        // is fragile on iOS PWAs where cached HTML serves a stale meta-token
+        // after login and the XSRF-TOKEN cookie can expire while the app
+        // stays warm in standalone mode.
         $middleware->validateCsrfTokens(except: [
             'api/push/subscribe',
+            'api/orders',
         ]);
         $middleware->alias([
             'pos' => \App\Http\Middleware\EnsurePosSession::class,

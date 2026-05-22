@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowRight, Coffee, X } from 'lucide-react';
+import { ArrowRight, Coffee, Star, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NotificationPrompt } from '@/components/storefront/notification-prompt';
 import StorefrontLayout from '@/layouts/storefront-layout';
@@ -30,6 +30,8 @@ interface BranchInfo {
     logo: string | null;
     is_open_now: boolean;
     accepts_orders: boolean;
+    avg_rating: number;
+    reviews_count: number;
 }
 
 interface Props {
@@ -294,6 +296,34 @@ export default function BranchHome({ branch, slides, rewards_slides, popup_slide
                     </span>
                 </button>
             </section>
+
+            {branch.reviews_count > 0 && (
+                <section className="border-border bg-card mb-6 flex items-center justify-between gap-3 rounded-2xl border p-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex size-12 items-center justify-center rounded-full bg-amber-100">
+                            <Star className="size-6 fill-amber-400 text-amber-400" />
+                        </div>
+                        <div>
+                            <p className="flex items-baseline gap-1">
+                                <span className="text-xl font-extrabold text-neutral-900">
+                                    {branch.avg_rating.toFixed(1)}
+                                </span>
+                                <span className="text-muted-foreground text-xs">/ 5</span>
+                            </p>
+                            <p className="text-muted-foreground text-[11px]">
+                                {branch.reviews_count}{' '}
+                                {branch.reviews_count === 1 ? 'review' : 'reviews'} from customers
+                            </p>
+                        </div>
+                    </div>
+                    <Link
+                        href={`/branches/${branch.id}/reviews`}
+                        className="text-primary hover:bg-primary/5 flex items-center gap-1 rounded-full border border-amber-300 px-3 py-1.5 text-xs font-semibold"
+                    >
+                        View all <ArrowRight className="size-3" />
+                    </Link>
+                </section>
+            )}
 
             {/* Explore Our Menu */}
             <section className="mb-6">

@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import L, { type Map as LeafletMap, type Marker as LeafletMarker } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Clock3, Coffee, Crosshair, Navigation } from 'lucide-react';
+import { ArrowLeft, Clock3, Coffee, Crosshair, Navigation, Star } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useBranchStore } from '@/stores/branch-store';
 import { useCartStore } from '@/stores/cart-store';
@@ -412,6 +412,17 @@ export default function BranchSelect({ branches }: Props) {
                                     <h3 className="text-card-foreground mt-0.5 truncate text-base leading-tight font-bold">
                                         {branch.name.replace(/^star coffee[\s—-]*/i, '')}
                                     </h3>
+                                    {!!branch.reviews_count && branch.reviews_count > 0 && (
+                                        <div className="mt-1 flex items-center gap-1 text-[11px]">
+                                            <Star className="size-3 fill-amber-400 text-amber-400" />
+                                            <span className="font-bold text-neutral-800">
+                                                {(branch.avg_rating ?? 0).toFixed(1)}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                ({branch.reviews_count})
+                                            </span>
+                                        </div>
+                                    )}
                                     <p className="text-muted-foreground mt-1 line-clamp-1 text-[11px] leading-snug">
                                         {branch.address}
                                         {branch.city && `, ${branch.city}`}

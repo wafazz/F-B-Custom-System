@@ -97,6 +97,8 @@ export interface BranchSummary {
     operating_hours: Record<string, { enabled: boolean; open: string; close: string }> | null;
     logo: string | null;
     cover_image?: string | null;
+    avg_rating?: number;
+    reviews_count?: number;
     is_open_now: boolean;
     closed_reason?: string | null;
     todays_hours?: string | null;

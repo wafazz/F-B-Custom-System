@@ -32,7 +32,7 @@ class StorefrontController extends Controller
             ->orderBy('sort_order')
             // status + accepts_orders are required by Branch::isOpenNow(); without
             // them the method short-circuits to false and every branch reads "Closed".
-            ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo', 'cover_image', 'status', 'accepts_orders'])
+            ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo', 'cover_image', 'status', 'accepts_orders', 'avg_rating', 'reviews_count'])
             ->map(function (Branch $b) {
                 $day = strtolower(now()->englishDayOfWeek);
                 $hours = is_array($b->operating_hours) ? ($b->operating_hours[$day] ?? null) : null;
@@ -50,6 +50,8 @@ class StorefrontController extends Controller
                     'operating_hours' => $b->operating_hours,
                     'logo' => $b->logo,
                     'cover_image' => $b->cover_image,
+                    'avg_rating' => (float) $b->avg_rating,
+                    'reviews_count' => (int) $b->reviews_count,
                     'is_open_now' => $b->isOpenNow(),
                     'closed_reason' => $b->closedReason(),
                     'todays_hours' => (function () use ($hours) {
@@ -233,6 +235,8 @@ class StorefrontController extends Controller
                 'logo' => $branch->logo,
                 'is_open_now' => $branch->isOpenNow(),
                 'accepts_orders' => $branch->accepts_orders,
+                'avg_rating' => (float) $branch->avg_rating,
+                'reviews_count' => (int) $branch->reviews_count,
             ],
             'slides' => $hero,
             'rewards_slides' => $rewards,

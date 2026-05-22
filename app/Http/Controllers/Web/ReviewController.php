@@ -10,6 +10,8 @@ use App\Models\ProductReview;
 use App\Services\Reviews\ReviewService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 use Throwable;
 
 class ReviewController extends Controller
@@ -94,14 +96,14 @@ class ReviewController extends Controller
         ]);
     }
 
-    public function branchReviews(Branch $branch): JsonResponse
+    public function branchReviews(Branch $branch): Response
     {
         $reviews = BranchReview::query()
             ->with('user:id,name')
             ->where('branch_id', $branch->id)
             ->where('is_hidden', false)
             ->latest()
-            ->limit(50)
+            ->limit(200)
             ->get()
             ->map(fn (BranchReview $r) => [
                 'id' => $r->id,
@@ -111,9 +113,13 @@ class ReviewController extends Controller
                 'created_at' => $r->created_at?->toIso8601String(),
             ]);
 
-        return response()->json([
-            'avg_rating' => (float) $branch->avg_rating,
-            'reviews_count' => (int) $branch->reviews_count,
+        return Inertia::render('storefront/branch-reviews', [
+            'branch' => [
+                'id' => $branch->id,
+                'name' => $branch->name,
+                'avg_rating' => (float) $branch->avg_rating,
+                'reviews_count' => (int) $branch->reviews_count,
+            ],
             'reviews' => $reviews,
         ]);
     }

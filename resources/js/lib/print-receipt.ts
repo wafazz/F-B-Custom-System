@@ -102,7 +102,9 @@ function renderReceiptHtml(order: ReceiptOrder, branch: ReceiptBranch, size: str
 <style>
   @page { size: ${widthMm}mm auto; margin: 0; }
   html, body { margin: 0; padding: 0; background: #fff; color: #000; font-family: 'Helvetica Neue', Arial, sans-serif; }
-  body { width: ${widthMm}mm; padding: 3mm 3mm 6mm 3mm; box-sizing: border-box; }
+  body { width: ${widthMm}mm; padding: 3mm 3mm 3mm 3mm; box-sizing: border-box; }
+  .feed { height: 15mm; }
+  .cut { page-break-after: always; height: 0; }
   .center { text-align: center; }
   .r { text-align: right; }
   .brand { font-size: 14pt; font-weight: 900; letter-spacing: 0.5px; }
@@ -171,6 +173,9 @@ function renderReceiptHtml(order: ReceiptOrder, branch: ReceiptBranch, size: str
 
   <div class="thanks">Thank you, see you again!</div>
   ${branch.receipt_footer ? `<div class="footer">${escapeHtml(branch.receipt_footer)}</div>` : ''}
+
+  <div class="feed"></div>
+  <div class="cut"></div>
 </body>
 </html>`;
 }

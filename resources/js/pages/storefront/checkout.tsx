@@ -146,9 +146,15 @@ export default function Checkout({
         setSubmitting(true);
         setError(null);
         try {
-            // Laravel rotates XSRF-TOKEN on every response, so the cookie
-            // is always live; the <meta> token can be stale after SPA
-            // navigation (e.g., login → checkout) and triggers 419.
+            // In a long-running PWA (especially iOS standalone) both the
+            // <meta> token and the XSRF-TOKEN cookie can be stale, so we
+            // refresh the cookie via sanctum first — same pattern push.ts
+            // uses for /api/push/subscribe.
+            try {
+                await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
+            } catch {
+                /* non-fatal — fall through and surface any 419 below */
+            }
             const cookieToken = document.cookie
                 .split('; ')
                 .find((c) => c.startsWith('XSRF-TOKEN='))

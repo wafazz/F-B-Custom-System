@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\ChangePassword;
+use App\Filament\Widgets\AppStatsOverviewWidget;
 use App\Filament\Widgets\LiveOrdersWidget;
 use App\Filament\Widgets\LowStockWidget;
 use App\Filament\Widgets\RecentOrdersWidget;
@@ -67,6 +68,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
+                AppStatsOverviewWidget::class,
                 LiveOrdersWidget::class,
                 SalesOverviewWidget::class,
                 RevenueChartWidget::class,

@@ -44,6 +44,14 @@ Route::delete('/push/subscribe', [PushSubscriptionController::class, 'unsubscrib
     ->middleware('web')
     ->name('api.push.unsubscribe');
 
+// PWA install + active-device tracking
+Route::post('/pwa/installed', [\App\Http\Controllers\Api\PwaInstallController::class, 'record'])
+    ->middleware('web')
+    ->name('api.pwa.installed');
+Route::post('/pwa/heartbeat', [\App\Http\Controllers\Api\PwaInstallController::class, 'heartbeat'])
+    ->middleware('web')
+    ->name('api.pwa.heartbeat');
+
 /*
 |--------------------------------------------------------------------------
 | Order placement — Sanctum token (mobile) OR session cookie (web/PWA)

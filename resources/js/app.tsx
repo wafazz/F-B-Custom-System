@@ -5,6 +5,7 @@ import { createInertiaApp, router, type ResolvedComponent } from '@inertiajs/rea
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { initPwaTracking } from '@/lib/pwa-tracking';
 import { queryClient } from '@/lib/query-client';
 
 if ('serviceWorker' in navigator) {
@@ -16,6 +17,8 @@ if ('serviceWorker' in navigator) {
         console.error('SW registration failed', err);
     });
 }
+
+initPwaTracking();
 
 const isPwa =
     typeof window !== 'undefined' &&

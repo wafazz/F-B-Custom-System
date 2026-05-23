@@ -129,7 +129,9 @@ class VoucherResource extends Resource
                         ])
                         ->required()
                         ->live()
-                        ->dehydrated(false)
+                        // Must dehydrate so normaliseBxgyPayload() can read the
+                        // chosen scope; the matching unset() strips it before
+                        // save so Eloquent doesn't see a non-column field.
                         ->afterStateHydrated(function (Forms\Components\Select $component, ?Voucher $record): void {
                             if (! $record) {
                                 $component->state('same');

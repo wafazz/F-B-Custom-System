@@ -115,6 +115,12 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /** @return HasMany<VoucherRedemption, $this> */
+    public function redemptions(): HasMany
+    {
+        return $this->hasMany(VoucherRedemption::class);
+    }
+
     public function scopeOpen(Builder $query): Builder
     {
         return $query->whereIn('status', [

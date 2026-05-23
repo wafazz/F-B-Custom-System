@@ -38,16 +38,25 @@ interface OrderProp {
 
 interface Props {
     order: OrderProp;
-    has_reviewed: boolean;
+    has_reviewed_branch: boolean;
+    reviewed_product_ids: number[];
     reverb: { channel: string; event: string };
 }
 
 const STAGES: OrderProp['status'][] = ['pending', 'preparing', 'ready', 'completed'];
 
-export default function Order({ order, has_reviewed, reverb }: Props) {
+export default function Order({
+    order,
+    has_reviewed_branch,
+    reviewed_product_ids,
+    reverb,
+}: Props) {
     const [status, setStatus] = useState<OrderProp['status']>(order.status);
     const [statusLabel, setStatusLabel] = useState(order.status_label);
-    const [reviewSubmitted, setReviewSubmitted] = useState(has_reviewed);
+    const [branchReviewed, setBranchReviewed] = useState(has_reviewed_branch);
+    const [reviewedProductIds, setReviewedProductIds] = useState<Set<number>>(
+        () => new Set(reviewed_product_ids),
+    );
     const [paying, setPaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -293,39 +302,58 @@ export default function Order({ order, has_reviewed, reverb }: Props) {
                 </section>
             )}
 
-            {status === 'completed' && (
-                reviewSubmitted ? (
-                    <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center shadow-sm">
-                        <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-emerald-700">
-                            <Check className="size-4" /> Review successfully submitted
-                        </p>
-                        <p className="mt-1 text-xs text-emerald-700/80">
-                            Thanks for sharing your feedback!
-                        </p>
-                    </section>
-                ) : (
+            {status === 'completed' && (() => {
+                // Show each rate-able target independently — submitting one
+                // no longer hides the others. Server hydrates initial state
+                // from prior reviews (has_reviewed_branch, reviewed_product_ids).
+                const ratableItems = order.items.filter(
+                    (it) => it.product_id !== null && !reviewedProductIds.has(it.product_id!),
+                );
+                const showBranchForm = !branchReviewed && order.branch.id;
+                const everythingRated = !showBranchForm && ratableItems.length === 0;
+
+                if (everythingRated) {
+                    return (
+                        <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center shadow-sm">
+                            <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-emerald-700">
+                                <Check className="size-4" /> All reviews submitted
+                            </p>
+                            <p className="mt-1 text-xs text-emerald-700/80">
+                                Thanks for sharing your feedback!
+                            </p>
+                        </section>
+                    );
+                }
+
+                return (
                     <section className="mt-4 space-y-3">
                         <h2 className="text-sm font-semibold">Rate your experience</h2>
-                        {order.branch.id && (
+
+                        {showBranchForm && (
                             <ReviewForm
                                 endpoint={`/branches/${order.branch.id}/reviews`}
                                 label={`Rate ${order.branch.name ?? 'this branch'}`}
-                                onDone={() => setReviewSubmitted(true)}
+                                onDone={() => setBranchReviewed(true)}
                             />
                         )}
-                        {order.items
-                            .filter((it) => it.product_id !== null)
-                            .map((it) => (
-                                <ReviewForm
-                                    key={it.id}
-                                    endpoint={`/products/${it.product_id}/reviews`}
-                                    label={`Rate ${it.product_name}`}
-                                    onDone={() => setReviewSubmitted(true)}
-                                />
-                            ))}
+
+                        {ratableItems.map((it) => (
+                            <ReviewForm
+                                key={it.id}
+                                endpoint={`/products/${it.product_id}/reviews`}
+                                label={`Rate ${it.product_name}`}
+                                onDone={() =>
+                                    setReviewedProductIds((prev) => {
+                                        const next = new Set(prev);
+                                        next.add(it.product_id!);
+                                        return next;
+                                    })
+                                }
+                            />
+                        ))}
                     </section>
-                )
-            )}
+                );
+            })()}
 
             <div className="mt-4 flex items-center justify-between gap-3">
                 <p className="text-muted-foreground flex items-center gap-1 text-[10px]">

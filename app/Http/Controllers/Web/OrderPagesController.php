@@ -129,28 +129,29 @@ class OrderPagesController extends Controller
         $order->refresh()->load(['items.modifiers', 'branch']);
 
         $userId = $order->user_id;
-        $hasReviewed = false;
+        $hasReviewedBranch = false;
+        $reviewedProductIds = [];
         if ($userId !== null) {
-            $branchReviewed = \App\Models\BranchReview::query()
+            $hasReviewedBranch = \App\Models\BranchReview::query()
                 ->where('user_id', $userId)
                 ->where('branch_id', $order->branch_id)
                 ->exists();
-            if ($branchReviewed) {
-                $hasReviewed = true;
-            } else {
-                $productIds = $order->items->pluck('product_id')->filter()->unique()->all();
-                if (! empty($productIds)) {
-                    $hasReviewed = \App\Models\ProductReview::query()
-                        ->where('user_id', $userId)
-                        ->whereIn('product_id', $productIds)
-                        ->exists();
-                }
+
+            $productIds = $order->items->pluck('product_id')->filter()->unique()->all();
+            if (! empty($productIds)) {
+                $reviewedProductIds = \App\Models\ProductReview::query()
+                    ->where('user_id', $userId)
+                    ->whereIn('product_id', $productIds)
+                    ->pluck('product_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
             }
         }
 
         return Inertia::render('storefront/order', [
             'order' => $this->presentOrder($order),
-            'has_reviewed' => $hasReviewed,
+            'has_reviewed_branch' => $hasReviewedBranch,
+            'reviewed_product_ids' => $reviewedProductIds,
             'reverb' => [
                 'channel' => "orders.{$order->id}",
                 'event' => 'order.status.changed',

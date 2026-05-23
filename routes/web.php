@@ -23,6 +23,7 @@ use App\Http\Controllers\Web\SpinController;
 use App\Http\Controllers\Web\OrderPagesController;
 use App\Http\Controllers\Web\PromoPickerController;
 use App\Http\Controllers\Web\ProfileController;
+use App\Http\Controllers\Web\ReceiptController;
 use App\Http\Controllers\Web\ReferralController;
 use App\Http\Controllers\Web\ReviewController;
 use App\Http\Controllers\Web\StorefrontController;
@@ -74,6 +75,13 @@ Route::post('/orders/{order}/pay', [OrderPagesController::class, 'payAgain'])
     ->middleware(['auth', 'can:view,order', 'throttle:10,1'])
     ->name('orders.pay-again');
 Route::get('/orders/{order}/simulate-paid', [OrderPagesController::class, 'simulatePaid'])->name('orders.simulate-paid');
+
+// Public signed-URL receipt — no auth, anyone with the signed link
+// can view (typically the customer who placed the order). Bound by
+// order number so it matches the human-friendly identifier on prints.
+Route::get('/r/{order:number}', [ReceiptController::class, 'show'])
+    ->middleware('signed')
+    ->name('receipt.public');
 
 // Billplz hosted-page redirect (customer's browser, not server-to-server)
 Route::get('/payments/billplz/return/{order}', [BillplzWebhookController::class, 'return'])

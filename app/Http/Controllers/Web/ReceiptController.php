@@ -41,6 +41,7 @@ class ReceiptController extends Controller
                 'discount_amount' => (float) ($order->discount_amount ?? 0),
                 'tumbler_discount_amount' => (float) ($order->tumbler_discount_amount ?? 0),
                 'total' => (float) $order->total,
+                'notes' => $order->notes,
                 'customer_name' => $order->user?->name
                     ?? ($order->customer_snapshot['name'] ?? null),
                 'points_earned' => $pointsEarned,

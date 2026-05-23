@@ -157,11 +157,13 @@ class WalkInController extends Controller
             'dine_in_table' => ['nullable', 'string', 'max:20', 'required_if:order_type,dine_in'],
             'payment_method' => ['required', 'in:cash,card,duitnow'],
             'customer_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'notes' => ['nullable', 'string', 'max:500'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'lines.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'lines.*.modifier_option_ids' => ['array'],
             'lines.*.modifier_option_ids.*' => ['integer', 'exists:modifier_options,id'],
+            'lines.*.notes' => ['nullable', 'string', 'max:200'],
         ]);
 
         $cashierId = (int) $request->user()->id;
@@ -176,8 +178,10 @@ class WalkInController extends Controller
                     productId: (int) $l['product_id'],
                     quantity: (int) $l['quantity'],
                     modifierOptionIds: array_map('intval', $l['modifier_option_ids'] ?? []),
+                    notes: isset($l['notes']) ? (string) $l['notes'] : null,
                 ))->all(),
                 dineInTable: $data['dine_in_table'] ?? null,
+                notes: $data['notes'] ?? null,
                 customerSnapshot: array_filter([
                     'source' => 'walk-in',
                     'staff_id' => $cashierId,

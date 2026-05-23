@@ -27,6 +27,7 @@ interface Props {
         discount_amount: number;
         tumbler_discount_amount: number;
         total: number;
+        notes: string | null;
         customer_name: string | null;
         points_earned: number;
         vouchers: { code: string | null; name: string | null; discount_amount: number }[];
@@ -232,6 +233,17 @@ export default function ReceiptPublic({ order, branch }: Props) {
                                 </div>
                             )}
                         </div>
+
+                        {order.notes && (
+                            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                                    Special remarks
+                                </p>
+                                <p className="mt-1 text-xs whitespace-pre-line text-slate-700">
+                                    {order.notes}
+                                </p>
+                            </div>
+                        )}
 
                         {order.points_earned > 0 && (
                             <div className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50 p-3 text-amber-900">

@@ -146,6 +146,8 @@ Route::middleware(['auth:sanctum', 'pos.token'])->group(function () {
     Route::post('/pos/orders/{order}/transition', [\App\Http\Controllers\Api\PosApiController::class, 'transition'])->name('api.pos.transition');
     Route::post('/pos/orders/{order}/print', [\App\Http\Controllers\Api\PosApiController::class, 'print'])->name('api.pos.print');
     Route::get('/pos/orders/{order}/receipt', [\App\Http\Controllers\Api\PosApiController::class, 'receipt'])->name('api.pos.receipt');
+    Route::patch('/pos/orders/{order}/notes', [\App\Http\Controllers\Api\PosApiController::class, 'updateNotes'])->name('api.pos.orders.notes');
+    Route::patch('/pos/orders/{order}/items/{item}/notes', [\App\Http\Controllers\Api\PosApiController::class, 'updateItemNotes'])->name('api.pos.orders.items.notes');
 
     // Walk-in
     Route::get('/pos/branches/{branch}/menu', [\App\Http\Controllers\Api\Pos\WalkInController::class, 'menu'])->name('api.pos.menu');

@@ -171,6 +171,7 @@ class PosApiController extends Controller
             'discount_amount' => (float) ($order->discount_amount ?? 0),
             'tumbler_discount_amount' => (float) ($order->tumbler_discount_amount ?? 0),
             'total' => (float) $order->total,
+            'notes' => $order->notes,
             'customer_name' => $order->user?->name,
             'points_earned' => $pointsEarned,
             'vouchers' => $order->redemptions->map(fn ($r) => [
@@ -217,6 +218,46 @@ class PosApiController extends Controller
         return response()->json(['order' => $this->presentOrder($fresh)]);
     }
 
+    /**
+     * Update the customer's order-level remark from the POS app. Useful when
+     * the customer rings in or amends their request after placing the order
+     * ("please pack separately"). Branch-scoped via the POS token.
+     */
+    public function updateNotes(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizeOrderBranch($request, $order);
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+        $order->update(['notes' => $data['notes'] ?? null]);
+
+        /** @var Order $fresh */
+        $fresh = $order->fresh(['items.modifiers']);
+
+        return response()->json(['order' => $this->presentOrder($fresh)]);
+    }
+
+    /**
+     * Update a single line-item remark (e.g. "extra cold for this latte
+     * only"). Guards that the item belongs to the order and the order to
+     * the token's branch.
+     */
+    public function updateItemNotes(Request $request, Order $order, \App\Models\OrderItem $item): JsonResponse
+    {
+        $this->authorizeOrderBranch($request, $order);
+        abort_unless($item->order_id === $order->id, 404, 'Item does not belong to this order.');
+
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:200'],
+        ]);
+        $item->update(['notes' => $data['notes'] ?? null]);
+
+        /** @var Order $fresh */
+        $fresh = $order->fresh(['items.modifiers']);
+
+        return response()->json(['order' => $this->presentOrder($fresh)]);
+    }
+
     /** Guard cross-branch order access via the token's branch scope. */
     protected function authorizeOrderBranch(Request $request, Order $order): void
     {
@@ -248,6 +289,7 @@ class PosApiController extends Controller
             'discount_amount' => (float) ($o->discount_amount ?? 0),
             'tumbler_discount_amount' => (float) ($o->tumbler_discount_amount ?? 0),
             'total' => (float) $o->total,
+            'notes' => $o->notes,
             'created_at' => $o->created_at?->toIso8601String(),
             'vouchers' => $vouchers,
             'items' => $o->items->map(fn ($i) => [

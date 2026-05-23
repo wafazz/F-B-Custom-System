@@ -39,4 +39,10 @@ class VoucherRedemption extends Model
     {
         return $this->belongsTo(Order::class);
     }
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }

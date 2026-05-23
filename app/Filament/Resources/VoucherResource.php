@@ -319,7 +319,26 @@ class VoucherResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(['active' => 'Active', 'paused' => 'Paused', 'expired' => 'Expired']),
             ])
-            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()]);
+            ->actions([
+                Tables\Actions\Action::make('redemptions')
+                    ->label('Redemptions')
+                    ->icon('heroicon-o-users')
+                    ->color('gray')
+                    ->modalHeading(fn (Voucher $record) => "Redemptions — {$record->code}")
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close')
+                    ->modalWidth('4xl')
+                    ->modalContent(fn (Voucher $record) => view('filament.resources.voucher.redemptions', [
+                        'voucher' => $record,
+                        'redemptions' => $record->redemptions()
+                            ->with(['user:id,name,email,phone', 'order:id,number,total,created_at'])
+                            ->latest()
+                            ->limit(200)
+                            ->get(),
+                    ])),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ]);
     }
 
     public static function getPages(): array

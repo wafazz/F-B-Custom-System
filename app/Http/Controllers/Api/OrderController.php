@@ -248,6 +248,11 @@ class OrderController extends Controller
     /** @return array<string, mixed> */
     protected function present(Order $order): array
     {
+        // Voucher redemptions live in their own table; lazy-load if the
+        // caller didn't already eager them so the response is consistent
+        // no matter which entry point assembled the model.
+        $order->loadMissing(['redemptions.voucher:id,code,name', 'items.modifiers']);
+
         $items = [];
         foreach ($order->items as $item) {
             $modifiers = [];
@@ -267,7 +272,21 @@ class OrderController extends Controller
                 'quantity' => $item->quantity,
                 'line_total' => (float) $item->line_total,
                 'notes' => $item->notes,
+                // BxGy lines carry the voucher code that earned them their
+                // paid/free role; thin clients can show a "FREE — code XYZ"
+                // badge without an extra lookup.
+                'voucher_code' => $item->voucher_code,
+                'voucher_role' => $item->voucher_role ?? null,
                 'modifiers' => $modifiers,
+            ];
+        }
+
+        $vouchers = [];
+        foreach ($order->redemptions as $r) {
+            $vouchers[] = [
+                'code' => $r->voucher?->code,
+                'name' => $r->voucher?->name,
+                'discount_amount' => (float) $r->discount_amount,
             ];
         }
 
@@ -282,12 +301,16 @@ class OrderController extends Controller
             'pickup_at' => $order->pickup_at?->toIso8601String(),
             'subtotal' => (float) $order->subtotal,
             'sst_amount' => (float) $order->sst_amount,
+            'service_charge_amount' => (float) ($order->service_charge_amount ?? 0),
+            'discount_amount' => (float) ($order->discount_amount ?? 0),
+            'tumbler_discount_amount' => (float) ($order->tumbler_discount_amount ?? 0),
             'total' => (float) $order->total,
             'payment_status' => $order->payment_status->value,
             'payment_method' => $order->payment_method,
             'payment_reference' => $order->payment_reference,
             'notes' => $order->notes,
             'created_at' => $order->created_at?->toIso8601String(),
+            'vouchers' => $vouchers,
             'items' => $items,
         ];
     }

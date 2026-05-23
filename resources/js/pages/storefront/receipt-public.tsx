@@ -1,11 +1,13 @@
 import { Head } from '@inertiajs/react';
-import { Check, Clock, MapPin, Package, Receipt as ReceiptIcon, Star } from 'lucide-react';
+import { Check, Clock, MapPin, Package, Receipt as ReceiptIcon, Star, Tag } from 'lucide-react';
 
 interface OrderItem {
     name: string;
     quantity: number;
     unit_price: number;
     line_total: number;
+    voucher_code: string | null;
+    voucher_role: 'paid' | 'free' | null;
     modifiers: { option_name: string }[];
 }
 
@@ -23,9 +25,11 @@ interface Props {
         sst_amount: number;
         service_charge_amount: number;
         discount_amount: number;
+        tumbler_discount_amount: number;
         total: number;
         customer_name: string | null;
         points_earned: number;
+        vouchers: { code: string | null; name: string | null; discount_amount: number }[];
         items: OrderItem[];
     };
     branch: {
@@ -120,10 +124,20 @@ export default function ReceiptPublic({ order, branch }: Props) {
                                         <div className="min-w-0 flex-1">
                                             <p className="font-semibold text-slate-900">
                                                 {item.name}
+                                                {item.voucher_role === 'free' && (
+                                                    <span className="ml-1.5 inline-block rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-emerald-700 uppercase align-middle">
+                                                        Free
+                                                    </span>
+                                                )}
                                             </p>
                                             {mods.length > 0 && (
                                                 <p className="text-[11px] text-slate-500">
                                                     {mods.join(' · ')}
+                                                </p>
+                                            )}
+                                            {item.voucher_code && (
+                                                <p className="mt-0.5 flex items-center gap-1 font-mono text-[10px] text-amber-600">
+                                                    <Tag className="size-2.5" /> {item.voucher_code}
                                                 </p>
                                             )}
                                         </div>
@@ -139,10 +153,26 @@ export default function ReceiptPublic({ order, branch }: Props) {
 
                         <dl className="space-y-1.5 text-sm">
                             <Row label="Subtotal" value={`RM${order.subtotal.toFixed(2)}`} />
-                            {order.discount_amount > 0 && (
+                            {order.vouchers.length > 0
+                                ? order.vouchers.map((v, i) => (
+                                      <Row
+                                          key={i}
+                                          label={`Voucher${v.code ? ` (${v.code})` : ''}`}
+                                          value={`−RM${v.discount_amount.toFixed(2)}`}
+                                          valueClass="text-emerald-600"
+                                      />
+                                  ))
+                                : order.discount_amount > 0 && (
+                                      <Row
+                                          label="Discount"
+                                          value={`−RM${order.discount_amount.toFixed(2)}`}
+                                          valueClass="text-emerald-600"
+                                      />
+                                  )}
+                            {order.tumbler_discount_amount > 0 && (
                                 <Row
-                                    label="Discount"
-                                    value={`−RM${order.discount_amount.toFixed(2)}`}
+                                    label="BYO tumbler"
+                                    value={`−RM${order.tumbler_discount_amount.toFixed(2)}`}
                                     valueClass="text-emerald-600"
                                 />
                             )}

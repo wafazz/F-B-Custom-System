@@ -150,7 +150,7 @@ class PosApiController extends Controller
     public function receipt(Request $request, Order $order, LoyaltyService $loyalty): JsonResponse
     {
         $this->authorizeOrderBranch($request, $order);
-        $order->loadMissing(['branch', 'items.modifiers', 'user']);
+        $order->loadMissing(['branch', 'items.modifiers', 'user', 'redemptions.voucher:id,code,name']);
         $branch = $order->branch;
 
         $pointsEarned = $order->user_id
@@ -169,14 +169,22 @@ class PosApiController extends Controller
             'sst_amount' => (float) $order->sst_amount,
             'service_charge_amount' => (float) ($order->service_charge_amount ?? 0),
             'discount_amount' => (float) ($order->discount_amount ?? 0),
+            'tumbler_discount_amount' => (float) ($order->tumbler_discount_amount ?? 0),
             'total' => (float) $order->total,
             'customer_name' => $order->user?->name,
             'points_earned' => $pointsEarned,
+            'vouchers' => $order->redemptions->map(fn ($r) => [
+                'code' => $r->voucher?->code,
+                'name' => $r->voucher?->name,
+                'discount_amount' => (float) $r->discount_amount,
+            ])->values()->all(),
             'items' => $order->items->map(fn ($i) => [
                 'name' => $i->product_name,
                 'quantity' => (int) $i->quantity,
                 'unit_price' => (float) $i->unit_price,
                 'line_total' => (float) $i->line_total,
+                'voucher_code' => $i->voucher_code,
+                'voucher_role' => $i->voucher_role ?? null,
                 'modifiers' => $i->modifiers
                     ->map(fn ($m) => ['option_name' => $m->option_name])
                     ->values()
@@ -220,6 +228,13 @@ class PosApiController extends Controller
     /** @return array<string, mixed> */
     protected function presentOrder(Order $o): array
     {
+        $o->loadMissing(['redemptions.voucher:id,code,name']);
+        $vouchers = $o->redemptions->map(fn ($r) => [
+            'code' => $r->voucher?->code,
+            'name' => $r->voucher?->name,
+            'discount_amount' => (float) $r->discount_amount,
+        ])->values()->all();
+
         return [
             'id' => $o->id,
             'number' => $o->number,
@@ -228,13 +243,20 @@ class PosApiController extends Controller
             'dine_in_table' => $o->dine_in_table,
             'customer_snapshot' => $o->customer_snapshot,
             'subtotal' => (float) $o->subtotal,
+            'sst_amount' => (float) $o->sst_amount,
+            'service_charge_amount' => (float) ($o->service_charge_amount ?? 0),
+            'discount_amount' => (float) ($o->discount_amount ?? 0),
+            'tumbler_discount_amount' => (float) ($o->tumbler_discount_amount ?? 0),
             'total' => (float) $o->total,
             'created_at' => $o->created_at?->toIso8601String(),
+            'vouchers' => $vouchers,
             'items' => $o->items->map(fn ($i) => [
                 'name' => $i->product_name,
                 'quantity' => (int) $i->quantity,
                 'modifiers' => $i->modifiers->map(fn ($m) => $m->option_name)->all(),
                 'notes' => $i->notes,
+                'voucher_code' => $i->voucher_code,
+                'voucher_role' => $i->voucher_role ?? null,
             ])->values(),
         ];
     }

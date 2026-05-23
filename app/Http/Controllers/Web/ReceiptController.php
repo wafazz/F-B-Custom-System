@@ -18,7 +18,7 @@ class ReceiptController extends Controller
      */
     public function show(Order $order, LoyaltyService $loyalty): Response
     {
-        $order->loadMissing(['branch', 'items.modifiers', 'user']);
+        $order->loadMissing(['branch', 'items.modifiers', 'user', 'redemptions.voucher:id,code,name']);
         $branch = $order->branch;
 
         $pointsEarned = $order->user_id
@@ -39,15 +39,23 @@ class ReceiptController extends Controller
                 'sst_amount' => (float) $order->sst_amount,
                 'service_charge_amount' => (float) ($order->service_charge_amount ?? 0),
                 'discount_amount' => (float) ($order->discount_amount ?? 0),
+                'tumbler_discount_amount' => (float) ($order->tumbler_discount_amount ?? 0),
                 'total' => (float) $order->total,
                 'customer_name' => $order->user?->name
                     ?? ($order->customer_snapshot['name'] ?? null),
                 'points_earned' => $pointsEarned,
+                'vouchers' => $order->redemptions->map(fn ($r) => [
+                    'code' => $r->voucher?->code,
+                    'name' => $r->voucher?->name,
+                    'discount_amount' => (float) $r->discount_amount,
+                ])->values()->all(),
                 'items' => $order->items->map(fn ($i) => [
                     'name' => $i->product_name,
                     'quantity' => (int) $i->quantity,
                     'unit_price' => (float) $i->unit_price,
                     'line_total' => (float) $i->line_total,
+                    'voucher_code' => $i->voucher_code,
+                    'voucher_role' => $i->voucher_role ?? null,
                     'modifiers' => $i->modifiers
                         ->map(fn ($m) => ['option_name' => $m->option_name])
                         ->values()

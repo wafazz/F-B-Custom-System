@@ -69,24 +69,13 @@ class ScheduledCampaignResource extends Resource
                         ->helperText('Use {name} to insert the customer\'s first name.')
                         ->columnSpanFull(),
                     Forms\Components\Select::make('url_quick_pick')
-                        ->label('Quick pick')
-                        ->placeholder('Choose a destination…')
+                        ->label('Quick pick (auto-fills URL)')
+                        ->options(fn () => HomeSlideResource::ctaOptions())
+                        ->searchable()
                         ->dehydrated(false)
                         ->live()
-                        ->options([
-                            '/' => 'Home',
-                            '/branches' => 'Browse branches / menu',
-                            '/vouchers' => 'My vouchers',
-                            '/wallet' => 'Wallet',
-                            '/orders' => 'My orders',
-                            '/loyalty' => 'Points & loyalty',
-                            '/rewards' => 'Rewards catalogue',
-                            '/spin' => 'Spin & win',
-                            '/check-in' => 'Daily check-in',
-                            '/referral' => 'Refer a friend',
-                        ])
-                        ->afterStateUpdated(fn (?string $state, Forms\Set $set) => filled($state) ? $set('url', $state) : null)
-                        ->helperText('Auto-fills the URL below.'),
+                        ->afterStateUpdated(fn ($state, Forms\Set $set) => $state ? $set('url', $state) : null)
+                        ->helperText('Search for a product, category, voucher or page. Or type a custom URL below.'),
                     Forms\Components\TextInput::make('url')
                         ->label('Deep-link URL')
                         ->default('/')

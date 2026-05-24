@@ -9,6 +9,7 @@
         "php": "^8.2",
         "bezhansalleh/filament-shield": "^3.9",
         "filament/filament": "^3.0",
+        "firebase/php-jwt": "^6.10",
         "inertiajs/inertia-laravel": "^3.0",
         "knuckleswtf/scribe": "^5.9",
         "laravel/framework": "^12.0",

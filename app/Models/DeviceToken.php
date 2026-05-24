@@ -9,6 +9,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $user_id
+ * @property int|null $branch_id
+ * @property string $scope
  * @property string $platform
  * @property string $token
  * @property string|null $device_id
@@ -18,8 +20,14 @@ use Illuminate\Support\Carbon;
  */
 class DeviceToken extends Model
 {
+    public const SCOPE_CUSTOMER = 'customer';
+
+    public const SCOPE_POS = 'pos';
+
     protected $fillable = [
         'user_id',
+        'branch_id',
+        'scope',
         'platform',
         'token',
         'device_id',

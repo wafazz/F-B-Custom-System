@@ -167,6 +167,12 @@ Route::middleware(['auth:sanctum', 'pos.token'])->group(function () {
     Route::get('/pos/branches/{branch}/stock', [\App\Http\Controllers\Api\Pos\StockController::class, 'index'])->name('api.pos.stock.index');
     Route::post('/pos/branches/{branch}/stock/{product}/toggle', [\App\Http\Controllers\Api\Pos\StockController::class, 'toggle'])->name('api.pos.stock.toggle');
 
+    // Push notification device registry (FCM tokens)
+    Route::post('/pos/devices', [\App\Http\Controllers\Api\Pos\DeviceController::class, 'store'])->name('api.pos.devices.store');
+    Route::delete('/pos/devices/{token}', [\App\Http\Controllers\Api\Pos\DeviceController::class, 'destroy'])
+        ->where('token', '.*')
+        ->name('api.pos.devices.destroy');
+
     // Reward pickups (cross-branch, scoped by pickup code)
     Route::get('/pos/reward-pickups', [\App\Http\Controllers\Api\Pos\RewardPickupController::class, 'index'])->name('api.pos.reward-pickups.index');
     Route::get('/pos/reward-pickups/lookup', [\App\Http\Controllers\Api\Pos\RewardPickupController::class, 'lookup'])->name('api.pos.reward-pickups.lookup');

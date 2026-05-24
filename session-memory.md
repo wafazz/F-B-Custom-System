@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-13 (Filament profile/password split + admin role gating)
+**Last Updated:** 2026-05-24 (PWA checkout CSRF fix + referral admin + receipt page + notes plumbing + voucher BxGy fix + split review submit)
 
 ---
 
@@ -87,6 +87,18 @@
     - Added to PWA precache via `includeAssets` + `additionalManifestEntries` in vite.config.ts; 50 → 51 entries.
     - **Caveat**: OS-level push notifications can't use custom sounds (Web Notifications spec dropped the `sound` property ~2018); custom mp3 only plays when a tab is open and Echo delivers the event. Customer page may hit browser autoplay-block on cold load with no interaction; `.catch(() => {})` swallows it.
   - 142 tests passing (137 + 5 new DashboardWidgetsTest). PHPStan + ESLint + tsc + Vite build clean.
+- [✔] **2026-05-22 → 2026-05-24 PWA-pilot polish bundle** (commits `476c5bc`, `a707732`, `8b85548`, `05e1ced`, `bac197c`, `1924ec3`, `2af788e`, `f98b297`, `ab03113`, `c852a12`, `9725ce5`, `8e4b4a1`, `c5fb2c9`, `35eb13f`, `36bd3ff`):
+  - **PWA checkout CSRF 419 fix** — long-running iOS standalone PWAs hit `419 CSRF mismatch` on every Billplz/wallet checkout because both the `<meta name="csrf-token">` AND the `XSRF-TOKEN` cookie were stale (cookie rotates on every full-page nav; PWA stays warm for hours without one). Two-part fix mirroring the `1d431b5` push-subscribe playbook: (a) checkout.tsx now `await fetch('/sanctum/csrf-cookie')` before reading the cookie + posting; (b) `api/orders` added to CSRF except-list in `bootstrap/app.php` (safe because route is `auth:sanctum,web` + cookies are SameSite=Lax). Saved as `pwa-csrf-cookie-refresh.md` memory.
+  - **Pull-to-refresh + manual refresh button** on order details page — touchstart/move/end listeners only engage at `scrollY=0`, rubber-band capped at 110px, 70px threshold triggers `router.reload()`. Refresh button next to "Placed" timestamp shares the same `refreshingRef` so both paths can't fire over each other.
+  - **Admin Referral Program settings** — new Filament page (`Settings → Referral Program`) with enable toggle, referrer points, referee points, min first-order amount, and share-text template with `{code}`/`{points}`/`{url}` placeholders. `ReferralService` reads from `SettingsRepository` with env config fallback. Storefront swaps placeholders client-side for the Web Share API / WhatsApp.
+  - **POS recent-orders endpoint** — `GET /api/pos/branches/{branch}/recent` returns preparing/ready/completed/cancelled orders (complement to `/queue`'s live trio). Optional `?status=` narrows to one bucket, `?limit=` caps page size.
+  - **Voucher BxGy save-bug fix** — `bxgy_free_scope` had `dehydrated(false)`, so the chosen scope never reached `normaliseBxgyPayload()`. The `?? 'same'` fallback then fired on every save and the 'same' arm reset both `bxgy_free_product_ids` and `bxgy_free_combo_ids` to null — silently wiping admin's Cross-sell picks. Dropped `dehydrated(false)`; the matching `unset()` already strips it before Eloquent sees it.
+  - **Voucher redemptions modal** — new "Redemptions" row action on voucher list opens a modal listing every redemption (customer name + email/phone + linked order + discount + timestamp + header totals). Added missing `VoucherRedemption::user()` belongsTo to power the lookup.
+  - **Public digital receipt page** at `/r/{order_number}` — controller + standalone Inertia React page (no storefront chrome). Initially shipped as signed URL, switched to plain URL per Fakrul's preference (security tradeoff: sequential numbers are guessable, accepted).
+  - **API response expansion** — `OrderController::present()`, `PosApiController::presentOrder()` + `receipt()`, and `ReceiptController` all now include `service_charge_amount`, `discount_amount`, `tumbler_discount_amount`, `vouchers[]` (code + name + discount, sourced from `VoucherRedemption`), and per-line `voucher_code` + `voucher_role` (BxGy free-item rendering signal).
+  - **`Order::redemptions()` hasMany added** (commit `c5fb2c9`) — initially missed; the API expansion called `$order->loadMissing(['redemptions.voucher...'])` but `Order` only had the inverse `Voucher::redemptions()`. Hit prod with 500 on `/r/PASTRY-260523-0013`. Saved as `eager-load-verify-relation.md` memory: grep the model file for the relation before adding any eager-load call.
+  - **Order notes plumbing** — exposed order-level `notes` in POS queue/recent/transition/receipt + public receipt page (was only on the customer `/api/orders` side). New `PATCH /api/pos/orders/{order}/notes` and `PATCH /api/pos/orders/{order}/items/{item}/notes` for POS staff to edit remarks. Walk-in endpoint extended to accept `notes` + `lines.*.notes` at creation time. Receipt page renders a "Special remarks" card.
+  - **Split review submit** — `OrderPagesController` hydrates `has_reviewed_branch` (bool) + `reviewed_product_ids` (int[]) instead of a single `has_reviewed` boolean. `order.tsx` tracks branch + per-product independently; each `ReviewForm` only retires its own card on submit. "All reviews submitted" card only when both branch + every product have been rated.
 
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
@@ -151,8 +163,8 @@ Ready for **Phase 3 — Mobile (Planning-Mobile.md)** to start in parallel using
 ---
 
 ## Session Recap
+- **2026-05-22 → 2026-05-24 (PWA-pilot polish bundle):** Fixed long-standing PWA checkout 419 (cookie refresh + CSRF except-list, same playbook as `1d431b5`); shipped pull-to-refresh + manual refresh on the order page; admin-configurable referral program (rewards, gating, share text with placeholders); new POS `/recent` endpoint; voucher BxGy save-bug fix (`dehydrated(false)` was wiping cross-sell selections); voucher redemptions modal in admin; public digital receipt page at `/r/{number}` (plain URL, not signed); expanded order API to include service charge, discount, tumbler, vouchers array + per-line voucher_code/role; full notes plumbing (POS read + edit endpoints + walk-in capture + receipt page render); split review submit so branch and per-product are independent. Caught and fixed missing `Order::redemptions()` hasMany after a prod 500.
 - **2026-05-12:** Validated Phase 1 end-to-end (routes ↔ controllers ↔ Inertia pages ↔ Echo channels ↔ PWA build), shipped a feature bundle (branch-home + label printing + user address), seeded admin accounts, added the Filament Web Push settings page with provider-level config hydration, and fixed a latent settings-encryption bug. 137 tests green.
-- Created comprehensive Requirement.md, Planning-Web.md, Planning-Mobile.md with full traceability (W-X.Y.Z and M-X.Y.Z task IDs).
 - Stack: Laravel 12 + Filament 3 + Inertia + React + TS, OnSend WhatsApp as Layer 2.
 - W-1 → W-8 closed (see Tasks Completed). TV Display + Wallet + PWA + Web Push + Referral + Legal pages all wired.
 - Common gotchas seen so far:
@@ -160,3 +172,6 @@ Ready for **Phase 3 — Mobile (Planning-Mobile.md)** to start in parallel using
   - CLI php (Homebrew) doesn't have `redis.so`; only Herd's `php84` does. Use Herd's binary for tinker/seed commands that touch Redis cache.
   - Eloquent `updateOrCreate` fills attributes in array order — when an accessor/mutator depends on another column (like `value` needing `is_encrypted`), order the array so the dependency lands first.
   - React 19 ESLint flags `setState` inside `useEffect` and `ref.current` reads during render — use lazy `useState` initializers for one-shot URL/query-param derivations.
+  - Eloquent relations are unidirectional — defining `Voucher::redemptions` does NOT create `Order::redemptions`. Grep the model before any `loadMissing` / eager-load call.
+  - Filament form-only selects with `dehydrated(false)` are EXCLUDED from `mutateFormDataBeforeSave` $data — if `normalisePayload()` reads the field with `?? 'default'`, it'll silently overwrite the persisted columns on every save. Either remove `dehydrated(false)` (and `unset()` before Eloquent sees it) or read from the live form state instead.
+  - PWA on iOS standalone keeps the app warm for hours without a full-page nav, so BOTH the meta CSRF token AND the XSRF cookie can go stale. Raw `fetch()` to `/api/*` must `await fetch('/sanctum/csrf-cookie')` first; for high-traffic auth-protected routes, also add them to the CSRF except-list as a backstop (safe when route is `auth:sanctum,web` + SameSite=Lax).

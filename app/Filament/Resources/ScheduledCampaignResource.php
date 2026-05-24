@@ -66,6 +66,38 @@ class ScheduledCampaignResource extends Resource
                 ])
                 ->columns(2),
 
+            Forms\Components\Section::make('Audience')
+                ->schema([
+                    Forms\Components\Select::make('audience')
+                        ->required()
+                        ->default('all')
+                        ->live()
+                        ->options([
+                            'all' => 'All opted-in customers',
+                            'inactive' => 'Inactive customers (re-engagement)',
+                        ])
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('inactivity_signal')
+                        ->label('Inactivity based on')
+                        ->options([
+                            'last_order' => 'No order placed',
+                            'last_seen' => 'No app activity',
+                        ])
+                        ->default('last_order')
+                        ->required(fn (Forms\Get $get) => $get('audience') === 'inactive')
+                        ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive'),
+                    Forms\Components\TextInput::make('inactivity_days')
+                        ->label('Days inactive')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(365)
+                        ->suffix('days')
+                        ->helperText('Fires once — the day a customer reaches this many days inactive (e.g. 7, 14, 30).')
+                        ->required(fn (Forms\Get $get) => $get('audience') === 'inactive')
+                        ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive'),
+                ])
+                ->columns(2),
+
             Forms\Components\Section::make('Schedule')
                 ->schema([
                     Forms\Components\Select::make('frequency')
@@ -75,17 +107,19 @@ class ScheduledCampaignResource extends Resource
                         ->options([
                             'once' => 'Once — on a specific date & time',
                             'daily' => 'Daily — every day at a set time',
-                        ]),
+                        ])
+                        ->visible(fn (Forms\Get $get) => $get('audience') === 'all')
+                        ->helperText(fn (Forms\Get $get) => $get('audience') === 'all' ? null : 'Inactive campaigns are scanned daily.'),
                     Forms\Components\DateTimePicker::make('scheduled_at')
                         ->label('Send at')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('frequency') === 'once')
-                        ->visible(fn (Forms\Get $get) => $get('frequency') === 'once'),
+                        ->required(fn (Forms\Get $get) => $get('audience') === 'all' && $get('frequency') === 'once')
+                        ->visible(fn (Forms\Get $get) => $get('audience') === 'all' && $get('frequency') === 'once'),
                     Forms\Components\TimePicker::make('run_time')
-                        ->label('Time of day')
+                        ->label(fn (Forms\Get $get) => $get('audience') === 'inactive' ? 'Daily scan time' : 'Time of day')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('frequency') === 'daily')
-                        ->visible(fn (Forms\Get $get) => $get('frequency') === 'daily'),
+                        ->required(fn (Forms\Get $get) => $get('audience') === 'inactive' || $get('frequency') === 'daily')
+                        ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive' || $get('frequency') === 'daily'),
                     Forms\Components\Toggle::make('is_active')
                         ->label('Active')
                         ->default(true),
@@ -99,6 +133,12 @@ class ScheduledCampaignResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('audience')
+                    ->badge()
+                    ->color(fn (string $state) => $state === 'inactive' ? 'warning' : 'gray')
+                    ->formatStateUsing(fn (string $state, ScheduledCampaign $r) => $state === 'inactive'
+                        ? 'Inactive · '.($r->inactivity_signal === 'last_seen' ? 'no activity' : 'no order').' '.$r->inactivity_days.'d'
+                        : 'All customers'),
                 Tables\Columns\TextColumn::make('frequency')
                     ->badge()
                     ->color(fn (string $state) => $state === 'daily' ? 'success' : 'gray'),
@@ -135,6 +175,27 @@ class ScheduledCampaignResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ]);
+    }
+
+    /**
+     * Inactive campaigns are always a daily scan — force the schedule fields
+     * so the once/datetime inputs (hidden for this audience) can't leak stale
+     * values into the row.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function normalizeSchedule(array $data): array
+    {
+        if (($data['audience'] ?? 'all') === 'inactive') {
+            $data['frequency'] = 'daily';
+            $data['scheduled_at'] = null;
+        } else {
+            $data['inactivity_signal'] = null;
+            $data['inactivity_days'] = null;
+        }
+
+        return $data;
     }
 
     public static function getPages(): array

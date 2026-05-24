@@ -5,12 +5,15 @@ namespace App\Jobs;
 use App\Models\PushSubscription;
 use App\Models\ScheduledCampaign;
 use App\Models\User;
+use App\Models\UserPresence;
 use App\Services\Push\PushService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 
 class SendScheduledCampaign implements ShouldQueue
 {
@@ -30,29 +33,77 @@ class SendScheduledCampaign implements ShouldQueue
             return;
         }
 
-        // Only customers (not staff/banned) who have at least one push
-        // subscription can receive this — anyone else is silently skipped.
-        $subscriberIds = PushSubscription::query()
-            ->whereNotNull('user_id')
-            ->distinct()
-            ->pluck('user_id');
-        if ($subscriberIds->isEmpty()) {
+        $query = $this->audienceQuery($campaign);
+        if ($query === null) {
             return;
         }
 
-        User::query()
-            ->whereIn('id', $subscriberIds)
-            ->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', self::STAFF_ROLES))
-            ->chunkById(500, function ($users) use ($campaign, $push) {
-                foreach ($users as $user) {
-                    $push->sendToUser((int) $user->getKey(), [
-                        'title' => $this->fill($campaign->title, $user),
-                        'body' => $this->fill($campaign->body, $user),
-                        'url' => $campaign->url ?: '/',
-                        'tag' => 'campaign-'.$campaign->id,
-                    ]);
-                }
-            });
+        $query->chunkById(500, function ($users) use ($campaign, $push) {
+            foreach ($users as $user) {
+                $push->sendToUser((int) $user->getKey(), [
+                    'title' => $this->fill((string) $campaign->title, $user),
+                    'body' => $this->fill((string) $campaign->body, $user),
+                    'url' => $campaign->url ?: '/',
+                    'tag' => 'campaign-'.$campaign->id,
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Build the customer query for this campaign, or null when there's no one
+     * to target. Always excludes staff/banned. PushService no-ops anyone
+     * without a subscription, so non-subscribers are harmlessly skipped.
+     */
+    private function audienceQuery(ScheduledCampaign $campaign): ?Builder
+    {
+        $base = User::query()->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', self::STAFF_ROLES));
+
+        if ($campaign->audience === 'inactive') {
+            $ids = $this->inactiveUserIds($campaign);
+
+            return $ids === [] ? null : $base->whereIn('id', $ids);
+        }
+
+        // 'all' — every opted-in (subscribed) customer.
+        $subscriberIds = PushSubscription::query()->whereNotNull('user_id')->distinct()->pluck('user_id');
+
+        return $subscriberIds->isEmpty() ? null : $base->whereIn('id', $subscriberIds);
+    }
+
+    /**
+     * Customers who crossed the inactivity threshold *today* — i.e. their last
+     * activity was exactly N days ago. Firing on the crossing day (not "N+
+     * days") makes a 7/14/30-day ladder send once each, with no daily spam.
+     *
+     * @return list<int>
+     */
+    private function inactiveUserIds(ScheduledCampaign $campaign): array
+    {
+        $days = (int) $campaign->inactivity_days;
+        if ($days < 1) {
+            return [];
+        }
+        $target = now()->subDays($days)->toDateString();
+
+        if ($campaign->inactivity_signal === 'last_seen') {
+            // user_presence holds only the latest seen-at, so this IS "no app
+            // activity since that day".
+            return UserPresence::query()
+                ->whereDate('last_seen_at', $target)
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        // last_order — most recent order was on the target day (none since).
+        return DB::table('orders')
+            ->whereNotNull('user_id')
+            ->groupBy('user_id')
+            ->havingRaw('DATE(MAX(created_at)) = ?', [$target])
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     private function fill(string $text, User $user): string

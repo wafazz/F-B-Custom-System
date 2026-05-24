@@ -12,6 +12,9 @@ class ScheduledCampaign extends Model
         'title',
         'body',
         'url',
+        'audience',
+        'inactivity_signal',
+        'inactivity_days',
         'frequency',
         'scheduled_at',
         'run_time',
@@ -22,6 +25,7 @@ class ScheduledCampaign extends Model
     protected function casts(): array
     {
         return [
+            'inactivity_days' => 'integer',
             'scheduled_at' => 'datetime',
             'is_active' => 'boolean',
             'last_sent_at' => 'datetime',

@@ -25,11 +25,11 @@ class PushService
      * Dead/expired subscriptions are pruned.
      *
      * @param  array<string, mixed>  $payload
-     * @return array{sent: int, pruned: int, failures: list<array{endpoint: string, reason: string, status: int|null}>}
+     * @return array{sent: int, pruned: int, delivered: list<string>, failures: list<array{endpoint: string, reason: string, status: int|null}>}
      */
     public function sendToUser(int $userId, array $payload): array
     {
-        $empty = ['sent' => 0, 'pruned' => 0, 'failures' => []];
+        $empty = ['sent' => 0, 'pruned' => 0, 'delivered' => [], 'failures' => []];
 
         if (! $this->isConfigured()) {
             return $empty;
@@ -39,6 +39,9 @@ class PushService
         if ($subscriptions->isEmpty()) {
             return $empty;
         }
+
+        /** @var array<string, string|null> $uaByEndpoint */
+        $uaByEndpoint = $subscriptions->pluck('user_agent', 'endpoint')->all();
 
         $webPush = new WebPush(['VAPID' => $this->vapidConfig()]);
         $body = json_encode($payload, JSON_THROW_ON_ERROR);
@@ -57,6 +60,7 @@ class PushService
 
         $sent = 0;
         $pruned = 0;
+        $delivered = [];
         $failures = [];
 
         foreach ($webPush->flush() as $report) {
@@ -65,6 +69,7 @@ class PushService
 
             if ($report->isSuccess()) {
                 $sent++;
+                $delivered[] = $this->deviceLabel($endpoint, $uaByEndpoint[$endpoint] ?? null);
                 PushSubscription::query()->where('endpoint', $endpoint)->update(['last_used_at' => now()]);
 
                 continue;
@@ -94,7 +99,25 @@ class PushService
             ];
         }
 
-        return ['sent' => $sent, 'pruned' => $pruned, 'failures' => $failures];
+        return ['sent' => $sent, 'pruned' => $pruned, 'delivered' => $delivered, 'failures' => $failures];
+    }
+
+    /** Human-readable label for a delivered endpoint so admins can tell which device got it. */
+    protected function deviceLabel(string $endpoint, ?string $userAgent): string
+    {
+        $host = (string) (parse_url($endpoint, PHP_URL_HOST) ?: '');
+        $platform = match (true) {
+            str_contains($host, 'fcm.googleapis') || str_contains($host, 'android.googleapis') => 'Chrome / Android',
+            str_contains($host, 'push.apple') => 'Safari / Apple',
+            str_contains($host, 'mozilla') => 'Firefox',
+            str_contains($host, 'notify.windows') || str_contains($host, 'wns') => 'Edge / Windows',
+            $host !== '' => $host,
+            default => 'Unknown service',
+        };
+        $tail = substr($endpoint, -8);
+        $ua = $userAgent !== null && $userAgent !== '' ? ' — '.mb_substr($userAgent, 0, 60) : '';
+
+        return "{$platform} (…{$tail}){$ua}";
     }
 
     /** @return array<string, string> */

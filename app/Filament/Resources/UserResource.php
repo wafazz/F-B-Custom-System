@@ -196,12 +196,16 @@ class UserResource extends Resource
                         ]);
 
                         if ($report['sent'] > 0) {
+                            $body = implode("\n", $report['delivered']);
+                            if ($report['pruned'] > 0) {
+                                $body .= "\n\n{$report['pruned']} dead endpoint(s) were pruned along the way.";
+                            }
+                            $body .= "\n\nDelivered to the push service — if it doesn't appear, check that device's notification permission and that you're watching the device listed above.";
                             Notification::make()
                                 ->title("Sent to {$report['sent']} device(s)")
-                                ->body($report['pruned'] > 0
-                                    ? "{$report['pruned']} dead endpoint(s) were pruned along the way."
-                                    : 'Notification handed off to the push service.')
+                                ->body($body)
                                 ->success()
+                                ->persistent()
                                 ->send();
 
                             return;

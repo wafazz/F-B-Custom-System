@@ -30,11 +30,15 @@ function parsePayload(data: PushMessageData | null): PushPayload {
 self.addEventListener('push', (event) => {
     const data = parsePayload(event.data);
     const title = data.title ?? 'Star Coffee';
-    const options: NotificationOptions = {
+    // renotify is valid at runtime but missing from lib.dom's NotificationOptions.
+    const options: NotificationOptions & { renotify?: boolean } = {
         body: data.body ?? '',
         icon: data.icon ?? '/icons/icon-192.png',
         badge: data.badge ?? '/icons/icon-192.png',
         tag: data.tag,
+        // Re-alert when a new push reuses an existing tag (e.g. repeat test
+        // sends) instead of silently replacing it. renotify requires a tag.
+        renotify: data.tag ? true : undefined,
         data: { url: data.url ?? '/' },
     };
 

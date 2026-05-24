@@ -66,6 +66,30 @@ class LoyaltyService
         return $this->record($userId, 'redeem', -$points, $order, $reason ?? 'redeem at checkout');
     }
 
+    /**
+     * Manual admin adjustment (+/- points). Records who did it (actor) and why,
+     * and clamps the resulting balance at zero. Returns null for a no-op delta.
+     */
+    public function adjust(int $userId, int $delta, int $actorId, ?string $reason = null): ?PointTransaction
+    {
+        if ($delta === 0) {
+            return null;
+        }
+
+        return DB::transaction(function () use ($userId, $delta, $actorId, $reason) {
+            $balance = max(0, $this->balance($userId) + $delta);
+
+            return PointTransaction::create([
+                'user_id' => $userId,
+                'type' => 'adjustment',
+                'points' => $delta,
+                'balance_after' => $balance,
+                'actor_user_id' => $actorId,
+                'reason' => $reason ?? 'admin adjustment',
+            ]);
+        });
+    }
+
     public function refundFromOrder(Order $order): void
     {
         if ($order->user_id === null) {

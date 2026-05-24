@@ -6,6 +6,7 @@ use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers\BranchesRelationManager;
 use App\Models\PushSubscription;
 use App\Models\User;
+use App\Services\Loyalty\LoyaltyService;
 use App\Services\Push\PushService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -132,6 +133,11 @@ class UserResource extends Resource
                     ->badge()
                     ->color(fn ($state) => $state > 0 ? 'success' : 'gray')
                     ->state(fn (User $r) => PushSubscription::query()->where('user_id', $r->getKey())->count()),
+                Tables\Columns\TextColumn::make('points')
+                    ->label('Points')
+                    ->badge()
+                    ->color('warning')
+                    ->state(fn (User $r) => app(LoyaltyService::class)->balance((int) $r->getKey())),
                 Tables\Columns\TextColumn::make('referral_code')
                     ->badge()
                     ->color('warning')
@@ -239,6 +245,47 @@ class UserResource extends Resource
                             ->body($body)
                             ->warning()
                             ->persistent()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('adjustPoints')
+                    ->label('Adjust points')
+                    ->icon('heroicon-o-star')
+                    ->color('warning')
+                    ->modalHeading(fn (User $r) => "Adjust points — {$r->name}")
+                    ->modalSubmitActionLabel('Save')
+                    ->form([
+                        Forms\Components\Placeholder::make('current_balance')
+                            ->label('Current balance')
+                            ->content(fn (User $r) => app(LoyaltyService::class)->balance((int) $r->getKey()).' pts'),
+                        Forms\Components\TextInput::make('new_balance')
+                            ->label('New balance')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(10000000)
+                            ->required()
+                            ->default(fn (User $r) => app(LoyaltyService::class)->balance((int) $r->getKey())),
+                        Forms\Components\TextInput::make('reason')
+                            ->label('Reason (kept in points history)')
+                            ->maxLength(255)
+                            ->placeholder('e.g. goodwill credit, manual correction'),
+                    ])
+                    ->action(function (User $r, array $data, LoyaltyService $loyalty): void {
+                        $current = $loyalty->balance((int) $r->getKey());
+                        $delta = (int) $data['new_balance'] - $current;
+                        if ($delta === 0) {
+                            Notification::make()
+                                ->title('No change')
+                                ->body('Balance is already '.$current.' pts.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+                        $loyalty->adjust((int) $r->getKey(), $delta, (int) auth()->id(), $data['reason'] ?: null);
+                        Notification::make()
+                            ->title('Points updated')
+                            ->body(sprintf('%s → %d pts (%+d).', $current, (int) $data['new_balance'], $delta))
+                            ->success()
                             ->send();
                     }),
                 Tables\Actions\Action::make('toggleBan')

@@ -55,6 +55,7 @@ class ScheduledCampaign extends Model
         'frequency',
         'scheduled_at',
         'run_time',
+        'run_days',
         'delay_minutes',
         'is_active',
         'last_sent_at',
@@ -66,6 +67,7 @@ class ScheduledCampaign extends Model
             'inactivity_days' => 'integer',
             'radius_meters' => 'integer',
             'delay_minutes' => 'integer',
+            'run_days' => 'array',
             'scheduled_at' => 'datetime',
             'is_active' => 'boolean',
             'last_sent_at' => 'datetime',
@@ -99,6 +101,12 @@ class ScheduledCampaign extends Model
         }
 
         if ($this->frequency === 'daily' && $this->run_time) {
+            // Optional weekday filter (peak days). Empty = every day.
+            $days = array_map('intval', $this->run_days ?? []);
+            if ($days !== [] && ! in_array((int) $now->dayOfWeek, $days, true)) {
+                return false;
+            }
+
             [$h, $m] = array_pad(explode(':', (string) $this->run_time), 2, '0');
             $runToday = $now->copy()->setTime((int) $h, (int) $m, 0);
 

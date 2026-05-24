@@ -177,6 +177,16 @@ class ScheduledCampaignResource extends Resource
                         ->seconds(false)
                         ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'voucher_expiry'], true) || $get('frequency') === 'daily'))
                         ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'voucher_expiry'], true) || $get('frequency') === 'daily')),
+                    Forms\Components\CheckboxList::make('run_days')
+                        ->label('Days (peak days)')
+                        ->options([
+                            1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu',
+                            5 => 'Fri', 6 => 'Sat', 0 => 'Sun',
+                        ])
+                        ->columns(4)
+                        ->helperText('Leave empty to fire every day. Pick days for peak-hour targeting (e.g. Fri–Sun).')
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'daily')
+                        ->columnSpanFull(),
                     Forms\Components\Toggle::make('is_active')
                         ->label('Active')
                         ->default(true),
@@ -219,7 +229,10 @@ class ScheduledCampaignResource extends Resource
                     ->state(fn (ScheduledCampaign $r) => match (true) {
                         $r->trigger_type === 'location' => 'Within '.$r->radius_meters.'m',
                         $r->trigger_type === 'abandoned_cart' => 'After '.$r->delay_minutes.'m idle',
-                        $r->frequency === 'daily' => 'Daily · '.\Illuminate\Support\Str::of((string) $r->run_time)->substr(0, 5),
+                        $r->frequency === 'daily' => (empty($r->run_days)
+                            ? 'Daily'
+                            : collect($r->run_days)->map(fn ($d) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][(int) $d] ?? '')->implode(',')
+                        ).' · '.\Illuminate\Support\Str::of((string) $r->run_time)->substr(0, 5),
                         default => $r->scheduled_at?->format('d M Y, H:i') ?? '—',
                     }),
                 Tables\Columns\IconColumn::make('is_active')->boolean()->label('Active'),
@@ -279,6 +292,7 @@ class ScheduledCampaignResource extends Resource
             $data['inactivity_days'] = null;
             $data['scheduled_at'] = null;
             $data['run_time'] = null;
+            $data['run_days'] = null;
             if ($type === 'abandoned_cart') {
                 $data['branch_id'] = null;
                 $data['radius_meters'] = null;
@@ -293,15 +307,21 @@ class ScheduledCampaignResource extends Resource
         $data['radius_meters'] = null;
         $audience = $data['audience'] ?? 'all';
         if ($audience === 'inactive' || $audience === 'voucher_expiry') {
-            // Daily-scan audiences.
+            // Daily-scan audiences run every day — no weekday filter.
             $data['frequency'] = 'daily';
             $data['scheduled_at'] = null;
+            $data['run_days'] = null;
             if ($audience === 'voucher_expiry') {
                 $data['inactivity_signal'] = null; // not used for voucher expiry
             }
         } else {
             $data['inactivity_signal'] = null;
             $data['inactivity_days'] = null;
+        }
+
+        // run_days only applies to the daily 'all' broadcast (peak days).
+        if (! ($audience === 'all' && ($data['frequency'] ?? null) === 'daily')) {
+            $data['run_days'] = null;
         }
 
         return $data;

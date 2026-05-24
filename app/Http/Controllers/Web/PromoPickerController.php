@@ -84,11 +84,13 @@ class PromoPickerController extends Controller
 
     /**
      * @param  list<int>|null  $ids  null = unrestricted (any active product at branch)
-     * @return array<int, array{id:int,name:string,image:string|null,price:float,sku:string}>
+     * @return array<int, array{id:int,name:string,image:string|null,price:float,sku:string,modifier_groups:array<int, mixed>}>
      */
     private static function loadProducts(Branch $branch, ?array $ids): array
     {
-        $query = Product::active()->availableAtBranch($branch->id);
+        $query = Product::active()
+            ->availableAtBranch($branch->id)
+            ->with(['modifierGroups.options' => fn ($q) => $q->where('is_available', true)->orderBy('sort_order')->orderBy('id')]);
         if (is_array($ids)) {
             if (empty($ids)) {
                 return [];
@@ -104,6 +106,20 @@ class PromoPickerController extends Controller
                 'image' => $p->image,
                 'price' => (float) $p->priceForBranch($branch->id),
                 'sku' => $p->sku,
+                'modifier_groups' => $p->modifierGroups->map(static fn ($g) => [
+                    'id' => (int) $g->getKey(),
+                    'name' => $g->name,
+                    'selection_type' => $g->selection_type,
+                    'is_required' => $g->is_required,
+                    'min_select' => $g->min_select,
+                    'max_select' => $g->max_select,
+                    'options' => $g->options->map(static fn ($o) => [
+                        'id' => (int) $o->getKey(),
+                        'name' => $o->name,
+                        'price_delta' => (float) $o->price_delta,
+                        'is_default' => $o->is_default,
+                    ])->values()->all(),
+                ])->values()->all(),
             ])
             ->values()
             ->all();

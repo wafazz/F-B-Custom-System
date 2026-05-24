@@ -12,6 +12,8 @@ interface Props {
     onOpenChange: (open: boolean) => void;
     onAdd: (product: MenuProduct, modifiers: SelectedModifier[], quantity: number) => void;
     onBuyNow?: (product: MenuProduct, modifiers: SelectedModifier[], quantity: number) => void;
+    addLabel?: string;
+    maxQuantity?: number;
 }
 
 type Selection = Record<number, number[]>;
@@ -27,7 +29,7 @@ function defaultsFor(product: MenuProduct): Selection {
     return defaults;
 }
 
-export function ModifierSheet({ product, open, onOpenChange, onAdd, onBuyNow }: Props) {
+export function ModifierSheet({ product, open, onOpenChange, onAdd, onBuyNow, addLabel, maxQuantity }: Props) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
@@ -40,6 +42,8 @@ export function ModifierSheet({ product, open, onOpenChange, onAdd, onBuyNow }: 
                         product={product}
                         onAdd={onAdd}
                         onBuyNow={onBuyNow}
+                        addLabel={addLabel}
+                        maxQuantity={maxQuantity}
                         onClose={() => onOpenChange(false)}
                     />
                 )}
@@ -52,11 +56,15 @@ function SheetBody({
     product,
     onAdd,
     onBuyNow,
+    addLabel,
+    maxQuantity,
     onClose,
 }: {
     product: MenuProduct;
     onAdd: (product: MenuProduct, modifiers: SelectedModifier[], quantity: number) => void;
     onBuyNow?: (product: MenuProduct, modifiers: SelectedModifier[], quantity: number) => void;
+    addLabel?: string;
+    maxQuantity?: number;
     onClose: () => void;
 }) {
     const [selection, setSelection] = useState<Selection>(() => defaultsFor(product));
@@ -254,8 +262,13 @@ function SheetBody({
                                     </span>
                                     <button
                                         type="button"
-                                        onClick={() => setQuantity((q) => q + 1)}
-                                        className="flex size-7 items-center justify-center rounded-full bg-black text-white hover:bg-black/80"
+                                        onClick={() =>
+                                            setQuantity((q) =>
+                                                maxQuantity ? Math.min(maxQuantity, q + 1) : q + 1,
+                                            )
+                                        }
+                                        disabled={maxQuantity !== undefined && quantity >= maxQuantity}
+                                        className="flex size-7 items-center justify-center rounded-full bg-black text-white hover:bg-black/80 disabled:opacity-30"
                                         aria-label="Increase"
                                     >
                                         <Plus className="size-3" />
@@ -334,9 +347,7 @@ function SheetBody({
                                 disabled={!valid}
                                 className={onBuyNow ? 'flex-1' : 'w-full'}
                             >
-                                {onBuyNow
-                                    ? `Add to cart — RM${totalPrice.toFixed(2)}`
-                                    : `Add to cart — RM${totalPrice.toFixed(2)}`}
+                                {`${addLabel ?? 'Add to cart'} — RM${totalPrice.toFixed(2)}`}
                             </Button>
                         </div>
                     </div>

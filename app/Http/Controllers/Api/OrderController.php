@@ -73,6 +73,12 @@ class OrderController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        // Order placed — drop any abandoned-cart watch so we don't nudge a
+        // customer who just checked out.
+        if ($order->user_id !== null) {
+            \App\Models\CustomerCart::query()->where('user_id', $order->user_id)->delete();
+        }
+
         // A full-coverage voucher (plus any loyalty/tumbler discount) can bring
         // the total to RM0. There's nothing for the gateway to charge — and
         // Billplz rejects zero-amount bills, which used to cancel the order.

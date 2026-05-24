@@ -43,6 +43,16 @@ class ScheduledCampaignResource extends Resource
         return $form->schema([
             Forms\Components\Section::make('Notification')
                 ->schema([
+                    Forms\Components\Select::make('trigger_type')
+                        ->label('Type')
+                        ->required()
+                        ->default('schedule')
+                        ->live()
+                        ->options([
+                            'schedule' => 'Scheduled campaign',
+                            'abandoned_cart' => 'Abandoned cart reminder (event-driven)',
+                        ])
+                        ->columnSpanFull(),
                     Forms\Components\TextInput::make('name')
                         ->label('Campaign name (internal)')
                         ->required()
@@ -58,6 +68,25 @@ class ScheduledCampaignResource extends Resource
                         ->rows(2)
                         ->helperText('Use {name} to insert the customer\'s first name.')
                         ->columnSpanFull(),
+                    Forms\Components\Select::make('url_quick_pick')
+                        ->label('Quick pick')
+                        ->placeholder('Choose a destination…')
+                        ->dehydrated(false)
+                        ->live()
+                        ->options([
+                            '/' => 'Home',
+                            '/branches' => 'Browse branches / menu',
+                            '/vouchers' => 'My vouchers',
+                            '/wallet' => 'Wallet',
+                            '/orders' => 'My orders',
+                            '/loyalty' => 'Points & loyalty',
+                            '/rewards' => 'Rewards catalogue',
+                            '/spin' => 'Spin & win',
+                            '/check-in' => 'Daily check-in',
+                            '/referral' => 'Refer a friend',
+                        ])
+                        ->afterStateUpdated(fn (?string $state, Forms\Set $set) => filled($state) ? $set('url', $state) : null)
+                        ->helperText('Auto-fills the URL below.'),
                     Forms\Components\TextInput::make('url')
                         ->label('Deep-link URL')
                         ->default('/')
@@ -67,6 +96,7 @@ class ScheduledCampaignResource extends Resource
                 ->columns(2),
 
             Forms\Components\Section::make('Audience')
+                ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule')
                 ->schema([
                     Forms\Components\Select::make('audience')
                         ->required()
@@ -98,28 +128,37 @@ class ScheduledCampaignResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Schedule')
+            Forms\Components\Section::make('Schedule & status')
                 ->schema([
+                    Forms\Components\TextInput::make('delay_minutes')
+                        ->label('Remind after')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(1440)
+                        ->default(15)
+                        ->suffix('minutes')
+                        ->helperText('How long a cart sits untouched before the reminder fires.')
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'abandoned_cart')
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'abandoned_cart'),
                     Forms\Components\Select::make('frequency')
-                        ->required()
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule')
                         ->default('once')
                         ->live()
                         ->options([
                             'once' => 'Once — on a specific date & time',
                             'daily' => 'Daily — every day at a set time',
                         ])
-                        ->visible(fn (Forms\Get $get) => $get('audience') === 'all')
-                        ->helperText(fn (Forms\Get $get) => $get('audience') === 'all' ? null : 'Inactive campaigns are scanned daily.'),
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all'),
                     Forms\Components\DateTimePicker::make('scheduled_at')
                         ->label('Send at')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('audience') === 'all' && $get('frequency') === 'once')
-                        ->visible(fn (Forms\Get $get) => $get('audience') === 'all' && $get('frequency') === 'once'),
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'once')
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'once'),
                     Forms\Components\TimePicker::make('run_time')
                         ->label(fn (Forms\Get $get) => $get('audience') === 'inactive' ? 'Daily scan time' : 'Time of day')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('audience') === 'inactive' || $get('frequency') === 'daily')
-                        ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive' || $get('frequency') === 'daily'),
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && ($get('audience') === 'inactive' || $get('frequency') === 'daily'))
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && ($get('audience') === 'inactive' || $get('frequency') === 'daily')),
                     Forms\Components\Toggle::make('is_active')
                         ->label('Active')
                         ->default(true),
@@ -133,20 +172,26 @@ class ScheduledCampaignResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('trigger_type')
+                    ->label('Type')
+                    ->badge()
+                    ->color(fn (string $state) => $state === 'abandoned_cart' ? 'info' : 'gray')
+                    ->formatStateUsing(fn (string $state) => $state === 'abandoned_cart' ? 'Abandoned cart' : 'Scheduled'),
                 Tables\Columns\TextColumn::make('audience')
                     ->badge()
-                    ->color(fn (string $state) => $state === 'inactive' ? 'warning' : 'gray')
-                    ->formatStateUsing(fn (string $state, ScheduledCampaign $r) => $state === 'inactive'
-                        ? 'Inactive · '.($r->inactivity_signal === 'last_seen' ? 'no activity' : 'no order').' '.$r->inactivity_days.'d'
-                        : 'All customers'),
-                Tables\Columns\TextColumn::make('frequency')
-                    ->badge()
-                    ->color(fn (string $state) => $state === 'daily' ? 'success' : 'gray'),
+                    ->color(fn (?string $state) => $state === 'inactive' ? 'warning' : 'gray')
+                    ->formatStateUsing(fn (?string $state, ScheduledCampaign $r) => match (true) {
+                        $r->trigger_type === 'abandoned_cart' => '—',
+                        $state === 'inactive' => 'Inactive · '.($r->inactivity_signal === 'last_seen' ? 'no activity' : 'no order').' '.$r->inactivity_days.'d',
+                        default => 'All customers',
+                    }),
                 Tables\Columns\TextColumn::make('schedule')
                     ->label('When')
-                    ->state(fn (ScheduledCampaign $r) => $r->frequency === 'daily'
-                        ? 'Daily · '.\Illuminate\Support\Str::of((string) $r->run_time)->substr(0, 5)
-                        : ($r->scheduled_at?->format('d M Y, H:i') ?? '—')),
+                    ->state(fn (ScheduledCampaign $r) => match (true) {
+                        $r->trigger_type === 'abandoned_cart' => 'After '.$r->delay_minutes.'m idle',
+                        $r->frequency === 'daily' => 'Daily · '.\Illuminate\Support\Str::of((string) $r->run_time)->substr(0, 5),
+                        default => $r->scheduled_at?->format('d M Y, H:i') ?? '—',
+                    }),
                 Tables\Columns\IconColumn::make('is_active')->boolean()->label('Active'),
                 Tables\Columns\TextColumn::make('last_sent_at')
                     ->label('Last sent')
@@ -161,6 +206,7 @@ class ScheduledCampaignResource extends Resource
                     ->label('Send now')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
+                    ->visible(fn (ScheduledCampaign $record) => $record->trigger_type === 'schedule')
                     ->requiresConfirmation()
                     ->modalDescription('Send this push to all opted-in customers right now?')
                     ->action(function (ScheduledCampaign $record): void {
@@ -187,6 +233,19 @@ class ScheduledCampaignResource extends Resource
      */
     public static function normalizeSchedule(array $data): array
     {
+        // Abandoned-cart is event-driven — clear all the scheduling fields so
+        // nothing stale leaks in and the cron scan never picks it up.
+        if (($data['trigger_type'] ?? 'schedule') === 'abandoned_cart') {
+            $data['audience'] = 'all';
+            $data['inactivity_signal'] = null;
+            $data['inactivity_days'] = null;
+            $data['scheduled_at'] = null;
+            $data['run_time'] = null;
+
+            return $data;
+        }
+
+        $data['delay_minutes'] = null;
         if (($data['audience'] ?? 'all') === 'inactive') {
             $data['frequency'] = 'daily';
             $data['scheduled_at'] = null;

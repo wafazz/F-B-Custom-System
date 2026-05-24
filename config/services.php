@@ -68,4 +68,12 @@ return [
         'referee_bonus_points' => (int) env('REFERRAL_REFEREE_BONUS', 100),
     ],
 
+    // Abandoned-cart reminder: how long a logged-in customer's cart must sit
+    // untouched (no checkout) before we nudge them, plus the push copy.
+    'abandoned_cart' => [
+        'delay_minutes' => (int) env('ABANDONED_CART_DELAY_MINUTES', 15),
+        'title' => env('ABANDONED_CART_TITLE', 'Your coffee is waiting ☕'),
+        'body' => env('ABANDONED_CART_BODY', 'You left items in your cart — complete your order & enjoy fresh bakes 🥐'),
+    ],
+
 ];

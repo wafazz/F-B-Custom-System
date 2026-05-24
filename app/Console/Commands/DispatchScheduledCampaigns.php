@@ -17,7 +17,7 @@ class DispatchScheduledCampaigns extends Command
         $now = now();
         $dispatched = 0;
 
-        foreach (ScheduledCampaign::query()->where('is_active', true)->get() as $campaign) {
+        foreach (ScheduledCampaign::query()->where('is_active', true)->where('trigger_type', 'schedule')->get() as $campaign) {
             if (! $campaign->isDue($now)) {
                 continue;
             }

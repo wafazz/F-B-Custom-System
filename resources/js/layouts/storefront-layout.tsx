@@ -12,10 +12,11 @@ import {
     User,
     Wallet,
 } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { InstallPrompt } from '@/components/storefront/install-prompt';
 import { useBranchStore } from '@/stores/branch-store';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
+import { syncCart } from '@/lib/cart-sync';
 import { cn } from '@/lib/utils';
 
 function greetingFor(hour: number): string {
@@ -54,8 +55,26 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
     };
     const branch = useBranchStore((s) => s.selected);
     const lines = useCartStore((s) => s.lines);
+    const cartBranchId = useCartStore((s) => s.branchId);
     const { itemCount } = cartTotals(lines);
     const path = typeof window !== 'undefined' ? window.location.pathname : url;
+
+    // Mirror the cart to the server (debounced) so an abandoned cart can be
+    // detected. Logged-in only, and we skip the empty→empty no-op so idle
+    // browsing doesn't spam the endpoint.
+    const isAuthed = Boolean(auth.user);
+    const lastSyncedCount = useRef<number | null>(null);
+    useEffect(() => {
+        if (!isAuthed) return;
+        if (itemCount === 0 && (lastSyncedCount.current === null || lastSyncedCount.current === 0)) {
+            return;
+        }
+        const t = setTimeout(() => {
+            void syncCart(lines, cartBranchId);
+            lastSyncedCount.current = itemCount;
+        }, 5000);
+        return () => clearTimeout(t);
+    }, [lines, cartBranchId, itemCount, isAuthed]);
 
     return (
         <div className="bg-background text-card-foreground flex min-h-screen flex-col pb-24">

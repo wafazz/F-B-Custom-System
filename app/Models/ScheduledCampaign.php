@@ -9,6 +9,7 @@ class ScheduledCampaign extends Model
 {
     protected $fillable = [
         'name',
+        'trigger_type',
         'title',
         'body',
         'url',
@@ -18,6 +19,7 @@ class ScheduledCampaign extends Model
         'frequency',
         'scheduled_at',
         'run_time',
+        'delay_minutes',
         'is_active',
         'last_sent_at',
     ];
@@ -26,10 +28,20 @@ class ScheduledCampaign extends Model
     {
         return [
             'inactivity_days' => 'integer',
+            'delay_minutes' => 'integer',
             'scheduled_at' => 'datetime',
             'is_active' => 'boolean',
             'last_sent_at' => 'datetime',
         ];
+    }
+
+    /** The active abandoned-cart reminder, if the admin has one enabled. */
+    public static function activeAbandonedCart(): ?self
+    {
+        return static::query()
+            ->where('trigger_type', 'abandoned_cart')
+            ->where('is_active', true)
+            ->first();
     }
 
     /**
@@ -39,8 +51,8 @@ class ScheduledCampaign extends Model
      */
     public function isDue(Carbon $now): bool
     {
-        if (! $this->is_active) {
-            return false;
+        if (! $this->is_active || $this->trigger_type !== 'schedule') {
+            return false; // abandoned_cart is event-driven, never cron-fired
         }
 
         if ($this->frequency === 'once') {

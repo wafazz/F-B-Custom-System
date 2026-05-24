@@ -6,6 +6,7 @@ use App\Models\PushSubscription;
 use App\Models\ScheduledCampaign;
 use App\Models\User;
 use App\Models\UserPresence;
+use App\Models\VoucherClaim;
 use App\Services\Push\PushService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -76,6 +77,12 @@ class SendScheduledCampaign implements ShouldQueue
             return $ids === [] ? null : $base->whereIn('id', $ids);
         }
 
+        if ($campaign->audience === 'voucher_expiry') {
+            $ids = $this->voucherExpiryUserIds($campaign);
+
+            return $ids === [] ? null : $base->whereIn('id', $ids);
+        }
+
         // 'all' — every opted-in (subscribed) customer.
         $subscriberIds = PushSubscription::query()->whereNotNull('user_id')->distinct()->pluck('user_id');
 
@@ -114,6 +121,34 @@ class SendScheduledCampaign implements ShouldQueue
             ->havingRaw('DATE(MAX(created_at)) = ?', [$target])
             ->pluck('user_id')
             ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * Customers holding an unused voucher that expires in exactly N days —
+     * fires the reminder once, N days before it lapses (no daily spam).
+     *
+     * @return list<int>
+     */
+    private function voucherExpiryUserIds(ScheduledCampaign $campaign): array
+    {
+        $days = (int) $campaign->inactivity_days;
+        if ($days < 0) {
+            return [];
+        }
+        $target = now()->addDays($days)->toDateString();
+
+        return VoucherClaim::query()
+            ->whereNull('used_at')
+            ->whereNotNull('user_id')
+            ->whereHas('voucher', fn ($q) => $q
+                ->where('status', 'active')
+                ->whereNotNull('valid_until')
+                ->whereDate('valid_until', $target))
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
             ->all();
     }
 }

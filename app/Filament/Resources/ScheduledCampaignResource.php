@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ScheduledCampaignResource\Pages;
 use App\Jobs\SendScheduledCampaign;
 use App\Models\ScheduledCampaign;
+
 use App\Models\Voucher;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -96,6 +97,7 @@ class ScheduledCampaignResource extends Resource
                         ->options([
                             'all' => 'All opted-in customers',
                             'inactive' => 'Inactive customers (re-engagement)',
+                            'voucher_expiry' => 'Voucher expiring soon',
                         ])
                         ->columnSpanFull(),
                     Forms\Components\Select::make('inactivity_signal')
@@ -108,14 +110,16 @@ class ScheduledCampaignResource extends Resource
                         ->required(fn (Forms\Get $get) => $get('audience') === 'inactive')
                         ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive'),
                     Forms\Components\TextInput::make('inactivity_days')
-                        ->label('Days inactive')
+                        ->label(fn (Forms\Get $get) => $get('audience') === 'voucher_expiry' ? 'Days before expiry' : 'Days inactive')
                         ->numeric()
-                        ->minValue(1)
+                        ->minValue(0)
                         ->maxValue(365)
                         ->suffix('days')
-                        ->helperText('Fires once — the day a customer reaches this many days inactive (e.g. 7, 14, 30).')
-                        ->required(fn (Forms\Get $get) => $get('audience') === 'inactive')
-                        ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive'),
+                        ->helperText(fn (Forms\Get $get) => $get('audience') === 'voucher_expiry'
+                            ? 'Fires once, this many days before an unused voucher expires (e.g. 3, 1, or 0 for expiry day).'
+                            : 'Fires once — the day a customer reaches this many days inactive (e.g. 7, 14, 30).')
+                        ->required(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'voucher_expiry'], true))
+                        ->visible(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'voucher_expiry'], true)),
                 ])
                 ->columns(2),
 
@@ -169,10 +173,10 @@ class ScheduledCampaignResource extends Resource
                         ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'once')
                         ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'once'),
                     Forms\Components\TimePicker::make('run_time')
-                        ->label(fn (Forms\Get $get) => $get('audience') === 'inactive' ? 'Daily scan time' : 'Time of day')
+                        ->label(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'voucher_expiry'], true) ? 'Daily scan time' : 'Time of day')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && ($get('audience') === 'inactive' || $get('frequency') === 'daily'))
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && ($get('audience') === 'inactive' || $get('frequency') === 'daily')),
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'voucher_expiry'], true) || $get('frequency') === 'daily'))
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'voucher_expiry'], true) || $get('frequency') === 'daily')),
                     Forms\Components\Toggle::make('is_active')
                         ->label('Active')
                         ->default(true),
@@ -207,6 +211,7 @@ class ScheduledCampaignResource extends Resource
                         $r->trigger_type === 'location' => $r->branch?->name ?? 'Outlet',
                         $r->trigger_type === 'abandoned_cart' => '—',
                         $state === 'inactive' => 'Inactive · '.($r->inactivity_signal === 'last_seen' ? 'no activity' : 'no order').' '.$r->inactivity_days.'d',
+                        $state === 'voucher_expiry' => 'Voucher expiry · '.$r->inactivity_days.'d before',
                         default => 'All customers',
                     }),
                 Tables\Columns\TextColumn::make('schedule')
@@ -286,9 +291,14 @@ class ScheduledCampaignResource extends Resource
         $data['delay_minutes'] = null;
         $data['branch_id'] = null;
         $data['radius_meters'] = null;
-        if (($data['audience'] ?? 'all') === 'inactive') {
+        $audience = $data['audience'] ?? 'all';
+        if ($audience === 'inactive' || $audience === 'voucher_expiry') {
+            // Daily-scan audiences.
             $data['frequency'] = 'daily';
             $data['scheduled_at'] = null;
+            if ($audience === 'voucher_expiry') {
+                $data['inactivity_signal'] = null; // not used for voucher expiry
+            }
         } else {
             $data['inactivity_signal'] = null;
             $data['inactivity_days'] = null;

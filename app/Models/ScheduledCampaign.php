@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -13,12 +14,30 @@ class ScheduledCampaign extends Model
         return $this->hasMany(CampaignDelivery::class);
     }
 
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /** Active proximity campaigns that have a target branch + radius set. */
+    public static function activeLocationCampaigns()
+    {
+        return static::query()
+            ->where('trigger_type', 'location')
+            ->where('is_active', true)
+            ->whereNotNull('branch_id')
+            ->whereNotNull('radius_meters')
+            ->get();
+    }
+
     protected $fillable = [
         'name',
         'trigger_type',
         'title',
         'body',
         'url',
+        'branch_id',
+        'radius_meters',
         'audience',
         'inactivity_signal',
         'inactivity_days',
@@ -34,6 +53,7 @@ class ScheduledCampaign extends Model
     {
         return [
             'inactivity_days' => 'integer',
+            'radius_meters' => 'integer',
             'delay_minutes' => 'integer',
             'scheduled_at' => 'datetime',
             'is_active' => 'boolean',

@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'api/push/subscribe',
             'api/orders',
+            'api/location/ping',
         ]);
         $middleware->alias([
             'pos' => \App\Http\Middleware\EnsurePosSession::class,

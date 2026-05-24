@@ -58,6 +58,12 @@ Route::post('/cart/sync', [\App\Http\Controllers\Api\CartSyncController::class, 
     ->middleware(['web', 'throttle:60,1'])
     ->name('api.cart.sync');
 
+// Location ping — client reports the customer's position; server fires any
+// in-radius proximity campaign. Works for web (session) or native (token).
+Route::post('/location/ping', [\App\Http\Controllers\Api\LocationController::class, 'ping'])
+    ->middleware(['auth:sanctum,web', 'throttle:30,1'])
+    ->name('api.location.ping');
+
 /*
 |--------------------------------------------------------------------------
 | Order placement — Sanctum token (mobile) OR session cookie (web/PWA)

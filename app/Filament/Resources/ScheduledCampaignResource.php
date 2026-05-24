@@ -51,6 +51,7 @@ class ScheduledCampaignResource extends Resource
                         ->options([
                             'schedule' => 'Scheduled campaign',
                             'abandoned_cart' => 'Abandoned cart reminder (event-driven)',
+                            'location' => 'Location / proximity (near an outlet)',
                         ])
                         ->columnSpanFull(),
                     Forms\Components\TextInput::make('name')
@@ -117,18 +118,41 @@ class ScheduledCampaignResource extends Resource
                 ])
                 ->columns(2),
 
+            Forms\Components\Section::make('Location')
+                ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'location')
+                ->schema([
+                    Forms\Components\Select::make('branch_id')
+                        ->label('Outlet')
+                        ->relationship('branch', 'name')
+                        ->searchable()
+                        ->preload()
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'location'),
+                    Forms\Components\TextInput::make('radius_meters')
+                        ->label('Radius')
+                        ->numeric()
+                        ->minValue(50)
+                        ->maxValue(20000)
+                        ->default(500)
+                        ->suffix('metres')
+                        ->helperText('Notify customers within this distance of the outlet.')
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'location'),
+                ])
+                ->columns(2),
+
             Forms\Components\Section::make('Schedule & status')
                 ->schema([
                     Forms\Components\TextInput::make('delay_minutes')
-                        ->label('Remind after')
+                        ->label(fn (Forms\Get $get) => $get('trigger_type') === 'location' ? 'Cooldown' : 'Remind after')
                         ->numeric()
                         ->minValue(1)
-                        ->maxValue(1440)
-                        ->default(15)
+                        ->maxValue(10080)
+                        ->default(fn (Forms\Get $get) => $get('trigger_type') === 'location' ? 360 : 15)
                         ->suffix('minutes')
-                        ->helperText('How long a cart sits untouched before the reminder fires.')
-                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'abandoned_cart')
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'abandoned_cart'),
+                        ->helperText(fn (Forms\Get $get) => $get('trigger_type') === 'location'
+                            ? 'Minimum gap before the same customer is nudged again near this outlet.'
+                            : 'How long a cart sits untouched before the reminder fires.')
+                        ->required(fn (Forms\Get $get) => in_array($get('trigger_type'), ['abandoned_cart', 'location'], true))
+                        ->visible(fn (Forms\Get $get) => in_array($get('trigger_type'), ['abandoned_cart', 'location'], true)),
                     Forms\Components\Select::make('frequency')
                         ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule')
                         ->default('once')
@@ -164,12 +188,22 @@ class ScheduledCampaignResource extends Resource
                 Tables\Columns\TextColumn::make('trigger_type')
                     ->label('Type')
                     ->badge()
-                    ->color(fn (string $state) => $state === 'abandoned_cart' ? 'info' : 'gray')
-                    ->formatStateUsing(fn (string $state) => $state === 'abandoned_cart' ? 'Abandoned cart' : 'Scheduled'),
+                    ->color(fn (string $state) => match ($state) {
+                        'abandoned_cart' => 'info',
+                        'location' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state) => match ($state) {
+                        'abandoned_cart' => 'Abandoned cart',
+                        'location' => 'Location',
+                        default => 'Scheduled',
+                    }),
                 Tables\Columns\TextColumn::make('audience')
+                    ->label('Target')
                     ->badge()
                     ->color(fn (?string $state) => $state === 'inactive' ? 'warning' : 'gray')
                     ->formatStateUsing(fn (?string $state, ScheduledCampaign $r) => match (true) {
+                        $r->trigger_type === 'location' => $r->branch?->name ?? 'Outlet',
                         $r->trigger_type === 'abandoned_cart' => '—',
                         $state === 'inactive' => 'Inactive · '.($r->inactivity_signal === 'last_seen' ? 'no activity' : 'no order').' '.$r->inactivity_days.'d',
                         default => 'All customers',
@@ -177,6 +211,7 @@ class ScheduledCampaignResource extends Resource
                 Tables\Columns\TextColumn::make('schedule')
                     ->label('When')
                     ->state(fn (ScheduledCampaign $r) => match (true) {
+                        $r->trigger_type === 'location' => 'Within '.$r->radius_meters.'m',
                         $r->trigger_type === 'abandoned_cart' => 'After '.$r->delay_minutes.'m idle',
                         $r->frequency === 'daily' => 'Daily · '.\Illuminate\Support\Str::of((string) $r->run_time)->substr(0, 5),
                         default => $r->scheduled_at?->format('d M Y, H:i') ?? '—',
@@ -227,19 +262,29 @@ class ScheduledCampaignResource extends Resource
      */
     public static function normalizeSchedule(array $data): array
     {
-        // Abandoned-cart is event-driven — clear all the scheduling fields so
-        // nothing stale leaks in and the cron scan never picks it up.
-        if (($data['trigger_type'] ?? 'schedule') === 'abandoned_cart') {
+        $type = $data['trigger_type'] ?? 'schedule';
+
+        // Event-driven types (abandoned_cart, location) don't use the cron
+        // schedule/audience fields — clear them so nothing stale leaks in and
+        // the cron scan never picks them up.
+        if ($type === 'abandoned_cart' || $type === 'location') {
             $data['audience'] = 'all';
             $data['inactivity_signal'] = null;
             $data['inactivity_days'] = null;
             $data['scheduled_at'] = null;
             $data['run_time'] = null;
+            if ($type === 'abandoned_cart') {
+                $data['branch_id'] = null;
+                $data['radius_meters'] = null;
+            }
 
             return $data;
         }
 
+        // Scheduled campaign — clear the event-only fields.
         $data['delay_minutes'] = null;
+        $data['branch_id'] = null;
+        $data['radius_meters'] = null;
         if (($data['audience'] ?? 'all') === 'inactive') {
             $data['frequency'] = 'daily';
             $data['scheduled_at'] = null;

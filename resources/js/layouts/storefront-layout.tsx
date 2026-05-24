@@ -17,6 +17,7 @@ import { InstallPrompt } from '@/components/storefront/install-prompt';
 import { useBranchStore } from '@/stores/branch-store';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
 import { syncCart } from '@/lib/cart-sync';
+import { pingLocation } from '@/lib/location-ping';
 import { cn } from '@/lib/utils';
 
 function greetingFor(hour: number): string {
@@ -75,6 +76,15 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
         }, 5000);
         return () => clearTimeout(t);
     }, [lines, cartBranchId, itemCount, isAuthed]);
+
+    // Report location for proximity campaigns — only if permission is already
+    // granted (never prompts), once on mount + every 5 min while open.
+    useEffect(() => {
+        if (!isAuthed) return;
+        void pingLocation();
+        const id = window.setInterval(() => void pingLocation(), 5 * 60 * 1000);
+        return () => window.clearInterval(id);
+    }, [isAuthed]);
 
     return (
         <div className="bg-background text-card-foreground flex min-h-screen flex-col pb-24">

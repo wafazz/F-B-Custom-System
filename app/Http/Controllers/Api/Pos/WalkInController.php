@@ -154,7 +154,7 @@ class WalkInController extends Controller
 
         $data = $request->validate([
             'order_type' => ['required', 'in:pickup,dine_in'],
-            'dine_in_table' => ['nullable', 'string', 'max:20', 'required_if:order_type,dine_in'],
+            'dine_in_table' => ['nullable', 'string', 'max:20'],
             'payment_method' => ['required', 'in:cash,card,duitnow'],
             'customer_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'notes' => ['nullable', 'string', 'max:500'],

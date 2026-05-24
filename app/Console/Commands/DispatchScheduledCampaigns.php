@@ -27,7 +27,8 @@ class DispatchScheduledCampaigns extends Command
             $dispatched++;
         }
 
-        $this->info("Dispatched {$dispatched} campaign(s).");
+        // Timestamped so the appended scheduler.log doubles as a heartbeat.
+        $this->info(now()->toDateTimeString()." — campaigns:dispatch ran, dispatched {$dispatched} campaign(s).");
 
         return self::SUCCESS;
     }

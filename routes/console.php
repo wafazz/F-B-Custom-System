@@ -9,4 +9,9 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Fire admin-scheduled push campaigns the moment they fall due.
-Schedule::command('campaigns:dispatch')->everyMinute()->withoutOverlapping();
+// Output is appended to storage/logs/scheduler.log so you can confirm the
+// cron is alive: `tail -f storage/logs/scheduler.log`.
+Schedule::command('campaigns:dispatch')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/scheduler.log'));

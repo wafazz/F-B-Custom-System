@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
-import { Coffee, ShoppingBag, Sparkles, Store, UserRound } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { CheckCircle2, Coffee, ShoppingBag, Sparkles, Store, UserRound } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface CartLine {
     key: string;
@@ -45,13 +45,39 @@ const EMPTY: CartState = {
     points_revealed: false,
 };
 
+interface OrderPlacedPayload {
+    orderNumber: string | null;
+    total: number;
+    customerName: string | null;
+}
+
+const CONFIRMATION_MS = 6000;
+
 export default function CustomerDisplay({ branch, staff }: Props) {
     const [cart, setCart] = useState<CartState>(EMPTY);
+    const [confirmation, setConfirmation] = useState<OrderPlacedPayload | null>(null);
+    const confirmationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Locks out cart updates while the confirmation is showing so the
+    // welcome screen doesn't flash between "order placed" and idle.
+    const lockUntilRef = useRef<number>(0);
 
     useEffect(() => {
         if (typeof BroadcastChannel === 'undefined') return;
         const channel = new BroadcastChannel(`pos-cart-${branch.id}`);
-        channel.onmessage = (e: MessageEvent<{ type: string; cart?: CartState }>) => {
+        channel.onmessage = (
+            e: MessageEvent<{ type: string; cart?: CartState; payload?: OrderPlacedPayload }>,
+        ) => {
+            if (e.data?.type === 'order:placed' && e.data.payload) {
+                lockUntilRef.current = Date.now() + CONFIRMATION_MS;
+                setConfirmation(e.data.payload);
+                if (confirmationTimer.current) clearTimeout(confirmationTimer.current);
+                confirmationTimer.current = setTimeout(() => {
+                    lockUntilRef.current = 0;
+                    setConfirmation(null);
+                }, CONFIRMATION_MS);
+                return;
+            }
+            if (Date.now() < lockUntilRef.current) return;
             if (e.data?.type === 'cart:update' && e.data.cart) {
                 setCart({ ...EMPTY, ...e.data.cart });
             }
@@ -60,7 +86,10 @@ export default function CustomerDisplay({ branch, staff }: Props) {
             }
         };
         channel.postMessage({ type: 'cart:request' });
-        return () => channel.close();
+        return () => {
+            channel.close();
+            if (confirmationTimer.current) clearTimeout(confirmationTimer.current);
+        };
     }, [branch.id]);
 
     const pointsRevealed = cart.points_revealed;
@@ -155,7 +184,33 @@ export default function CustomerDisplay({ branch, staff }: Props) {
                 )}
 
                 <main className="flex flex-1 flex-col rounded-3xl border-2 border-amber-200 bg-white/70 p-6 shadow-xl backdrop-blur">
-                    {cart.lines.length === 0 ? (
+                    {confirmation ? (
+                        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+                            <div className="rounded-full bg-emerald-100 p-6">
+                                <CheckCircle2
+                                    className="size-24 text-emerald-600"
+                                    strokeWidth={2.5}
+                                />
+                            </div>
+                            <h2 className="text-4xl font-bold text-amber-900">Order placed</h2>
+                            {confirmation.orderNumber && (
+                                <p className="text-lg font-semibold tracking-wider text-amber-700">
+                                    {confirmation.orderNumber}
+                                </p>
+                            )}
+                            <p className="text-5xl font-bold text-amber-900 tabular-nums">
+                                RM{confirmation.total.toFixed(2)}
+                            </p>
+                            {confirmation.customerName && (
+                                <p className="mt-2 text-base text-amber-700">
+                                    Thank you, {confirmation.customerName}
+                                </p>
+                            )}
+                            <p className="mt-2 max-w-md text-sm text-amber-600">
+                                Please collect your receipt from the cashier.
+                            </p>
+                        </div>
+                    ) : cart.lines.length === 0 ? (
                         <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
                             <div className="rounded-full bg-amber-100 p-8">
                                 <Coffee className="size-20 text-amber-700" />

@@ -265,7 +265,20 @@ export default function PosWalkIn({ branch, parents }: Props) {
                 })),
             },
             {
-                onSuccess: () => {
+                onSuccess: (page) => {
+                    // Server flashes "Order {number} placed" — pull the
+                    // number out so the customer screen can show it.
+                    const flashSuccess = (page.props as { flash?: { success?: string } }).flash?.success;
+                    const orderNumber = flashSuccess?.match(/Order (\S+) placed/)?.[1] ?? null;
+
+                    channelRef.current?.postMessage({
+                        type: 'order:placed',
+                        payload: {
+                            orderNumber,
+                            total,
+                            customerName: customer?.name ?? null,
+                        },
+                    });
                     channelRef.current?.postMessage({ type: 'cart:clear' });
                     setCustomer(null);
                     setSearch('');

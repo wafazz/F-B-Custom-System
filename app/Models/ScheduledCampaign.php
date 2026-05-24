@@ -3,10 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 class ScheduledCampaign extends Model
 {
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(CampaignDelivery::class);
+    }
+
     protected $fillable = [
         'name',
         'trigger_type',

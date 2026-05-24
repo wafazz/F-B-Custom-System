@@ -39,13 +39,24 @@ class SendScheduledCampaign implements ShouldQueue
         }
 
         $query->chunkById(500, function ($users) use ($campaign, $push) {
+            $delivered = [];
             foreach ($users as $user) {
-                $push->sendToUser((int) $user->getKey(), [
+                $report = $push->sendToUser((int) $user->getKey(), [
                     'title' => $this->fill((string) $campaign->title, $user),
                     'body' => $this->fill((string) $campaign->body, $user),
                     'url' => $campaign->url ?: '/',
                     'tag' => 'campaign-'.$campaign->id,
                 ]);
+                if ($report['sent'] > 0) {
+                    $delivered[] = [
+                        'scheduled_campaign_id' => $campaign->id,
+                        'user_id' => $user->getKey(),
+                        'sent_at' => now(),
+                    ];
+                }
+            }
+            if ($delivered !== []) {
+                \App\Models\CampaignDelivery::insert($delivered);
             }
         });
     }

@@ -182,6 +182,11 @@ class ScheduledCampaignResource extends Resource
                         default => $r->scheduled_at?->format('d M Y, H:i') ?? '—',
                     }),
                 Tables\Columns\IconColumn::make('is_active')->boolean()->label('Active'),
+                Tables\Columns\TextColumn::make('deliveries_count')
+                    ->counts('deliveries')
+                    ->label('Sent')
+                    ->badge()
+                    ->color('success'),
                 Tables\Columns\TextColumn::make('last_sent_at')
                     ->label('Last sent')
                     ->dateTime('d M, H:i')
@@ -244,6 +249,13 @@ class ScheduledCampaignResource extends Resource
         }
 
         return $data;
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            ScheduledCampaignResource\RelationManagers\DeliveriesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

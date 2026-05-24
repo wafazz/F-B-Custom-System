@@ -73,6 +73,43 @@ class OrderController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        // A full-coverage voucher (plus any loyalty/tumbler discount) can bring
+        // the total to RM0. There's nothing for the gateway to charge — and
+        // Billplz rejects zero-amount bills, which used to cancel the order.
+        // Settle it as paid here and push it straight to the kitchen, mirroring
+        // the gateway webhook flow.
+        if ((float) $order->total <= 0) {
+            $order->forceFill([
+                'payment_status' => PaymentStatus::Paid,
+                'payment_method' => 'free',
+                'payment_reference' => 'FREE-'.$order->number,
+                'paid_at' => now(),
+            ])->save();
+
+            try {
+                $this->orders->transition($order->fresh() ?? $order, OrderStatus::Preparing);
+            } catch (Throwable $e) {
+                Log::warning('Failed to advance free order to preparing', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            if ($order->user_id === null && $request->hasSession()) {
+                $ids = (array) $request->session()->get('placed_order_ids', []);
+                $ids[] = $order->id;
+                $request->session()->put('placed_order_ids', array_slice(array_unique($ids), -20));
+            }
+
+            return response()->json([
+                'order' => $this->present($order->fresh(['items.modifiers'])),
+                'payment' => [
+                    'method' => 'free',
+                    'url' => route('orders.show', ['order' => $order]),
+                ],
+            ], 201);
+        }
+
         // Wallet-paid orders skip the gateway entirely — they're already paid.
         if ($payload->paymentMethod === 'wallet') {
             return response()->json([

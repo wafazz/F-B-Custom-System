@@ -61,7 +61,9 @@ class FcmService
                         'priority' => 'HIGH',
                         'notification' => [
                             'channel_id' => $payload['channel_id'] ?? 'orders',
-                            'sound' => 'default',
+                            // Channel's sound wins on API 26+. Sent anyway for
+                            // older Android + as a safety net.
+                            'sound' => $payload['sound'] ?? 'new_order',
                         ],
                     ],
                     'data' => $payload['data'] ?? [],

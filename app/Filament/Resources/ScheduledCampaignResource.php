@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ScheduledCampaignResource\Pages;
 use App\Jobs\SendScheduledCampaign;
 use App\Models\ScheduledCampaign;
+use App\Models\Voucher;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -71,12 +72,12 @@ class ScheduledCampaignResource extends Resource
                         ->columnSpanFull(),
                     Forms\Components\Select::make('url_quick_pick')
                         ->label('Quick pick (auto-fills URL)')
-                        ->options(fn () => HomeSlideResource::ctaOptions())
+                        ->options(fn () => self::urlOptions())
                         ->searchable()
                         ->dehydrated(false)
                         ->live()
                         ->afterStateUpdated(fn ($state, Forms\Set $set) => $state ? $set('url', $state) : null)
-                        ->helperText('Search for a product, category, voucher or page. Or type a custom URL below.'),
+                        ->helperText('Pick a page or voucher. Notifications open the link directly, so only branch-independent destinations are listed — type a custom /branches/{id}/… URL if you need a specific branch.'),
                     Forms\Components\TextInput::make('url')
                         ->label('Deep-link URL')
                         ->default('/')
@@ -294,6 +295,45 @@ class ScheduledCampaignResource extends Resource
         }
 
         return $data;
+    }
+
+    /**
+     * Push-safe quick-pick destinations. Notifications open the URL directly
+     * with no branch context, so only branch-independent (absolute) routes are
+     * offered — plus every active voucher. Branch-relative pages (menu, cart,
+     * checkout, product/category) are intentionally excluded; they'd 404.
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function urlOptions(): array
+    {
+        $pages = [
+            '/' => 'Home',
+            '/branches' => 'Browse branches / menu',
+            '/vouchers' => 'My vouchers',
+            '/wallet' => 'Wallet',
+            '/orders' => 'My orders',
+            '/loyalty' => 'Loyalty & rewards',
+            '/rewards' => 'Rewards catalogue',
+            '/spin' => 'Spin & Win',
+            '/check-in' => 'Daily Check-in',
+            '/favourites' => 'Favourites',
+            '/referral' => 'Referral',
+            '/notifications' => 'Notifications',
+            '/profile' => 'Profile',
+        ];
+
+        $vouchers = Voucher::query()
+            ->where('status', 'active')
+            ->orderBy('code')
+            ->get(['code', 'name'])
+            ->mapWithKeys(fn (Voucher $v) => ["/vouchers?code={$v->code}" => "Voucher: {$v->code} — {$v->name}"])
+            ->all();
+
+        return array_filter([
+            'Pages' => $pages,
+            'Vouchers' => $vouchers,
+        ]);
     }
 
     public static function getRelations(): array

@@ -195,8 +195,7 @@ class HomeSlideResource extends Resource
     }
 
     /** @return array<string, array<string, string>> */
-    /** Grouped storefront link options (pages, categories, products, vouchers). Reused by the campaign quick-pick. */
-    public static function ctaOptions(): array
+    protected static function ctaOptions(): array
     {
         $pages = [
             // Branch-scoped (relative — resolved against current branch on the

@@ -358,6 +358,106 @@ class OrderService
         });
     }
 
+    /**
+     * Read-only price + voucher preview for the POS cashier. Mirrors the
+     * pricing + tax-after-discount math in place() without persisting, so
+     * the cashier collects exactly what place() will charge. Throws
+     * RuntimeException (with a human-readable message) when the voucher is
+     * invalid — the caller surfaces it as a 422. Product lines only (the POS
+     * payload has no combos).
+     *
+     * @return array{subtotal: float, discount_amount: float, sst_amount: float, service_charge_amount: float, total: float, voucher_code: string|null}
+     */
+    public function quote(OrderPayload $payload): array
+    {
+        $branch = Branch::query()->findOrFail($payload->branchId);
+
+        $productIds = collect($payload->lines)->pluck('productId')->filter()->unique()->values();
+        $products = $productIds->isEmpty()
+            ? collect()
+            : Product::query()
+                ->whereIn('id', $productIds)
+                ->with(['branches' => fn ($q) => $q->where('branches.id', $branch->id)])
+                ->get()
+                ->keyBy('id');
+
+        $optionIds = collect($payload->lines)->flatMap(fn ($l) => $l->modifierOptionIds)->unique()->values();
+        $options = $optionIds->isEmpty()
+            ? collect()
+            : ModifierOption::query()->whereIn('id', $optionIds)->get()->keyBy('id');
+
+        $sstRate = $branch->sst_enabled ? (float) $branch->sst_rate / 100 : 0;
+        $serviceRate = $branch->service_charge_enabled ? (float) $branch->service_charge_rate / 100 : 0;
+        $subtotal = 0.0;
+        $sstAmount = 0.0;
+        $tumblerDiscount = 0.0;
+        $voucherItems = [];
+
+        foreach ($payload->lines as $line) {
+            /** @var Product|null $product */
+            $product = $products->get($line->productId);
+            if (! $product) {
+                throw new RuntimeException("Product {$line->productId} not found.");
+            }
+            $branchPivot = $product->branches->first();
+            $unitBase = (float) ($branchPivot?->getRelationValue('pivot')?->getAttribute('price_override') ?? $product->base_price);
+            foreach ($line->modifierOptionIds as $optionId) {
+                $option = $options->get($optionId);
+                if ($option) {
+                    $unitBase += (float) $option->price_delta;
+                }
+            }
+            $lineTotal = $unitBase * $line->quantity;
+            $subtotal += $lineTotal;
+            if ($product->sst_applicable) {
+                $sstAmount += $lineTotal * $sstRate;
+            }
+            if ($payload->useOwnTumbler) {
+                $tumblerDiscount += (float) $product->tumbler_discount * $line->quantity;
+            }
+            $voucherItems[] = [
+                'product_id' => (int) $product->id,
+                'combo_id' => null,
+                'line_total' => $lineTotal,
+                'quantity' => $line->quantity,
+                'unit_price' => $unitBase,
+                'voucher_code' => $line->voucherCode,
+                'voucher_role' => $line->voucherRole,
+            ];
+        }
+
+        $sstAmount = round($sstAmount, 2);
+        $subtotal = round($subtotal, 2);
+
+        $voucherDiscount = 0.0;
+        if (! empty($payload->voucherCode)) {
+            $voucher = $this->vouchers->find($payload->voucherCode, $branch->id, $payload->userId);
+            $voucherDiscount = $this->vouchers->discountFor($voucher, $subtotal, $voucherItems);
+        }
+
+        $tumblerDiscount = round($tumblerDiscount, 2);
+        $discountTotal = round(min($subtotal, $voucherDiscount + $tumblerDiscount), 2);
+
+        // Recompute SST on the discounted subtotal proportionally (matches place()).
+        $discountedSubtotal = max(0, $subtotal - $discountTotal);
+        if ($discountTotal > 0 && $subtotal > 0) {
+            $sstAmount = round($sstAmount * ($discountedSubtotal / $subtotal), 2);
+        }
+        $serviceChargeAmount = $serviceRate > 0
+            ? round($discountedSubtotal * $serviceRate, 2)
+            : 0.0;
+        $total = round($discountedSubtotal + $sstAmount + $serviceChargeAmount, 2);
+
+        return [
+            'subtotal' => $subtotal,
+            'discount_amount' => $discountTotal,
+            'sst_amount' => $sstAmount,
+            'service_charge_amount' => $serviceChargeAmount,
+            'total' => $total,
+            'voucher_code' => $payload->voucherCode ? strtoupper($payload->voucherCode) : null,
+        ];
+    }
+
     public function transition(Order $order, OrderStatus $next): Order
     {
         if (! $order->status->canTransitionTo($next)) {

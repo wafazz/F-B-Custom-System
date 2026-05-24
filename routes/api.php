@@ -155,6 +155,9 @@ Route::middleware(['auth:sanctum', 'pos.token'])->group(function () {
     Route::post('/pos/branches/{branch}/walk-in', [\App\Http\Controllers\Api\Pos\WalkInController::class, 'store'])
         ->middleware('throttle:60,1')
         ->name('api.pos.walk-in');
+    Route::post('/pos/branches/{branch}/walk-in/voucher-preview', [\App\Http\Controllers\Api\Pos\WalkInController::class, 'voucherPreview'])
+        ->middleware('throttle:120,1')
+        ->name('api.pos.walk-in.voucher-preview');
 
     // Shift
     Route::get('/pos/branches/{branch}/shift', [\App\Http\Controllers\Api\Pos\ShiftController::class, 'current'])->name('api.pos.shift.current');

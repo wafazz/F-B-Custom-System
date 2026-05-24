@@ -46,7 +46,17 @@ class PosApiController extends Controller
 
         return response()->json([
             'token' => $token,
-            'branch' => ['id' => $branch->id, 'code' => $branch->code, 'name' => $branch->name],
+            // Full branch shape (incl. tax config) so the walk-in screen can
+            // compute SST/service immediately after login — must match me().
+            'branch' => [
+                'id' => $branch->id,
+                'code' => $branch->code,
+                'name' => $branch->name,
+                'sst_rate' => (float) $branch->sst_rate,
+                'sst_enabled' => (bool) $branch->sst_enabled,
+                'service_charge_rate' => (float) $branch->service_charge_rate,
+                'service_charge_enabled' => (bool) $branch->service_charge_enabled,
+            ],
             'staff' => ['id' => $user->id, 'name' => $user->name],
         ]);
     }

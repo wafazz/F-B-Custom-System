@@ -157,6 +157,7 @@ class WalkInController extends Controller
             'dine_in_table' => ['nullable', 'string', 'max:20'],
             'payment_method' => ['required', 'in:cash,card,duitnow'],
             'customer_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'voucher_code' => ['nullable', 'string', 'max:50'],
             'notes' => ['nullable', 'string', 'max:500'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.product_id' => ['required', 'integer', 'exists:products,id'],
@@ -187,6 +188,7 @@ class WalkInController extends Controller
                     'staff_id' => $cashierId,
                     'customer_user_id' => $customerId,
                 ]),
+                voucherCode: $data['voucher_code'] ?? null,
                 shiftId: $shift->id,
             ));
 
@@ -221,6 +223,7 @@ class WalkInController extends Controller
                 'sst_amount' => (float) $fresh->sst_amount,
                 'service_charge_amount' => (float) ($fresh->service_charge_amount ?? 0),
                 'discount_amount' => (float) ($fresh->discount_amount ?? 0),
+                'voucher_code' => ($fresh->discount_amount ?? 0) > 0 ? ($data['voucher_code'] ?? null) : null,
                 'total' => (float) $fresh->total,
                 'customer_name' => $fresh->user?->name,
                 'points_earned' => $pointsEarned,
@@ -233,5 +236,44 @@ class WalkInController extends Controller
                 ])->values(),
             ],
         ], 201);
+    }
+
+    /** Validate a voucher against the current cart and return the discounted totals — no order is created. */
+    public function voucherPreview(Request $request, Branch $branch, OrderService $service): JsonResponse
+    {
+        $data = $request->validate([
+            'voucher_code' => ['required', 'string', 'max:50'],
+            'customer_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'lines.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
+            'lines.*.modifier_option_ids' => ['array'],
+            'lines.*.modifier_option_ids.*' => ['integer', 'exists:modifier_options,id'],
+        ]);
+
+        try {
+            $quote = $service->quote(new OrderPayload(
+                branchId: $branch->id,
+                userId: isset($data['customer_user_id']) ? (int) $data['customer_user_id'] : null,
+                orderType: OrderType::Pickup,
+                lines: collect($data['lines'])->map(fn ($l) => new OrderLinePayload(
+                    productId: (int) $l['product_id'],
+                    quantity: (int) $l['quantity'],
+                    modifierOptionIds: array_map('intval', $l['modifier_option_ids'] ?? []),
+                ))->all(),
+                voucherCode: $data['voucher_code'],
+            ));
+        } catch (Throwable $e) {
+            return response()->json(['valid' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        if ($quote['discount_amount'] <= 0) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'This voucher gives no discount on the current cart.',
+            ], 422);
+        }
+
+        return response()->json(array_merge(['valid' => true], $quote));
     }
 }

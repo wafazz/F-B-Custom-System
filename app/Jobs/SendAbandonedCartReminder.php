@@ -2,9 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Models\Branch;
 use App\Models\CampaignDelivery;
 use App\Models\CustomerCart;
 use App\Models\ScheduledCampaign;
+use App\Models\User;
 use App\Services\Push\PushService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -42,9 +44,12 @@ class SendAbandonedCartReminder implements ShouldQueue
             return;
         }
 
+        $user = User::find($this->userId);
+        $branchName = $cart->branch_id ? Branch::query()->whereKey($cart->branch_id)->value('name') : null;
+
         $report = $push->sendToUser($this->userId, [
-            'title' => (string) $campaign->title,
-            'body' => (string) $campaign->body,
+            'title' => $campaign->renderMessage((string) $campaign->title, $user, $branchName),
+            'body' => $campaign->renderMessage((string) $campaign->body, $user, $branchName),
             'url' => $campaign->url ?: ($cart->branch_id ? "/branches/{$cart->branch_id}/cart" : '/'),
             'tag' => 'abandoned-cart',
         ]);

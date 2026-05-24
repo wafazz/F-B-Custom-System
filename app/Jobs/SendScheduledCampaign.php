@@ -42,8 +42,8 @@ class SendScheduledCampaign implements ShouldQueue
             $delivered = [];
             foreach ($users as $user) {
                 $report = $push->sendToUser((int) $user->getKey(), [
-                    'title' => $this->fill((string) $campaign->title, $user),
-                    'body' => $this->fill((string) $campaign->body, $user),
+                    'title' => $campaign->renderMessage((string) $campaign->title, $user),
+                    'body' => $campaign->renderMessage((string) $campaign->body, $user),
                     'url' => $campaign->url ?: '/',
                     'tag' => 'campaign-'.$campaign->id,
                 ]);
@@ -115,12 +115,5 @@ class SendScheduledCampaign implements ShouldQueue
             ->pluck('user_id')
             ->map(fn ($id) => (int) $id)
             ->all();
-    }
-
-    private function fill(string $text, User $user): string
-    {
-        $first = trim((string) explode(' ', (string) $user->name)[0]);
-
-        return str_replace('{name}', $first, $text);
     }
 }

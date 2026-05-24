@@ -68,7 +68,7 @@ class ScheduledCampaignResource extends Resource
                         ->required()
                         ->maxLength(180)
                         ->rows(2)
-                        ->helperText('Use {name} to insert the customer\'s first name.')
+                        ->helperText('Placeholders: {name} = customer\'s first name. {branch} = outlet name (location & abandoned-cart campaigns only).')
                         ->columnSpanFull(),
                     Forms\Components\Select::make('url_quick_pick')
                         ->label('Quick pick (auto-fills URL)')

@@ -19,6 +19,17 @@ class ScheduledCampaign extends Model
         return $this->belongsTo(Branch::class);
     }
 
+    /**
+     * Fill the push placeholders: {name} → customer's first name,
+     * {branch} → outlet name (where a branch context applies).
+     */
+    public function renderMessage(string $text, ?User $user = null, ?string $branchName = null): string
+    {
+        $first = $user !== null ? trim((string) explode(' ', (string) $user->name)[0]) : '';
+
+        return str_replace(['{name}', '{branch}'], [$first, (string) $branchName], $text);
+    }
+
     /** Active proximity campaigns that have a target branch + radius set. */
     public static function activeLocationCampaigns()
     {

@@ -81,8 +81,8 @@ class LocationController extends Controller
             }
 
             $report = $push->sendToUser($userId, [
-                'title' => (string) $campaign->title,
-                'body' => (string) $campaign->body,
+                'title' => $campaign->renderMessage((string) $campaign->title, $user, $branch->name),
+                'body' => $campaign->renderMessage((string) $campaign->body, $user, $branch->name),
                 'url' => $campaign->url ?: '/',
                 'tag' => 'geo-'.$campaign->id,
             ]);

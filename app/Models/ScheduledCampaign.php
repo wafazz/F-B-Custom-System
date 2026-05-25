@@ -19,6 +19,11 @@ class ScheduledCampaign extends Model
         return $this->belongsTo(Branch::class);
     }
 
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(Voucher::class);
+    }
+
     /**
      * Fill the push placeholders: {name} → customer's first name,
      * {branch} → outlet name (where a branch context applies).
@@ -49,6 +54,7 @@ class ScheduledCampaign extends Model
         'url',
         'branch_id',
         'radius_meters',
+        'voucher_id',
         'audience',
         'inactivity_signal',
         'inactivity_days',

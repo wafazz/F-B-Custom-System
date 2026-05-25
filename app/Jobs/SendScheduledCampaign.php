@@ -83,6 +83,12 @@ class SendScheduledCampaign implements ShouldQueue
             return $ids === [] ? null : $base->whereIn('id', $ids);
         }
 
+        if ($campaign->audience === 'birthday') {
+            $ids = $this->birthdayUserIds($campaign);
+
+            return $ids === [] ? null : $base->whereIn('id', $ids);
+        }
+
         // 'all' — every opted-in (subscribed) customer.
         $subscriberIds = PushSubscription::query()->whereNotNull('user_id')->distinct()->pluck('user_id');
 
@@ -150,5 +156,51 @@ class SendScheduledCampaign implements ShouldQueue
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * Customers whose birthday falls in the current month, greeted once per
+     * birthday month (a same-month delivery means they've already had it). When
+     * the campaign carries a voucher, anyone who's already claimed it is dropped
+     * — they've got it, so the reminders stop.
+     *
+     * @return list<int>
+     */
+    private function birthdayUserIds(ScheduledCampaign $campaign): array
+    {
+        $now = now();
+
+        $ids = User::query()
+            ->whereNotNull('date_of_birth')
+            ->whereMonth('date_of_birth', $now->month)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        if ($ids === []) {
+            return [];
+        }
+
+        // Already greeted this birthday month — send once, no daily spam.
+        $greeted = \App\Models\CampaignDelivery::query()
+            ->where('scheduled_campaign_id', $campaign->id)
+            ->whereYear('sent_at', $now->year)
+            ->whereMonth('sent_at', $now->month)
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $ids = array_values(array_diff($ids, $greeted));
+
+        // A claimed voucher means they already took it — stop nudging them.
+        if ($campaign->voucher_id !== null && $ids !== []) {
+            $claimed = VoucherClaim::query()
+                ->where('voucher_id', $campaign->voucher_id)
+                ->whereIn('user_id', $ids)
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            $ids = array_values(array_diff($ids, $claimed));
+        }
+
+        return $ids;
     }
 }

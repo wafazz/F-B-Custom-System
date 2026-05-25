@@ -12,7 +12,9 @@ class BranchController extends Controller
     {
         $branches = Branch::active()
             ->orderBy('sort_order')
-            ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo', 'cover_image'])
+            // status + accepts_orders are required by Branch::isOpenNow(); without
+            // them the method short-circuits to false and every branch reads "Closed".
+            ->get(['id', 'code', 'name', 'address', 'city', 'state', 'phone', 'latitude', 'longitude', 'operating_hours', 'logo', 'cover_image', 'status', 'accepts_orders', 'avg_rating', 'reviews_count'])
             ->map(fn (Branch $b) => $this->present($b))
             ->values();
 
@@ -41,11 +43,32 @@ class BranchController extends Controller
             'logo' => $b->logo,
             'cover_image' => $b->cover_image,
             'is_open_now' => $b->isOpenNow(),
+            'closed_reason' => $b->closedReason(),
+            'todays_hours' => $this->todaysHours($b),
+            'avg_rating' => (float) $b->avg_rating,
+            'reviews_count' => (int) $b->reviews_count,
             'accepts_orders' => (bool) $b->accepts_orders,
             'sst_rate' => (float) $b->sst_rate,
             'sst_enabled' => (bool) $b->sst_enabled,
             'service_charge_rate' => (float) $b->service_charge_rate,
             'service_charge_enabled' => (bool) $b->service_charge_enabled,
         ];
+    }
+
+    /** Today's "open – close" label, or null when closed/unset for today. */
+    protected function todaysHours(Branch $b): ?string
+    {
+        $day = strtolower(now()->englishDayOfWeek);
+        $hours = is_array($b->operating_hours) ? ($b->operating_hours[$day] ?? null) : null;
+        if (! is_array($hours) || empty($hours['enabled'])) {
+            return null;
+        }
+        $open = (string) ($hours['open'] ?? '');
+        $close = (string) ($hours['close'] ?? '');
+        if ($open === '' || $close === '') {
+            return null;
+        }
+
+        return $open.' – '.$close;
     }
 }

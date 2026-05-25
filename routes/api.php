@@ -3,9 +3,12 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillplzWebhookController;
 use App\Http\Controllers\Api\BranchController;
+use App\Http\Controllers\Api\BranchHomeController;
 use App\Http\Controllers\Api\BranchMenuController;
 use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\FavouriteController;
 use App\Http\Controllers\Api\LoyaltyController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PushSubscriptionController;
@@ -23,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/branches', [BranchController::class, 'index'])->name('api.branches.index');
 Route::get('/branches/{branch}', [BranchController::class, 'show'])->name('api.branches.show');
 Route::get('/branches/{branch}/menu', BranchMenuController::class)->name('api.branches.menu');
+Route::get('/branches/{branch}/home', BranchHomeController::class)->name('api.branches.home');
 
 Route::post('/auth/register', [AuthController::class, 'register'])
     ->middleware('throttle:6,1')
@@ -127,6 +131,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/vouchers/{voucher}/claim', [VoucherController::class, 'claim'])
         ->middleware('throttle:20,1')
         ->name('api.vouchers.claim');
+
+    // Favourites
+    Route::get('/favourites', [FavouriteController::class, 'index'])->name('api.favourites.index');
+    Route::post('/favourites/{product}/toggle', [FavouriteController::class, 'toggle'])
+        ->middleware('throttle:60,1')
+        ->name('api.favourites.toggle');
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])
+        ->name('api.notifications.read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])
+        ->name('api.notifications.read-all');
 
     // Device tokens (FCM / APNS)
     Route::post('/devices', [DeviceTokenController::class, 'store'])->name('api.devices.store');

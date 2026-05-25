@@ -60,10 +60,10 @@ Route::post('/pwa/heartbeat', [\App\Http\Controllers\Api\PwaInstallController::c
     ->middleware('web')
     ->name('api.pwa.heartbeat');
 
-// Cart sync — mirrors a logged-in customer's browser cart so an abandoned
-// cart can be detected (session-authed like the PWA endpoints above).
+// Cart sync — mirrors a logged-in customer's cart so an abandoned cart can be
+// detected. Sanctum token (mobile) OR session cookie (web/PWA), like /orders.
 Route::post('/cart/sync', [\App\Http\Controllers\Api\CartSyncController::class, 'sync'])
-    ->middleware(['web', 'throttle:60,1'])
+    ->middleware(['auth:sanctum,web', 'throttle:60,1'])
     ->name('api.cart.sync');
 
 // Location ping — client reports the customer's position; server fires any

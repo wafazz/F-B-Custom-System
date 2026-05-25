@@ -3,6 +3,7 @@
 use App\Models\Branch;
 use App\Models\BranchReview;
 use App\Models\Category;
+use App\Models\CustomerCart;
 use App\Models\HomeSlide;
 use App\Models\Product;
 use App\Models\ProductReview;
@@ -250,4 +251,45 @@ test('GET /api/products/{product}/reviews returns visible reviews and rating sum
         ->assertJsonStructure(['avg_rating', 'reviews_count', 'reviews' => [['id', 'rating', 'comment', 'user_name', 'created_at']]])
         ->assertJsonFragment(['user_name' => 'Aisyah', 'comment' => 'Best latte ever'])
         ->assertJsonMissing(['comment' => 'Hidden one']);
+});
+
+// ── Cart sync (abandoned-cart, mobile via Sanctum token) ──────────────────────
+
+test('POST /api/cart/sync requires authentication', function () {
+    $this->postJson('/api/cart/sync', ['item_count' => 1])->assertUnauthorized();
+});
+
+test('POST /api/cart/sync mirrors a logged-in cart via a Sanctum token', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $this->postJson('/api/cart/sync', [
+        'branch_id' => null,
+        'item_count' => 2,
+        'subtotal' => 25.5,
+        'items' => [['name' => 'Latte', 'quantity' => 2]],
+    ])
+        ->assertOk()
+        ->assertJsonPath('ok', true);
+
+    expect(CustomerCart::query()->where('user_id', $user->id)->where('item_count', 2)->exists())
+        ->toBeTrue();
+});
+
+test('POST /api/cart/sync with an empty cart clears the stored row', function () {
+    $user = User::factory()->create();
+    CustomerCart::create([
+        'user_id' => $user->id,
+        'branch_id' => null,
+        'item_count' => 3,
+        'subtotal' => 30,
+        'items' => [['name' => 'Mocha', 'quantity' => 3]],
+    ]);
+    Sanctum::actingAs($user);
+
+    $this->postJson('/api/cart/sync', ['item_count' => 0])
+        ->assertOk()
+        ->assertJsonPath('cleared', true);
+
+    expect(CustomerCart::query()->where('user_id', $user->id)->exists())->toBeFalse();
 });

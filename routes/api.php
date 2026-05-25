@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductReviewsController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\PromoPickerController;
 use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\VoucherController;
 use App\Http\Controllers\Api\WalletController;
@@ -31,6 +32,9 @@ Route::get('/branches/{branch}/menu', BranchMenuController::class)->name('api.br
 Route::get('/branches/{branch}/home', BranchHomeController::class)->name('api.branches.home');
 Route::get('/branches/{branch}/reviews', BranchReviewsController::class)->name('api.branches.reviews');
 Route::get('/products/{product}/reviews', ProductReviewsController::class)->name('api.products.reviews');
+Route::get('/branches/{branch}/promos/{voucher:code}', [PromoPickerController::class, 'show'])
+    ->withoutScopedBindings()
+    ->name('api.branches.promo');
 
 Route::post('/auth/register', [AuthController::class, 'register'])
     ->middleware('throttle:6,1')

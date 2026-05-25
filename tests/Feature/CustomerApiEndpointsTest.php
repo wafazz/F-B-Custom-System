@@ -335,3 +335,45 @@ test('GET /api/vouchers hides vouchers the customer is not eligible for', functi
         ->assertOk()
         ->assertJsonMissing(['code' => 'NEWBIE']);
 });
+
+// ── BxGy promo picker (mobile parity) ─────────────────────────────────────────
+
+test('GET /api/branches/{branch}/promos/{code} returns paid + free pools for a bxgy voucher', function () {
+    $branch = Branch::factory()->create();
+    $cat = Category::factory()->create();
+    $product = Product::factory()->create([
+        'category_id' => $cat->id,
+        'status' => 'active',
+        'base_price' => 10,
+    ]);
+    $branch->products()->attach($product->id, ['is_available' => true]);
+
+    Voucher::factory()->create([
+        'code' => 'B1F1',
+        'discount_type' => 'buy_x_get_y',
+        'status' => 'active',
+        'bxgy_buy_qty' => 1,
+        'bxgy_free_qty' => 1,
+        'product_ids' => [$product->id],
+    ]);
+
+    $this->getJson("/api/branches/{$branch->id}/promos/B1F1")
+        ->assertOk()
+        ->assertJsonPath('voucher.code', 'B1F1')
+        ->assertJsonPath('voucher.bxgy_buy_qty', 1)
+        ->assertJsonPath('voucher.free_scope_mode', 'same')
+        ->assertJsonStructure([
+            'branch' => ['id', 'code', 'name'],
+            'voucher' => ['code', 'name', 'bxgy_buy_qty', 'bxgy_free_qty', 'free_scope_mode'],
+            'paid_products' => [['id', 'name', 'price', 'sku', 'modifier_groups']],
+            'free_products',
+        ])
+        ->assertJsonPath('paid_products.0.id', $product->id);
+});
+
+test('promo picker 404s for a non-bxgy voucher', function () {
+    $branch = Branch::factory()->create();
+    Voucher::factory()->create(['code' => 'FLAT5', 'discount_type' => 'percentage', 'status' => 'active']);
+
+    $this->getJson("/api/branches/{$branch->id}/promos/FLAT5")->assertNotFound();
+});

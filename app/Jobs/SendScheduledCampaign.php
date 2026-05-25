@@ -96,9 +96,12 @@ class SendScheduledCampaign implements ShouldQueue
     }
 
     /**
-     * Customers who crossed the inactivity threshold *today* — i.e. their last
-     * activity was exactly N days ago. Firing on the crossing day (not "N+
-     * days") makes a 7/14/30-day ladder send once each, with no daily spam.
+     * Customers who hit the inactivity threshold. Two modes (admin choice):
+     *  - drip (inactivity_repeat = false): last activity was *exactly* N days
+     *    ago, so a 7/14/30-day ladder sends once each with no daily spam.
+     *  - repeat (inactivity_repeat = true): last activity was N *or more* days
+     *    ago, re-nudged every scan but throttled by inactivity_cooldown_days
+     *    (skip anyone already sent this campaign within that window).
      *
      * @return list<int>
      */
@@ -108,23 +111,51 @@ class SendScheduledCampaign implements ShouldQueue
         if ($days < 1) {
             return [];
         }
+        $repeat = (bool) $campaign->inactivity_repeat;
         $target = now()->subDays($days)->toDateString();
 
         if ($campaign->inactivity_signal === 'last_seen') {
             // user_presence holds only the latest seen-at, so this IS "no app
             // activity since that day".
-            return UserPresence::query()
-                ->whereDate('last_seen_at', $target)
+            $ids = UserPresence::query()
+                ->when($repeat,
+                    fn ($q) => $q->whereDate('last_seen_at', '<=', $target),
+                    fn ($q) => $q->whereDate('last_seen_at', $target))
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        } else {
+            // last_order — most recent order on (drip) / on-or-before (repeat)
+            // the target day, with nothing since.
+            $ids = DB::table('orders')
+                ->whereNotNull('user_id')
+                ->groupBy('user_id')
+                ->havingRaw('DATE(MAX(created_at)) '.($repeat ? '<=' : '=').' ?', [$target])
                 ->pluck('user_id')
                 ->map(fn ($id) => (int) $id)
                 ->all();
         }
 
-        // last_order — most recent order was on the target day (none since).
-        return DB::table('orders')
-            ->whereNotNull('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('DATE(MAX(created_at)) = ?', [$target])
+        if ($repeat && $ids !== []) {
+            $ids = array_values(array_diff($ids, $this->recentlyNudged($campaign)));
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Users already sent this campaign within its re-send cooldown — excluded
+     * so repeat reminders don't fire every daily scan.
+     *
+     * @return list<int>
+     */
+    private function recentlyNudged(ScheduledCampaign $campaign): array
+    {
+        $cooldown = max(1, (int) $campaign->inactivity_cooldown_days);
+
+        return \App\Models\CampaignDelivery::query()
+            ->where('scheduled_campaign_id', $campaign->id)
+            ->where('sent_at', '>=', now()->subDays($cooldown))
             ->pluck('user_id')
             ->map(fn ($id) => (int) $id)
             ->all();

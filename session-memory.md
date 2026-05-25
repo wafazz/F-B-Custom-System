@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-24 (PWA checkout CSRF fix + referral admin + receipt page + notes plumbing + voucher BxGy fix + split review submit)
+**Last Updated:** 2026-05-25 (inactive-user "we miss you" repeat-mode toggle on Scheduled Push)
 
 ---
 
@@ -100,6 +100,8 @@
   - **Order notes plumbing** — exposed order-level `notes` in POS queue/recent/transition/receipt + public receipt page (was only on the customer `/api/orders` side). New `PATCH /api/pos/orders/{order}/notes` and `PATCH /api/pos/orders/{order}/items/{item}/notes` for POS staff to edit remarks. Walk-in endpoint extended to accept `notes` + `lines.*.notes` at creation time. Receipt page renders a "Special remarks" card.
   - **Split review submit** — `OrderPagesController` hydrates `has_reviewed_branch` (bool) + `reviewed_product_ids` (int[]) instead of a single `has_reviewed` boolean. `order.tsx` tracks branch + per-product independently; each `ReviewForm` only retires its own card on submit. "All reviews submitted" card only when both branch + every product have been rated.
 
+- [✔] **2026-05-25 inactive-user reactivation repeat mode** — The "we miss you" reactivation push already existed (Marketing → Scheduled Push, `audience='inactive'`, admin sets `inactivity_signal` no-order/no-app-activity + `inactivity_days`). Added an admin choice for the cadence: new `inactivity_repeat` toggle + `inactivity_cooldown_days` (migration `2026_05_25_000100`). OFF = original drip (fires once on the exact day they hit N days inactive — stack 7/14/30-day campaigns). ON = re-engage anyone inactive N+ days every daily scan, throttled by the cooldown via `SendScheduledCampaign::recentlyNudged()` (skips users with a `campaign_deliveries` row inside the window). Touched: migration, `ScheduledCampaign` (fillable+casts), `ScheduledCampaignResource` (form fields + `normalizeSchedule` null-out + table badge), `SendScheduledCampaign::inactiveUserIds()` (query flips `=`→`<=`). Verified: migration ran, tinker smoke test confirmed new columns persist + repeat-mode SQL executes; PHPStan delta = 0 new errors (stash-compared, 23 pre-existing local larastan cast artifacts unchanged).
+
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
 - **W-0.8** Deployment prep (blocked on W-DEC-1)
@@ -163,6 +165,7 @@ Ready for **Phase 3 — Mobile (Planning-Mobile.md)** to start in parallel using
 ---
 
 ## Session Recap
+- **2026-05-25 (inactive-user reactivation cadence):** The "we miss you" inactive-customer push was already built (Scheduled Push, `audience='inactive'`). Added an admin per-campaign choice: `inactivity_repeat` toggle (+ `inactivity_cooldown_days`) — OFF = drip once at exactly N days, ON = keep reminding anyone N+ days inactive each scan, cooldown-throttled. Migration `2026_05_25_000100`. Verified via tinker smoke test; zero new PHPStan errors (stash-compared). Not yet committed.
 - **2026-05-22 → 2026-05-24 (PWA-pilot polish bundle):** Fixed long-standing PWA checkout 419 (cookie refresh + CSRF except-list, same playbook as `1d431b5`); shipped pull-to-refresh + manual refresh on the order page; admin-configurable referral program (rewards, gating, share text with placeholders); new POS `/recent` endpoint; voucher BxGy save-bug fix (`dehydrated(false)` was wiping cross-sell selections); voucher redemptions modal in admin; public digital receipt page at `/r/{number}` (plain URL, not signed); expanded order API to include service charge, discount, tumbler, vouchers array + per-line voucher_code/role; full notes plumbing (POS read + edit endpoints + walk-in capture + receipt page render); split review submit so branch and per-product are independent. Caught and fixed missing `Order::redemptions()` hasMany after a prod 500.
 - **2026-05-12:** Validated Phase 1 end-to-end (routes ↔ controllers ↔ Inertia pages ↔ Echo channels ↔ PWA build), shipped a feature bundle (branch-home + label printing + user address), seeded admin accounts, added the Filament Web Push settings page with provider-level config hydration, and fixed a latent settings-encryption bug. 137 tests green.
 - Stack: Laravel 12 + Filament 3 + Inertia + React + TS, OnSend WhatsApp as Layer 2.

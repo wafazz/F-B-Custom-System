@@ -135,6 +135,23 @@ class ScheduledCampaignResource extends Resource
                             : 'Fires once — the day a customer reaches this many days inactive (e.g. 7, 14, 30).')
                         ->required(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'voucher_expiry'], true))
                         ->visible(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'voucher_expiry'], true)),
+                    Forms\Components\Toggle::make('inactivity_repeat')
+                        ->label('Keep reminding while inactive')
+                        ->default(false)
+                        ->live()
+                        ->helperText('Off: nudge once on the day they reach the threshold (stack 7/14/30-day campaigns for a drip). On: re-send every scan while they stay inactive, throttled by the cooldown below.')
+                        ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive')
+                        ->columnSpanFull(),
+                    Forms\Components\TextInput::make('inactivity_cooldown_days')
+                        ->label('Re-send cooldown')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(365)
+                        ->default(7)
+                        ->suffix('days')
+                        ->helperText('Minimum gap before the same customer is reminded again.')
+                        ->required(fn (Forms\Get $get) => $get('audience') === 'inactive' && $get('inactivity_repeat'))
+                        ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive' && $get('inactivity_repeat')),
                 ])
                 ->columns(2),
 
@@ -235,7 +252,7 @@ class ScheduledCampaignResource extends Resource
                     ->formatStateUsing(fn (?string $state, ScheduledCampaign $r) => match (true) {
                         $r->trigger_type === 'location' => $r->branch?->name ?? 'Outlet',
                         $r->trigger_type === 'abandoned_cart' => '—',
-                        $state === 'inactive' => 'Inactive · '.($r->inactivity_signal === 'last_seen' ? 'no activity' : 'no order').' '.$r->inactivity_days.'d',
+                        $state === 'inactive' => 'Inactive · '.($r->inactivity_signal === 'last_seen' ? 'no activity' : 'no order').' '.$r->inactivity_days.'d'.($r->inactivity_repeat ? ' · repeat '.$r->inactivity_cooldown_days.'d' : ''),
                         $state === 'voucher_expiry' => 'Voucher expiry · '.$r->inactivity_days.'d before',
                         $state === 'birthday' => 'Birthday'.($r->voucher_id ? ' · voucher' : ''),
                         default => 'All customers',
@@ -307,6 +324,8 @@ class ScheduledCampaignResource extends Resource
             $data['voucher_id'] = null;
             $data['inactivity_signal'] = null;
             $data['inactivity_days'] = null;
+            $data['inactivity_repeat'] = false;
+            $data['inactivity_cooldown_days'] = null;
             $data['scheduled_at'] = null;
             $data['run_time'] = null;
             $data['run_days'] = null;
@@ -328,6 +347,17 @@ class ScheduledCampaignResource extends Resource
             $data['frequency'] = 'daily';
             $data['scheduled_at'] = null;
             $data['run_days'] = null;
+            if ($audience === 'inactive') {
+                // Repeat/cooldown only apply to the inactive audience; drop the
+                // cooldown unless the admin turned repeat reminders on.
+                if (empty($data['inactivity_repeat'])) {
+                    $data['inactivity_repeat'] = false;
+                    $data['inactivity_cooldown_days'] = null;
+                }
+            } else {
+                $data['inactivity_repeat'] = false;
+                $data['inactivity_cooldown_days'] = null;
+            }
             if ($audience === 'voucher_expiry') {
                 $data['inactivity_signal'] = null; // not used for voucher expiry
             }
@@ -339,6 +369,8 @@ class ScheduledCampaignResource extends Resource
             $data['voucher_id'] = null; // only the birthday audience carries a voucher
             $data['inactivity_signal'] = null;
             $data['inactivity_days'] = null;
+            $data['inactivity_repeat'] = false;
+            $data['inactivity_cooldown_days'] = null;
         }
 
         // run_days only applies to the daily 'all' broadcast (peak days).

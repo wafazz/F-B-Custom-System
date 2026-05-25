@@ -58,6 +58,8 @@ class ScheduledCampaign extends Model
         'audience',
         'inactivity_signal',
         'inactivity_days',
+        'inactivity_repeat',
+        'inactivity_cooldown_days',
         'frequency',
         'scheduled_at',
         'run_time',
@@ -71,6 +73,8 @@ class ScheduledCampaign extends Model
     {
         return [
             'inactivity_days' => 'integer',
+            'inactivity_repeat' => 'boolean',
+            'inactivity_cooldown_days' => 'integer',
             'radius_meters' => 'integer',
             'delay_minutes' => 'integer',
             'run_days' => 'array',

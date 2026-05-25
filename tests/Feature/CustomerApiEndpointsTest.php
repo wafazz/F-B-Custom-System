@@ -5,6 +5,7 @@ use App\Models\BranchReview;
 use App\Models\Category;
 use App\Models\HomeSlide;
 use App\Models\Product;
+use App\Models\ProductReview;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -207,4 +208,46 @@ test('branch reviews is publicly accessible without authentication', function ()
     $this->getJson("/api/branches/{$branch->id}/reviews")
         ->assertOk()
         ->assertJsonStructure(['branch' => ['id', 'name', 'avg_rating', 'reviews_count'], 'reviews']);
+});
+
+// ── Product reviews (modifier-sheet slider parity) ────────────────────────────
+
+test('GET /api/products/{product}/reviews returns visible reviews and rating summary', function () {
+    $cat = Category::factory()->create();
+    $product = Product::factory()->create([
+        'category_id' => $cat->id,
+        'avg_rating' => 4.5,
+        'reviews_count' => 2,
+    ]);
+
+    ProductReview::create([
+        'user_id' => User::factory()->create(['name' => 'Aisyah'])->id,
+        'product_id' => $product->id,
+        'rating' => 5,
+        'comment' => 'Best latte ever',
+        'is_hidden' => false,
+    ]);
+    ProductReview::create([
+        'user_id' => User::factory()->create()->id,
+        'product_id' => $product->id,
+        'rating' => 4,
+        'comment' => 'Good',
+        'is_hidden' => false,
+    ]);
+    ProductReview::create([
+        'user_id' => User::factory()->create()->id,
+        'product_id' => $product->id,
+        'rating' => 1,
+        'comment' => 'Hidden one',
+        'is_hidden' => true,
+    ]);
+
+    $this->getJson("/api/products/{$product->id}/reviews")
+        ->assertOk()
+        ->assertJsonPath('avg_rating', 4.5)
+        ->assertJsonPath('reviews_count', 2)
+        ->assertJsonCount(2, 'reviews')
+        ->assertJsonStructure(['avg_rating', 'reviews_count', 'reviews' => [['id', 'rating', 'comment', 'user_name', 'created_at']]])
+        ->assertJsonFragment(['user_name' => 'Aisyah', 'comment' => 'Best latte ever'])
+        ->assertJsonMissing(['comment' => 'Hidden one']);
 });

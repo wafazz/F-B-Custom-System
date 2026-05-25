@@ -3,7 +3,7 @@
 **Project:** Star Coffee — Multi-branch F&B Platform (Coffee & Pastry)
 **Phase:** 1 of 3 — Web App + PWA
 **Started:** 2026-05-08
-**Last Updated:** 2026-05-25 (inactive-user "we miss you" repeat-mode toggle on Scheduled Push)
+**Last Updated:** 2026-05-25 (usual-order reminder campaign + inactive repeat-mode toggle on Scheduled Push)
 
 ---
 
@@ -102,6 +102,8 @@
 
 - [✔] **2026-05-25 inactive-user reactivation repeat mode** — The "we miss you" reactivation push already existed (Marketing → Scheduled Push, `audience='inactive'`, admin sets `inactivity_signal` no-order/no-app-activity + `inactivity_days`). Added an admin choice for the cadence: new `inactivity_repeat` toggle + `inactivity_cooldown_days` (migration `2026_05_25_000100`). OFF = original drip (fires once on the exact day they hit N days inactive — stack 7/14/30-day campaigns). ON = re-engage anyone inactive N+ days every daily scan, throttled by the cooldown via `SendScheduledCampaign::recentlyNudged()` (skips users with a `campaign_deliveries` row inside the window). Touched: migration, `ScheduledCampaign` (fillable+casts), `ScheduledCampaignResource` (form fields + `normalizeSchedule` null-out + table badge), `SendScheduledCampaign::inactiveUserIds()` (query flips `=`→`<=`). Verified: migration ran, tinker smoke test confirmed new columns persist + repeat-mode SQL executes; PHPStan delta = 0 new errors (stash-compared, 23 pre-existing local larastan cast artifacts unchanged).
 
+- [✔] **2026-05-25 usual-order reminder campaign** — New `audience='usual'` on Scheduled Push: a daily "come back & buy your usual {item}" push. **No migration** — reuses `audience` + `inactivity_days` (= "remind if no order in last N days") + `inactivity_cooldown_days` (re-send gap). New `{usual}` placeholder filled per customer from their most-bought *completed*-order item via `SendScheduledCampaign::usualProductsFor()` (one grouped `order_items ⋈ orders` query per chunk). `usualReminderUserIds()` targets lapsed N+ day buyers minus cooldown; customers with no completed order are skipped in the send loop. `renderMessage()` gained a 4th `$usual` arg. Touched: `ScheduledCampaign` (renderMessage), `SendScheduledCampaign` (audienceQuery + 2 helpers + chunk loop), `ScheduledCampaignResource` (audience option, field labels/visibility, body helper, normalizeSchedule, table badge). Verified via reflection smoke test (targeting + usual lookup + {usual} render all correct); PHPStan still 23 (zero new). **Known gap:** usual item not availability/stock-checked. Not yet committed.
+
 ## Tasks Next (Pending Decisions)
 - **W-0.7.1** GitHub repo (blocked on W-DEC-2)
 - **W-0.8** Deployment prep (blocked on W-DEC-1)
@@ -165,6 +167,7 @@ Ready for **Phase 3 — Mobile (Planning-Mobile.md)** to start in parallel using
 ---
 
 ## Session Recap
+- **2026-05-25 (usual-order reminder):** New `audience='usual'` Scheduled Push — daily "come back for your usual {item}" to lapsed buyers (no order in N+ days), throttled by cooldown. `{usual}` placeholder = each customer's most-bought completed item (`usualProductsFor()`). No migration (reuses inactivity columns). No-history customers skipped. Verified via reflection smoke test; PHPStan 23 (no new). Not yet committed.
 - **2026-05-25 (inactive-user reactivation cadence):** The "we miss you" inactive-customer push was already built (Scheduled Push, `audience='inactive'`). Added an admin per-campaign choice: `inactivity_repeat` toggle (+ `inactivity_cooldown_days`) — OFF = drip once at exactly N days, ON = keep reminding anyone N+ days inactive each scan, cooldown-throttled. Migration `2026_05_25_000100`. Verified via tinker smoke test; zero new PHPStan errors (stash-compared). Not yet committed.
 - **2026-05-22 → 2026-05-24 (PWA-pilot polish bundle):** Fixed long-standing PWA checkout 419 (cookie refresh + CSRF except-list, same playbook as `1d431b5`); shipped pull-to-refresh + manual refresh on the order page; admin-configurable referral program (rewards, gating, share text with placeholders); new POS `/recent` endpoint; voucher BxGy save-bug fix (`dehydrated(false)` was wiping cross-sell selections); voucher redemptions modal in admin; public digital receipt page at `/r/{number}` (plain URL, not signed); expanded order API to include service charge, discount, tumbler, vouchers array + per-line voucher_code/role; full notes plumbing (POS read + edit endpoints + walk-in capture + receipt page render); split review submit so branch and per-product are independent. Caught and fixed missing `Order::redemptions()` hasMany after a prod 500.
 - **2026-05-12:** Validated Phase 1 end-to-end (routes ↔ controllers ↔ Inertia pages ↔ Echo channels ↔ PWA build), shipped a feature bundle (branch-home + label printing + user address), seeded admin accounts, added the Filament Web Push settings page with provider-level config hydration, and fixed a latent settings-encryption bug. 137 tests green.

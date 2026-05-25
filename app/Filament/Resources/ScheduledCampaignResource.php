@@ -69,7 +69,7 @@ class ScheduledCampaignResource extends Resource
                         ->required()
                         ->maxLength(180)
                         ->rows(2)
-                        ->helperText('Placeholders: {name} = customer\'s first name. {branch} = outlet name (location & abandoned-cart campaigns only).')
+                        ->helperText('Placeholders: {name} = customer\'s first name. {branch} = outlet name (location & abandoned-cart campaigns only). {usual} = their most-bought item (usual-order reminders only).')
                         ->columnSpanFull(),
                     Forms\Components\Select::make('url_quick_pick')
                         ->label('Quick pick (auto-fills URL)')
@@ -97,6 +97,7 @@ class ScheduledCampaignResource extends Resource
                         ->options([
                             'all' => 'All opted-in customers',
                             'inactive' => 'Inactive customers (re-engagement)',
+                            'usual' => 'Usual order reminder (come back & buy)',
                             'voucher_expiry' => 'Voucher expiring soon',
                             'birthday' => 'Birthday this month',
                         ])
@@ -125,16 +126,22 @@ class ScheduledCampaignResource extends Resource
                         ->required(fn (Forms\Get $get) => $get('audience') === 'inactive')
                         ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive'),
                     Forms\Components\TextInput::make('inactivity_days')
-                        ->label(fn (Forms\Get $get) => $get('audience') === 'voucher_expiry' ? 'Days before expiry' : 'Days inactive')
+                        ->label(fn (Forms\Get $get) => match ($get('audience')) {
+                            'voucher_expiry' => 'Days before expiry',
+                            'usual' => 'Remind if no order in the last',
+                            default => 'Days inactive',
+                        })
                         ->numeric()
                         ->minValue(0)
                         ->maxValue(365)
                         ->suffix('days')
-                        ->helperText(fn (Forms\Get $get) => $get('audience') === 'voucher_expiry'
-                            ? 'Fires once, this many days before an unused voucher expires (e.g. 3, 1, or 0 for expiry day).'
-                            : 'Fires once — the day a customer reaches this many days inactive (e.g. 7, 14, 30).')
-                        ->required(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'voucher_expiry'], true))
-                        ->visible(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'voucher_expiry'], true)),
+                        ->helperText(fn (Forms\Get $get) => match ($get('audience')) {
+                            'voucher_expiry' => 'Fires once, this many days before an unused voucher expires (e.g. 3, 1, or 0 for expiry day).',
+                            'usual' => 'Only nudges customers who haven\'t ordered in this many days, featuring their most-bought item (e.g. 14, 30).',
+                            default => 'Fires once — the day a customer reaches this many days inactive (e.g. 7, 14, 30).',
+                        })
+                        ->required(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry'], true))
+                        ->visible(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry'], true)),
                     Forms\Components\Toggle::make('inactivity_repeat')
                         ->label('Keep reminding while inactive')
                         ->default(false)
@@ -147,11 +154,11 @@ class ScheduledCampaignResource extends Resource
                         ->numeric()
                         ->minValue(1)
                         ->maxValue(365)
-                        ->default(7)
+                        ->default(fn (Forms\Get $get) => $get('audience') === 'usual' ? 14 : 7)
                         ->suffix('days')
                         ->helperText('Minimum gap before the same customer is reminded again.')
-                        ->required(fn (Forms\Get $get) => $get('audience') === 'inactive' && $get('inactivity_repeat'))
-                        ->visible(fn (Forms\Get $get) => $get('audience') === 'inactive' && $get('inactivity_repeat')),
+                        ->required(fn (Forms\Get $get) => $get('audience') === 'usual' || ($get('audience') === 'inactive' && $get('inactivity_repeat')))
+                        ->visible(fn (Forms\Get $get) => $get('audience') === 'usual' || ($get('audience') === 'inactive' && $get('inactivity_repeat'))),
                 ])
                 ->columns(2),
 
@@ -205,10 +212,10 @@ class ScheduledCampaignResource extends Resource
                         ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'once')
                         ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'once'),
                     Forms\Components\TimePicker::make('run_time')
-                        ->label(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'voucher_expiry', 'birthday'], true) ? 'Daily scan time' : 'Time of day')
+                        ->label(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry', 'birthday'], true) ? 'Daily scan time' : 'Time of day')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'voucher_expiry', 'birthday'], true) || $get('frequency') === 'daily'))
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'voucher_expiry', 'birthday'], true) || $get('frequency') === 'daily')),
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry', 'birthday'], true) || $get('frequency') === 'daily'))
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry', 'birthday'], true) || $get('frequency') === 'daily')),
                     Forms\Components\CheckboxList::make('run_days')
                         ->label('Days (peak days)')
                         ->options([
@@ -253,6 +260,7 @@ class ScheduledCampaignResource extends Resource
                         $r->trigger_type === 'location' => $r->branch?->name ?? 'Outlet',
                         $r->trigger_type === 'abandoned_cart' => '—',
                         $state === 'inactive' => 'Inactive · '.($r->inactivity_signal === 'last_seen' ? 'no activity' : 'no order').' '.$r->inactivity_days.'d'.($r->inactivity_repeat ? ' · repeat '.$r->inactivity_cooldown_days.'d' : ''),
+                        $state === 'usual' => 'Usual order · no order '.$r->inactivity_days.'d · every '.$r->inactivity_cooldown_days.'d',
                         $state === 'voucher_expiry' => 'Voucher expiry · '.$r->inactivity_days.'d before',
                         $state === 'birthday' => 'Birthday'.($r->voucher_id ? ' · voucher' : ''),
                         default => 'All customers',
@@ -342,7 +350,7 @@ class ScheduledCampaignResource extends Resource
         $data['branch_id'] = null;
         $data['radius_meters'] = null;
         $audience = $data['audience'] ?? 'all';
-        if ($audience === 'inactive' || $audience === 'voucher_expiry' || $audience === 'birthday') {
+        if (in_array($audience, ['inactive', 'usual', 'voucher_expiry', 'birthday'], true)) {
             // Daily-scan audiences run every day — no weekday filter.
             $data['frequency'] = 'daily';
             $data['scheduled_at'] = null;
@@ -354,6 +362,11 @@ class ScheduledCampaignResource extends Resource
                     $data['inactivity_repeat'] = false;
                     $data['inactivity_cooldown_days'] = null;
                 }
+            } elseif ($audience === 'usual') {
+                // Usual reminder always throttles by the cooldown; it doesn't
+                // use the signal or the repeat toggle.
+                $data['inactivity_signal'] = null;
+                $data['inactivity_repeat'] = false;
             } else {
                 $data['inactivity_repeat'] = false;
                 $data['inactivity_cooldown_days'] = null;

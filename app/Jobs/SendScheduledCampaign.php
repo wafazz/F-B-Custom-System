@@ -39,12 +39,23 @@ class SendScheduledCampaign implements ShouldQueue
             return;
         }
 
-        $query->chunkById(500, function ($users) use ($campaign, $push) {
+        $isUsual = $campaign->audience === 'usual';
+
+        $query->chunkById(500, function ($users) use ($campaign, $push, $isUsual) {
+            // Usual-order reminders need each customer's most-bought item; pull
+            // them for the whole chunk in one query.
+            $usualMap = $isUsual ? $this->usualProductsFor($users->pluck('id')->map(fn ($id) => (int) $id)->all()) : [];
+
             $delivered = [];
             foreach ($users as $user) {
+                $usual = $usualMap[(int) $user->getKey()] ?? null;
+                // No purchase history → nothing to remind them of; skip.
+                if ($isUsual && $usual === null) {
+                    continue;
+                }
                 $report = $push->sendToUser((int) $user->getKey(), [
-                    'title' => $campaign->renderMessage((string) $campaign->title, $user),
-                    'body' => $campaign->renderMessage((string) $campaign->body, $user),
+                    'title' => $campaign->renderMessage((string) $campaign->title, $user, null, $usual),
+                    'body' => $campaign->renderMessage((string) $campaign->body, $user, null, $usual),
                     'url' => $campaign->url ?: '/',
                     'tag' => 'campaign-'.$campaign->id,
                 ]);
@@ -85,6 +96,12 @@ class SendScheduledCampaign implements ShouldQueue
 
         if ($campaign->audience === 'birthday') {
             $ids = $this->birthdayUserIds($campaign);
+
+            return $ids === [] ? null : $base->whereIn('id', $ids);
+        }
+
+        if ($campaign->audience === 'usual') {
+            $ids = $this->usualReminderUserIds($campaign);
 
             return $ids === [] ? null : $base->whereIn('id', $ids);
         }
@@ -159,6 +176,74 @@ class SendScheduledCampaign implements ShouldQueue
             ->pluck('user_id')
             ->map(fn ($id) => (int) $id)
             ->all();
+    }
+
+    /**
+     * "Come back for your usual" reminder. Targets customers whose last order
+     * was N+ days ago (lapsing buyers), throttled by inactivity_cooldown_days
+     * so the same person isn't nudged every daily scan. Anyone with no usual
+     * (no completed orders) is dropped later in the send loop.
+     *
+     * @return list<int>
+     */
+    private function usualReminderUserIds(ScheduledCampaign $campaign): array
+    {
+        $days = (int) $campaign->inactivity_days;
+        if ($days < 1) {
+            return [];
+        }
+        $target = now()->subDays($days)->toDateString();
+
+        $ids = DB::table('orders')
+            ->whereNotNull('user_id')
+            ->groupBy('user_id')
+            ->havingRaw('DATE(MAX(created_at)) <= ?', [$target])
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return array_values(array_diff($ids, $this->recentlyNudged($campaign)));
+    }
+
+    /**
+     * Each customer's most-bought item across their completed orders, keyed by
+     * user_id. One grouped query for the whole id set; PHP keeps the top row
+     * per customer (rows arrive ordered by user then quantity desc). Users with
+     * no completed orders are simply absent from the map.
+     *
+     * @param  list<int>  $userIds
+     * @return array<int, string>
+     */
+    private function usualProductsFor(array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        $rows = DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereIn('orders.user_id', $userIds)
+            ->where('orders.status', 'completed')
+            ->whereNotNull('order_items.product_name')
+            ->groupBy('orders.user_id', 'order_items.product_name')
+            ->orderBy('orders.user_id')
+            ->orderByDesc('qty')
+            ->select('orders.user_id', 'order_items.product_name', DB::raw('SUM(order_items.quantity) as qty'))
+            ->get();
+
+        $usual = [];
+        foreach ($rows as $row) {
+            $uid = (int) $row->user_id;
+            if (! isset($usual[$uid])) {
+                $usual[$uid] = (string) $row->product_name; // first = highest qty
+            }
+        }
+
+        return $usual;
     }
 
     /**

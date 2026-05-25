@@ -26,13 +26,14 @@ class ScheduledCampaign extends Model
 
     /**
      * Fill the push placeholders: {name} → customer's first name,
-     * {branch} → outlet name (where a branch context applies).
+     * {branch} → outlet name (where a branch context applies),
+     * {usual} → the customer's most-bought item (usual-order reminders).
      */
-    public function renderMessage(string $text, ?User $user = null, ?string $branchName = null): string
+    public function renderMessage(string $text, ?User $user = null, ?string $branchName = null, ?string $usual = null): string
     {
         $first = $user !== null ? trim((string) explode(' ', (string) $user->name)[0]) : '';
 
-        return str_replace(['{name}', '{branch}'], [$first, (string) $branchName], $text);
+        return str_replace(['{name}', '{branch}', '{usual}'], [$first, (string) $branchName, (string) $usual], $text);
     }
 
     /** Active proximity campaigns that have a target branch + radius set. */

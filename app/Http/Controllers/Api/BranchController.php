@@ -58,13 +58,18 @@ class BranchController extends Controller
     /** Today's "open – close" label, or null when closed/unset for today. */
     protected function todaysHours(Branch $b): ?string
     {
-        $day = strtolower(now()->englishDayOfWeek);
-        $hours = is_array($b->operating_hours) ? ($b->operating_hours[$day] ?? null) : null;
-        if (! is_array($hours) || empty($hours['enabled'])) {
+        // getAttribute() applies the 'array' cast at runtime and is typed mixed,
+        // so is_array() narrows cleanly (the property's static type is string|null).
+        $hours = $b->getAttribute('operating_hours');
+        if (! is_array($hours)) {
             return null;
         }
-        $open = (string) ($hours['open'] ?? '');
-        $close = (string) ($hours['close'] ?? '');
+        $today = $hours[strtolower(now()->englishDayOfWeek)] ?? null;
+        if (! is_array($today) || empty($today['enabled'])) {
+            return null;
+        }
+        $open = (string) ($today['open'] ?? '');
+        $close = (string) ($today['close'] ?? '');
         if ($open === '' || $close === '') {
             return null;
         }

@@ -377,3 +377,29 @@ test('promo picker 404s for a non-bxgy voucher', function () {
 
     $this->getJson("/api/branches/{$branch->id}/promos/FLAT5")->assertNotFound();
 });
+
+// ── Loyalty page (mobile Membership tab parity) ───────────────────────────────
+
+test('GET /api/loyalty/page requires authentication', function () {
+    $this->getJson('/api/loyalty/page')->assertUnauthorized();
+});
+
+test('GET /api/loyalty/page returns slides, referral, balance, tiers and history', function () {
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/loyalty/page')
+        ->assertOk()
+        ->assertJsonStructure([
+            'slides' => [['type', 'title', 'image', 'subtitle', 'cta_label', 'cta_url']],
+            'referral' => ['code', 'share_url', 'referrer_bonus'],
+            'balance',
+            'redeem_value',
+            'lifetime_spend',
+            'current_tier',
+            'next_tier',
+            'history',
+            'membership_tiers',
+        ])
+        ->assertJsonPath('referral.code', $user->referral_code);
+});

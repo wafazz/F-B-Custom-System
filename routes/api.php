@@ -123,6 +123,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Loyalty
     Route::get('/loyalty', [LoyaltyController::class, 'show'])->name('api.loyalty.show');
+    Route::get('/loyalty/page', [LoyaltyController::class, 'page'])->name('api.loyalty.page');
     Route::get('/loyalty/history', [LoyaltyController::class, 'history'])
         ->name('api.loyalty.history');
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BillplzWebhookController;
 use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\BranchHomeController;
 use App\Http\Controllers\Api\BranchMenuController;
+use App\Http\Controllers\Api\BranchReviewsController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\FavouriteController;
 use App\Http\Controllers\Api\LoyaltyController;
@@ -27,6 +28,7 @@ Route::get('/branches', [BranchController::class, 'index'])->name('api.branches.
 Route::get('/branches/{branch}', [BranchController::class, 'show'])->name('api.branches.show');
 Route::get('/branches/{branch}/menu', BranchMenuController::class)->name('api.branches.menu');
 Route::get('/branches/{branch}/home', BranchHomeController::class)->name('api.branches.home');
+Route::get('/branches/{branch}/reviews', BranchReviewsController::class)->name('api.branches.reviews');
 
 Route::post('/auth/register', [AuthController::class, 'register'])
     ->middleware('throttle:6,1')

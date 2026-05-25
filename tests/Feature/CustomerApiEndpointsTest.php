@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Branch;
+use App\Models\BranchReview;
 use App\Models\Category;
 use App\Models\HomeSlide;
 use App\Models\Product;
@@ -160,4 +161,50 @@ test('GET /api/branches returns open status, todays hours and rating fields', fu
         ->assertJsonPath('branches.0.todays_hours', '00:00 – 23:59')
         ->assertJsonPath('branches.0.avg_rating', 4.5)
         ->assertJsonPath('branches.0.reviews_count', 12);
+});
+
+// ── Branch reviews (mobile parity) ────────────────────────────────────────────
+
+test('GET /api/branches/{branch}/reviews returns visible reviews and rating summary', function () {
+    $branch = Branch::factory()->create(['avg_rating' => 4.5, 'reviews_count' => 2]);
+
+    BranchReview::create([
+        'user_id' => User::factory()->create(['name' => 'Faiz Niseng'])->id,
+        'branch_id' => $branch->id,
+        'rating' => 5,
+        'comment' => 'Terbaikk, boleh repeat lagi',
+        'is_hidden' => false,
+    ]);
+    BranchReview::create([
+        'user_id' => User::factory()->create()->id,
+        'branch_id' => $branch->id,
+        'rating' => 4,
+        'comment' => 'Good',
+        'is_hidden' => false,
+    ]);
+    BranchReview::create([
+        'user_id' => User::factory()->create()->id,
+        'branch_id' => $branch->id,
+        'rating' => 1,
+        'comment' => 'Hidden one',
+        'is_hidden' => true,
+    ]);
+
+    $this->getJson("/api/branches/{$branch->id}/reviews")
+        ->assertOk()
+        ->assertJsonPath('branch.id', $branch->id)
+        ->assertJsonPath('branch.avg_rating', 4.5)
+        ->assertJsonPath('branch.reviews_count', 2)
+        ->assertJsonCount(2, 'reviews')
+        ->assertJsonStructure(['reviews' => [['id', 'rating', 'comment', 'user_name', 'created_at']]])
+        ->assertJsonFragment(['user_name' => 'Faiz Niseng', 'comment' => 'Terbaikk, boleh repeat lagi'])
+        ->assertJsonMissing(['comment' => 'Hidden one']);
+});
+
+test('branch reviews is publicly accessible without authentication', function () {
+    $branch = Branch::factory()->create();
+
+    $this->getJson("/api/branches/{$branch->id}/reviews")
+        ->assertOk()
+        ->assertJsonStructure(['branch' => ['id', 'name', 'avg_rating', 'reviews_count'], 'reviews']);
 });

@@ -7,6 +7,7 @@ use App\Models\CustomerCart;
 use App\Models\HomeSlide;
 use App\Models\Product;
 use App\Models\ProductReview;
+use App\Models\Voucher;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -292,4 +293,45 @@ test('POST /api/cart/sync with an empty cart clears the stored row', function ()
         ->assertJsonPath('cleared', true);
 
     expect(CustomerCart::query()->where('user_id', $user->id)->exists())->toBeFalse();
+});
+
+// ── Vouchers (eligible-only + banner image, mobile parity) ────────────────────
+
+test('GET /api/vouchers returns eligible vouchers with banner image and points balance', function () {
+    $user = User::factory()->create();
+    Voucher::factory()->create([
+        'code' => 'WELCOME10',
+        'banner_image' => 'vouchers/welcome.jpg',
+        'is_spin_only' => false,
+        'is_check_in_only' => false,
+    ]);
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/vouchers')
+        ->assertOk()
+        ->assertJsonStructure([
+            'available' => [
+                ['id', 'code', 'name', 'banner_image', 'discount_type', 'valid_from', 'max_uses_per_user', 'tier_names', 'product_names', 'combo_names', 'new_users_only', 'points_cost'],
+            ],
+            'claimed',
+            'points_balance',
+        ])
+        ->assertJsonPath('available.0.code', 'WELCOME10')
+        ->assertJsonPath('available.0.banner_image', 'vouchers/welcome.jpg');
+});
+
+test('GET /api/vouchers hides vouchers the customer is not eligible for', function () {
+    $user = User::factory()->create();
+    \App\Models\Order::factory()->create(['user_id' => $user->id]);
+    Voucher::factory()->create([
+        'code' => 'NEWBIE',
+        'new_users_only' => true,
+        'is_spin_only' => false,
+        'is_check_in_only' => false,
+    ]);
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/vouchers')
+        ->assertOk()
+        ->assertJsonMissing(['code' => 'NEWBIE']);
 });

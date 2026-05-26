@@ -140,6 +140,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/wallet/transactions', [WalletController::class, 'transactions'])
         ->name('api.wallet.transactions');
     Route::get('/wallet/history', [WalletController::class, 'history'])->name('api.wallet.history');
+    Route::post('/wallet/reconcile', [WalletController::class, 'reconcile'])
+        ->middleware('throttle:20,1')
+        ->name('api.wallet.reconcile');
     Route::post('/wallet/topup', [WalletController::class, 'topup'])
         ->middleware('throttle:10,1')
         ->name('api.wallet.topup');

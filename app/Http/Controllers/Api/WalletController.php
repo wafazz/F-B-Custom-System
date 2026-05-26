@@ -27,6 +27,11 @@ class WalletController extends Controller
             'lifetime_topup' => $row ? (float) $row->lifetime_topup : 0.0,
             'lifetime_spent' => $row ? (float) $row->lifetime_spent : 0.0,
             'topup_amounts' => [10, 20, 50, 100, 200],
+            'pending_topups' => WalletTopup::query()
+                ->where('user_id', $userId)
+                ->where('status', 'pending')
+                ->whereNotNull('billplz_reference')
+                ->count(),
         ]);
     }
 
@@ -103,6 +108,49 @@ class WalletController extends Controller
         usort($items, fn ($a, $b) => strcmp((string) $b['created_at'], (string) $a['created_at']));
 
         return response()->json(['history' => \array_slice($items, 0, 100)]);
+    }
+
+    /**
+     * Re-query Billplz for the user's pending top-ups and credit any that are
+     * now paid (or cancel deleted bills). The app calls this when returning
+     * from the payment browser, so the wallet self-heals even if the
+     * server-to-server webhook never landed. Returns how many were credited.
+     */
+    public function reconcile(Request $request, BillplzGateway $gateway, WalletService $wallet): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $pending = WalletTopup::query()
+            ->where('user_id', $user->getKey())
+            ->where('status', 'pending')
+            ->whereNotNull('billplz_reference')
+            ->get();
+
+        $credited = 0;
+        foreach ($pending as $topup) {
+            try {
+                $bill = $gateway->fetchBill((string) $topup->billplz_reference);
+                if ((bool) ($bill['paid'] ?? false)) {
+                    $wallet->applyTopupPaid($topup);
+                    $credited++;
+                } elseif ((string) ($bill['state'] ?? '') === 'deleted') {
+                    $topup->forceFill(['status' => 'cancelled'])->save();
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Wallet reconcile failed', [
+                    'topup_id' => $topup->id,
+                    'reference' => $topup->billplz_reference,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'ok' => true,
+            'credited' => $credited,
+            'balance' => (float) $wallet->balance((int) $user->getKey()),
+        ]);
     }
 
     public function topup(Request $request, BillplzGateway $gateway): JsonResponse

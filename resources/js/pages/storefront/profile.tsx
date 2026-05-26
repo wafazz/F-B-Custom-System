@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     Bell,
+    Camera,
     ChevronRight,
     Download,
     Home,
@@ -13,7 +14,7 @@ import {
     Trophy,
     User,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,7 @@ import { cn } from '@/lib/utils';
 interface ProfileData {
     name: string;
     email: string;
+    photo: string | null;
     phone: string | null;
     date_of_birth: string | null;
     date_of_birth_locked: boolean;
@@ -120,10 +122,25 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
         password: '',
         password_confirmation: '',
     });
+    const photoForm = useForm<{ photo: File | null }>({ photo: null });
+    const photoInputRef = useRef<HTMLInputElement>(null);
 
     function onSave(e: React.FormEvent) {
         e.preventDefault();
         form.put('/profile', { preserveScroll: true });
+    }
+
+    function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        photoForm.transform(() => ({ photo: file }));
+        photoForm.post('/profile/photo', {
+            preserveScroll: true,
+            forceFormData: true,
+            onFinish: () => {
+                if (photoInputRef.current) photoInputRef.current.value = '';
+            },
+        });
     }
 
     function onPasswordSave(e: React.FormEvent) {
@@ -154,12 +171,42 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
             <Head title="Profile" />
 
             <header className="border-border bg-card mb-4 flex items-center gap-4 rounded-2xl border p-5 shadow-sm">
-                <div className="bg-primary/10 text-primary flex size-14 items-center justify-center rounded-full">
-                    <User className="size-7" />
-                </div>
+                <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={photoForm.processing}
+                    aria-label="Change profile photo"
+                    className="bg-primary/10 text-primary relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full disabled:opacity-60"
+                >
+                    {profile.photo ? (
+                        <img
+                            src={`/storage/${profile.photo}`}
+                            alt=""
+                            className="size-full object-cover"
+                        />
+                    ) : (
+                        <User className="size-7" />
+                    )}
+                    <span className="bg-primary text-primary-foreground absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border-2 border-white">
+                        <Camera className="size-2.5" />
+                    </span>
+                </button>
+                <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onPhotoChange}
+                />
                 <div className="flex-1">
                     <p className="text-base font-bold">{profile.name}</p>
                     <p className="text-muted-foreground text-xs">{profile.email}</p>
+                    {photoForm.processing && (
+                        <p className="text-muted-foreground text-[10px]">Uploading photo…</p>
+                    )}
+                    {photoForm.errors.photo && (
+                        <p className="text-[10px] text-red-600">{photoForm.errors.photo}</p>
+                    )}
                     {loyalty.tier_name && (
                         <p
                             className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold"

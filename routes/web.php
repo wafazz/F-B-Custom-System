@@ -116,6 +116,9 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', LogoutController::class)->name('logout');
     Route::get('profile', [ProfileController::class, 'show'])->name('profile');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('profile/photo', [ProfileController::class, 'updatePhoto'])
+        ->middleware('throttle:20,1')
+        ->name('profile.photo');
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])
         ->middleware('throttle:5,1')
         ->name('profile.password');

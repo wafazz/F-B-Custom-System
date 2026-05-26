@@ -11,6 +11,7 @@ use App\Services\Loyalty\LoyaltyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +30,7 @@ class ProfileController extends Controller
             'profile' => [
                 'name' => $user->name,
                 'email' => $user->email,
+                'photo' => $user->photo,
                 'phone' => $user->phone,
                 'date_of_birth' => $user->date_of_birth ? Carbon::parse((string) $user->date_of_birth)->format('Y-m-d') : null,
                 'date_of_birth_locked' => $user->date_of_birth !== null,
@@ -108,6 +110,29 @@ class ProfileController extends Controller
         $user->update($data);
 
         return back()->with('success', 'Profile updated.');
+    }
+
+    public function updatePhoto(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+        ]);
+
+        $path = $request->file('photo')->store('avatars', 'public');
+
+        $old = $user->photo;
+        $user->update(['photo' => $path]);
+
+        // Prune the replaced upload only if it lived on the public disk —
+        // external avatar URLs (e.g. social login) won't resolve there.
+        if ($old !== null && Storage::disk('public')->exists($old)) {
+            Storage::disk('public')->delete($old);
+        }
+
+        return back()->with('success', 'Profile photo updated.');
     }
 
     public function updatePassword(Request $request): RedirectResponse

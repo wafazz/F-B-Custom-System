@@ -177,7 +177,35 @@ class OrderController extends Controller
     {
         $order->load(['items.modifiers', 'branch']);
 
-        return response()->json(['order' => $this->present($order)]);
+        $userId = $order->user_id;
+        $hasReviewedBranch = false;
+        $reviewedProductIds = [];
+        if ($userId !== null) {
+            $hasReviewedBranch = \App\Models\BranchReview::query()
+                ->where('user_id', $userId)
+                ->where('branch_id', $order->branch_id)
+                ->exists();
+
+            $productIds = $order->items->pluck('product_id')->filter()->unique()->all();
+            if (! empty($productIds)) {
+                $reviewedProductIds = \App\Models\ProductReview::query()
+                    ->where('user_id', $userId)
+                    ->whereIn('product_id', $productIds)
+                    ->pluck('product_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
+            }
+        }
+
+        return response()->json([
+            'order' => $this->present($order),
+            'has_reviewed_branch' => $hasReviewedBranch,
+            'reviewed_product_ids' => $reviewedProductIds,
+            'reverb' => [
+                'channel' => "orders.{$order->id}",
+                'event' => 'order.status.changed',
+            ],
+        ]);
     }
 
     public function index(Request $request): JsonResponse

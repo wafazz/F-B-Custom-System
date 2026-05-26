@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\PointRewardController;
 use App\Http\Controllers\Api\PromoPickerController;
 use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\ReferralController;
+use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SpinController;
 use App\Http\Controllers\Api\VoucherController;
 use App\Http\Controllers\Api\WalletController;
@@ -171,6 +172,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Referral
     Route::get('/referral', [ReferralController::class, 'show'])->name('api.referral.show');
+
+    // Reviews (submit)
+    Route::post('/branches/{branch}/reviews', [ReviewController::class, 'storeBranchReview'])
+        ->middleware('throttle:20,1')
+        ->name('api.branches.reviews.store');
+    Route::post('/products/{product}/reviews', [ReviewController::class, 'storeProductReview'])
+        ->middleware('throttle:20,1')
+        ->name('api.products.reviews.store');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');

@@ -53,6 +53,58 @@ class WalletController extends Controller
         ]);
     }
 
+    /**
+     * Unified wallet history: completed ledger movements (successful top-ups,
+     * spends, refunds, adjustments) merged with unsuccessful/incomplete top-up
+     * attempts (failed/cancelled/pending) that never hit the ledger — newest
+     * first, so the customer sees the full picture.
+     */
+    public function history(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $userId = (int) $user->getKey();
+
+        $items = [];
+
+        foreach (
+            WalletTransaction::query()->where('user_id', $userId)->latest('id')->limit(100)->get() as $t
+        ) {
+            $items[] = [
+                'id' => 'tx-'.$t->id,
+                'kind' => $t->type, // topup | spend | refund | adjustment
+                'status' => 'successful',
+                'amount' => (float) $t->amount,
+                'balance_after' => (float) $t->balance_after,
+                'description' => $t->description,
+                'created_at' => $t->created_at?->toIso8601String(),
+            ];
+        }
+
+        foreach (
+            WalletTopup::query()
+                ->where('user_id', $userId)
+                ->whereIn('status', ['failed', 'cancelled', 'pending'])
+                ->latest('id')
+                ->limit(50)
+                ->get() as $tp
+        ) {
+            $items[] = [
+                'id' => 'topup-'.$tp->id,
+                'kind' => 'topup',
+                'status' => $tp->status, // failed | cancelled | pending
+                'amount' => (float) $tp->amount,
+                'balance_after' => null,
+                'description' => 'Wallet top-up',
+                'created_at' => $tp->created_at?->toIso8601String(),
+            ];
+        }
+
+        usort($items, fn ($a, $b) => strcmp((string) $b['created_at'], (string) $a['created_at']));
+
+        return response()->json(['history' => \array_slice($items, 0, 100)]);
+    }
+
     public function topup(Request $request, BillplzGateway $gateway): JsonResponse
     {
         $data = $request->validate([

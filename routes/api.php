@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductReviewsController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\PointRewardController;
 use App\Http\Controllers\Api\PromoPickerController;
 use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\SpinController;
@@ -160,6 +161,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/check-in', [DailyCheckInController::class, 'checkIn'])
         ->middleware('throttle:10,1')
         ->name('api.check-in.store');
+
+    // Point rewards (claim points for catalogue rewards)
+    Route::get('/point-rewards', [PointRewardController::class, 'index'])->name('api.point-rewards.index');
+    Route::post('/point-rewards/{pointReward}/redeem', [PointRewardController::class, 'redeem'])
+        ->middleware('throttle:20,1')
+        ->name('api.point-rewards.redeem');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');

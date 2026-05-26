@@ -28,16 +28,16 @@ class ScheduledCampaignResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    // Restricted to super admin for now — hidden from the nav AND blocked at
+    // Restricted to admin tier — hidden from the nav AND blocked at
     // the route level for everyone else.
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        return auth()->user()?->hasAnyRole(['super_admin', 'hq_admin']) ?? false;
     }
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        return auth()->user()?->hasAnyRole(['super_admin', 'hq_admin']) ?? false;
     }
 
     public static function form(Form $form): Form

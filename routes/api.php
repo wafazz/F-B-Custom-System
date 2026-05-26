@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PointRewardController;
 use App\Http\Controllers\Api\PromoPickerController;
 use App\Http\Controllers\Api\PushSubscriptionController;
+use App\Http\Controllers\Api\ReferralController;
 use App\Http\Controllers\Api\SpinController;
 use App\Http\Controllers\Api\VoucherController;
 use App\Http\Controllers\Api\WalletController;
@@ -167,6 +168,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/point-rewards/{pointReward}/redeem', [PointRewardController::class, 'redeem'])
         ->middleware('throttle:20,1')
         ->name('api.point-rewards.redeem');
+
+    // Referral
+    Route::get('/referral', [ReferralController::class, 'show'])->name('api.referral.show');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');

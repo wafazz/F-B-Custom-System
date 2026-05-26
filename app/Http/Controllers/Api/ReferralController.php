@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\ReferralReward;
+use App\Models\User;
+use App\Services\Settings\SettingsRepository;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class ReferralController extends Controller
+{
+    public function show(Request $request, SettingsRepository $settings): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $rewards = ReferralReward::query()
+            ->with('referee:id,name,email')
+            ->where('referrer_user_id', $user->getKey())
+            ->latest()
+            ->get();
+
+        $rows = [];
+        foreach ($rewards as $r) {
+            $referee = $r->referee;
+            $rows[] = [
+                'id' => $r->id,
+                'referee_name' => $referee instanceof User ? $referee->name : '—',
+                'points_earned' => $r->referrer_points,
+                'created_at' => $r->created_at?->toIso8601String(),
+            ];
+        }
+
+        return response()->json([
+            'code' => $user->referral_code,
+            'share_url' => url('/register').'?ref='.$user->referral_code,
+            'enabled' => $settings->get('referral.enabled', '1') === '1',
+            'referrer_bonus' => (int) $settings->get(
+                'referral.referrer_points',
+                (string) config('services.referral.referrer_bonus_points', 100),
+            ),
+            'referee_bonus' => (int) $settings->get(
+                'referral.referee_points',
+                (string) config('services.referral.referee_bonus_points', 100),
+            ),
+            'min_first_order_amount' => (float) $settings->get('referral.min_first_order_amount', '0'),
+            'share_text_template' => $settings->get(
+                'referral.share_text',
+                'Join me on Star Coffee — use my code {code} to get {points} bonus points on your first order: {url}',
+            ),
+            'rewards' => $rows,
+            'total_earned' => array_sum(array_column($rows, 'points_earned')),
+        ]);
+    }
+}

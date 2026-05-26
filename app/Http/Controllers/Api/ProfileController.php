@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
@@ -43,6 +44,29 @@ class ProfileController extends Controller
         ]);
 
         $user->update($data);
+
+        return response()->json(['profile' => $this->present($user->fresh() ?? $user)]);
+    }
+
+    public function updatePhoto(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+        ]);
+
+        $path = $request->file('photo')->store('avatars', 'public');
+
+        $old = $user->photo;
+        $user->update(['photo' => $path]);
+
+        // Only prune the previous file if it was a stored upload — external
+        // avatar URLs (e.g. social login) won't resolve on the public disk.
+        if ($old !== null && Storage::disk('public')->exists($old)) {
+            Storage::disk('public')->delete($old);
+        }
 
         return response()->json(['profile' => $this->present($user->fresh() ?? $user)]);
     }

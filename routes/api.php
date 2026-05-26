@@ -111,6 +111,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Profile
     Route::get('/profile', [ProfileController::class, 'show'])->name('api.profile.show');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('api.profile.update');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])
+        ->middleware('throttle:20,1')
+        ->name('api.profile.photo');
     Route::get('/profile/data-export', [ProfileController::class, 'dataExport'])
         ->name('api.profile.data-export');
     Route::delete('/profile', [ProfileController::class, 'destroy'])

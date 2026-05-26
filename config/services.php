@@ -52,6 +52,12 @@ return [
         'private_key' => env('VAPID_PRIVATE_KEY'),
     ],
 
+    // Expo push for the customer mobile app (sends to stored DeviceTokens via
+    // https://exp.host). Toggle off to disable mobile fan-out entirely.
+    'expo' => [
+        'push_enabled' => (bool) env('EXPO_PUSH_ENABLED', true),
+    ],
+
     'fcm' => [
         'project_id' => env('FCM_PROJECT_ID'),
         'credentials_path' => env('FCM_CREDENTIALS_PATH', storage_path('app/fcm/service-account.json')),

@@ -12,6 +12,8 @@ class PushService
     /** @var array<string, string>|null */
     protected ?array $auth = null;
 
+    public function __construct(protected ExpoPushService $expo) {}
+
     public function isConfigured(): bool
     {
         $public = (string) config('services.webpush.public_key');
@@ -21,13 +23,35 @@ class PushService
     }
 
     /**
-     * Send a notification to all of a user's push subscriptions.
-     * Dead/expired subscriptions are pruned.
+     * Fan a notification out to a user's web-push subscriptions AND their mobile
+     * (Expo) device tokens, merging both delivery reports. Every caller —
+     * campaigns, vouchers, order status, abandoned cart, admin test — reaches
+     * web + mobile through this single entry point with no per-caller changes.
      *
      * @param  array<string, mixed>  $payload
      * @return array{sent: int, pruned: int, delivered: list<string>, failures: list<array{endpoint: string, reason: string, status: int|null}>}
      */
     public function sendToUser(int $userId, array $payload): array
+    {
+        $web = $this->sendWebPush($userId, $payload);
+        $expo = $this->expo->sendToUser($userId, $payload);
+
+        return [
+            'sent' => $web['sent'] + $expo['sent'],
+            'pruned' => $web['pruned'] + $expo['pruned'],
+            'delivered' => array_merge($web['delivered'], $expo['delivered']),
+            'failures' => array_merge($web['failures'], $expo['failures']),
+        ];
+    }
+
+    /**
+     * Send a notification to all of a user's web-push subscriptions.
+     * Dead/expired subscriptions are pruned.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{sent: int, pruned: int, delivered: list<string>, failures: list<array{endpoint: string, reason: string, status: int|null}>}
+     */
+    protected function sendWebPush(int $userId, array $payload): array
     {
         $empty = ['sent' => 0, 'pruned' => 0, 'delivered' => [], 'failures' => []];
 

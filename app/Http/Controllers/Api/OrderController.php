@@ -323,7 +323,7 @@ class OrderController extends Controller
         // Voucher redemptions live in their own table; lazy-load if the
         // caller didn't already eager them so the response is consistent
         // no matter which entry point assembled the model.
-        $order->loadMissing(['redemptions.voucher:id,code,name', 'items.modifiers']);
+        $order->loadMissing(['redemptions.voucher:id,code,name', 'items.modifiers', 'branch:id,code,name']);
 
         $items = [];
         foreach ($order->items as $item) {
@@ -366,6 +366,11 @@ class OrderController extends Controller
             'id' => $order->id,
             'number' => $order->number,
             'branch_id' => $order->branch_id,
+            'branch' => $order->branch ? [
+                'id' => $order->branch->id,
+                'code' => $order->branch->code,
+                'name' => $order->branch->name,
+            ] : null,
             'status' => $order->status->value,
             'status_label' => $order->status->label(),
             'order_type' => $order->order_type->value,

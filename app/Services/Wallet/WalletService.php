@@ -79,22 +79,27 @@ class WalletService
      */
     public function applyTopupPaid(WalletTopup $topup): void
     {
-        if ($topup->status === 'paid') {
-            return;
-        }
-
         DB::transaction(function () use ($topup) {
-            $topup->forceFill(['status' => 'paid', 'paid_at' => now()])->save();
+            // Lock the row and re-read its status INSIDE the transaction so
+            // concurrent callers (Billplz webhook + redirect-return + the app's
+            // reconcile) can't each credit the same top-up. The previous
+            // in-memory `status === 'paid'` check raced and double-credited.
+            $locked = WalletTopup::query()->whereKey($topup->getKey())->lockForUpdate()->first();
+            if ($locked === null || $locked->status === 'paid') {
+                return;
+            }
+
+            $locked->forceFill(['status' => 'paid', 'paid_at' => now()])->save();
             $this->credit(
-                $topup->user_id,
-                (float) $topup->amount,
+                $locked->user_id,
+                (float) $locked->amount,
                 type: 'topup',
-                reference: $topup,
-                description: "Top-up #{$topup->id}",
+                reference: $locked,
+                description: "Top-up #{$locked->id}",
             );
 
-            $user = User::query()->find($topup->user_id);
-            $user?->notify(new WalletTopupPaidNotification($topup));
+            $user = User::query()->find($locked->user_id);
+            $user?->notify(new WalletTopupPaidNotification($locked));
         });
     }
 

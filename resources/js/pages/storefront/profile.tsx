@@ -59,6 +59,51 @@ const MY_STATES = [
     'Terengganu',
 ];
 
+// Shrink oversized photos in the browser so the upload always lands under the
+// server's 4 MB cap. Caps the longest edge, then steps quality down until the
+// result fits the target. Falls back to the original file if anything throws
+// (e.g. an undecodable HEIC on an old browser).
+async function compressImage(file: File, targetBytes = 1_500_000): Promise<File> {
+    if (!file.type.startsWith('image/') || file.size <= targetBytes) return file;
+
+    try {
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        const MAX_DIM = 1600;
+        let { width, height } = bitmap;
+        if (width > MAX_DIM || height > MAX_DIM) {
+            const scale = MAX_DIM / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return file;
+        ctx.fillStyle = '#fff'; // flatten transparency — JPEG has no alpha
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(bitmap, 0, 0, width, height);
+        bitmap.close?.();
+
+        let quality = 0.9;
+        let blob: Blob | null = null;
+        for (let i = 0; i < 6; i++) {
+            blob = await new Promise<Blob | null>((resolve) =>
+                canvas.toBlob(resolve, 'image/jpeg', quality),
+            );
+            if (!blob || blob.size <= targetBytes || quality <= 0.3) break;
+            quality -= 0.15;
+        }
+        if (!blob) return file;
+
+        const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+        return new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() });
+    } catch {
+        return file;
+    }
+}
+
 interface Loyalty {
     balance: number;
     tier_name: string | null;
@@ -124,16 +169,20 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
     });
     const photoForm = useForm<{ photo: File | null }>({ photo: null });
     const photoInputRef = useRef<HTMLInputElement>(null);
+    const [preparingPhoto, setPreparingPhoto] = useState(false);
 
     function onSave(e: React.FormEvent) {
         e.preventDefault();
         form.put('/profile', { preserveScroll: true });
     }
 
-    function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    async function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
-        photoForm.transform(() => ({ photo: file }));
+        setPreparingPhoto(true);
+        const photo = await compressImage(file);
+        setPreparingPhoto(false);
+        photoForm.transform(() => ({ photo }));
         photoForm.post('/profile/photo', {
             preserveScroll: true,
             forceFormData: true,
@@ -174,7 +223,7 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
                 <button
                     type="button"
                     onClick={() => photoInputRef.current?.click()}
-                    disabled={photoForm.processing}
+                    disabled={photoForm.processing || preparingPhoto}
                     aria-label="Change profile photo"
                     className="bg-primary/10 text-primary relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full disabled:opacity-60"
                 >
@@ -201,6 +250,9 @@ export default function Profile({ profile, loyalty, branches, recent_orders }: P
                 <div className="flex-1">
                     <p className="text-base font-bold">{profile.name}</p>
                     <p className="text-muted-foreground text-xs">{profile.email}</p>
+                    {preparingPhoto && (
+                        <p className="text-muted-foreground text-[10px]">Optimising photo…</p>
+                    )}
                     {photoForm.processing && (
                         <p className="text-muted-foreground text-[10px]">Uploading photo…</p>
                     )}

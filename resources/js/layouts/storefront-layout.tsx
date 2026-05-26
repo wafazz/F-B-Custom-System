@@ -50,7 +50,10 @@ interface Props {
 
 export default function StorefrontLayout({ children, headerSlot, hideStats = false }: Props) {
     const { auth, url, customer_stats } = usePage().props as unknown as {
-        auth: { user: { name: string } | null; unread_notifications: number };
+        auth: {
+            user: { name: string; photo: string | null } | null;
+            unread_notifications: number;
+        };
         url: string;
         customer_stats: CustomerStats | null;
     };
@@ -94,6 +97,7 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
                 ) : (
                     <DefaultGreetingHeader
                         userName={auth.user?.name ?? null}
+                        userPhoto={auth.user?.photo ?? null}
                         unreadCount={auth.unread_notifications ?? 0}
                         branchName={branch?.name ?? null}
                         branchLogo={branch?.logo ?? null}
@@ -180,6 +184,7 @@ export default function StorefrontLayout({ children, headerSlot, hideStats = fal
 
 function DefaultGreetingHeader({
     userName,
+    userPhoto,
     unreadCount,
     branchName,
     branchLogo,
@@ -187,6 +192,7 @@ function DefaultGreetingHeader({
     branchIsOpen,
 }: {
     userName: string | null;
+    userPhoto: string | null;
     unreadCount: number;
     branchName: string | null;
     branchLogo: string | null;
@@ -267,10 +273,18 @@ function DefaultGreetingHeader({
                 </Link>
                 <Link
                     href={userName ? '/profile' : '/login'}
-                    className="flex size-10 items-center justify-center rounded-full bg-amber-800 text-amber-50 transition-colors hover:bg-amber-700"
+                    className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-amber-800 text-amber-50 transition-colors hover:bg-amber-700"
                     aria-label={userName ? 'Profile' : 'Login'}
                 >
-                    <User className="size-4" />
+                    {userPhoto ? (
+                        <img
+                            src={`/storage/${userPhoto}`}
+                            alt=""
+                            className="size-full object-cover"
+                        />
+                    ) : (
+                        <User className="size-4" />
+                    )}
                 </Link>
             </div>
         </div>

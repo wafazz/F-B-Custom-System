@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ProductReviewsController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PromoPickerController;
 use App\Http\Controllers\Api\PushSubscriptionController;
+use App\Http\Controllers\Api\SpinController;
 use App\Http\Controllers\Api\VoucherController;
 use App\Http\Controllers\Api\WalletController;
 use Illuminate\Http\Request;
@@ -146,6 +147,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/favourites/{product}/toggle', [FavouriteController::class, 'toggle'])
         ->middleware('throttle:60,1')
         ->name('api.favourites.toggle');
+
+    // Spin & Win
+    Route::get('/spin', [SpinController::class, 'index'])->name('api.spin.index');
+    Route::post('/spin', [SpinController::class, 'spin'])
+        ->middleware('throttle:30,1')
+        ->name('api.spin.spin');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');

@@ -217,7 +217,7 @@ class OrderController extends Controller
 
         $orders = Order::query()
             ->where('user_id', $userId)
-            ->with(['items:id,order_id,product_name,quantity'])
+            ->with(['items:id,order_id,product_name,quantity', 'branch:id,name'])
             ->latest()
             ->limit(50)
             ->get();
@@ -235,6 +235,7 @@ class OrderController extends Controller
                 'items_summary' => $o->items
                     ->map(fn ($i) => "{$i->quantity}× {$i->product_name}")
                     ->join(', '),
+                'branch_name' => $o->branch?->name,
                 'created_at' => $o->created_at?->toIso8601String(),
             ])->values(),
         ]);

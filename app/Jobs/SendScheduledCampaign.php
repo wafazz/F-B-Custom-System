@@ -106,6 +106,12 @@ class SendScheduledCampaign implements ShouldQueue
             return $ids === [] ? null : $base->whereIn('id', $ids);
         }
 
+        if ($campaign->audience === 'voucher_holders') {
+            $ids = $this->voucherHolderUserIds($campaign);
+
+            return $ids === [] ? null : $base->whereIn('id', $ids);
+        }
+
         // 'all' — every opted-in (subscribed) customer.
         $subscriberIds = PushSubscription::query()->whereNotNull('user_id')->distinct()->pluck('user_id');
 
@@ -267,6 +273,30 @@ class SendScheduledCampaign implements ShouldQueue
                 ->where('status', 'active')
                 ->whereNotNull('valid_until')
                 ->whereDate('valid_until', $target))
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Customers who currently hold the campaign's voucher — i.e. have claimed
+     * it and not yet used it. Lets the admin push a notification to exactly the
+     * holders of one specific voucher. No voucher set → no audience.
+     *
+     * @return list<int>
+     */
+    private function voucherHolderUserIds(ScheduledCampaign $campaign): array
+    {
+        if ($campaign->voucher_id === null) {
+            return [];
+        }
+
+        return VoucherClaim::query()
+            ->where('voucher_id', $campaign->voucher_id)
+            ->whereNull('used_at')
+            ->whereNotNull('user_id')
             ->pluck('user_id')
             ->map(fn ($id) => (int) $id)
             ->unique()

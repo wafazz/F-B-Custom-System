@@ -100,10 +100,11 @@ class ScheduledCampaignResource extends Resource
                             'usual' => 'Usual order reminder (come back & buy)',
                             'voucher_expiry' => 'Voucher expiring soon',
                             'birthday' => 'Birthday this month',
+                            'voucher_holders' => 'Specific voucher holders',
                         ])
                         ->columnSpanFull(),
                     Forms\Components\Select::make('voucher_id')
-                        ->label('Birthday voucher (optional)')
+                        ->label(fn (Forms\Get $get) => $get('audience') === 'voucher_holders' ? 'Target voucher' : 'Birthday voucher (optional)')
                         ->options(fn () => Voucher::query()->where('status', 'active')->orderBy('code')->pluck('name', 'id'))
                         ->searchable()
                         ->live()
@@ -113,8 +114,11 @@ class ScheduledCampaignResource extends Resource
                                 $set('url', '/vouchers?code='.$code);
                             }
                         })
-                        ->helperText('Link the birthday-month offer. Customers who have already claimed it are skipped, so the reminders stop once they grab it. Leave empty for a plain birthday greeting.')
-                        ->visible(fn (Forms\Get $get) => $get('audience') === 'birthday')
+                        ->helperText(fn (Forms\Get $get) => $get('audience') === 'voucher_holders'
+                            ? 'Only customers who currently hold this voucher (claimed and not yet used) get the notification.'
+                            : 'Link the birthday-month offer. Customers who have already claimed it are skipped, so the reminders stop once they grab it. Leave empty for a plain birthday greeting.')
+                        ->required(fn (Forms\Get $get) => $get('audience') === 'voucher_holders')
+                        ->visible(fn (Forms\Get $get) => in_array($get('audience'), ['birthday', 'voucher_holders'], true))
                         ->columnSpanFull(),
                     Forms\Components\Select::make('inactivity_signal')
                         ->label('Inactivity based on')
@@ -205,12 +209,12 @@ class ScheduledCampaignResource extends Resource
                             'once' => 'Once — on a specific date & time',
                             'daily' => 'Daily — every day at a set time',
                         ])
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all'),
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), ['all', 'voucher_holders'], true)),
                     Forms\Components\DateTimePicker::make('scheduled_at')
                         ->label('Send at')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'once')
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'once'),
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), ['all', 'voucher_holders'], true) && $get('frequency') === 'once')
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), ['all', 'voucher_holders'], true) && $get('frequency') === 'once'),
                     Forms\Components\TimePicker::make('run_time')
                         ->label(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry', 'birthday'], true) ? 'Daily scan time' : 'Time of day')
                         ->seconds(false)
@@ -224,7 +228,7 @@ class ScheduledCampaignResource extends Resource
                         ])
                         ->columns(4)
                         ->helperText('Leave empty to fire every day. Pick days for peak-hour targeting (e.g. Fri–Sun).')
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && $get('audience') === 'all' && $get('frequency') === 'daily')
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), ['all', 'voucher_holders'], true) && $get('frequency') === 'daily')
                         ->columnSpanFull(),
                     Forms\Components\Toggle::make('is_active')
                         ->label('Active')
@@ -263,6 +267,7 @@ class ScheduledCampaignResource extends Resource
                         $state === 'usual' => 'Usual order · no order '.$r->inactivity_days.'d · every '.$r->inactivity_cooldown_days.'d',
                         $state === 'voucher_expiry' => 'Voucher expiry · '.$r->inactivity_days.'d before',
                         $state === 'birthday' => 'Birthday'.($r->voucher_id ? ' · voucher' : ''),
+                        $state === 'voucher_holders' => 'Voucher holders'.($r->voucher?->code ? ' · '.$r->voucher->code : ''),
                         default => 'All customers',
                     }),
                 Tables\Columns\TextColumn::make('schedule')
@@ -378,16 +383,23 @@ class ScheduledCampaignResource extends Resource
                 $data['inactivity_signal'] = null; // birthday uses neither inactivity field
                 $data['inactivity_days'] = null;
             }
+        } elseif ($audience === 'voucher_holders') {
+            // Targeted voucher blast — keeps voucher_id and schedules like the
+            // 'all' broadcast (once/daily); the inactivity fields don't apply.
+            $data['inactivity_signal'] = null;
+            $data['inactivity_days'] = null;
+            $data['inactivity_repeat'] = false;
+            $data['inactivity_cooldown_days'] = null;
         } else {
-            $data['voucher_id'] = null; // only the birthday audience carries a voucher
+            $data['voucher_id'] = null; // only the birthday/voucher_holders audiences carry a voucher
             $data['inactivity_signal'] = null;
             $data['inactivity_days'] = null;
             $data['inactivity_repeat'] = false;
             $data['inactivity_cooldown_days'] = null;
         }
 
-        // run_days only applies to the daily 'all' broadcast (peak days).
-        if (! ($audience === 'all' && ($data['frequency'] ?? null) === 'daily')) {
+        // run_days only applies to the daily 'all'/voucher_holders broadcast (peak days).
+        if (! (in_array($audience, ['all', 'voucher_holders'], true) && ($data['frequency'] ?? null) === 'daily')) {
             $data['run_days'] = null;
         }
 

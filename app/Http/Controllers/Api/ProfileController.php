@@ -41,9 +41,22 @@ class ProfileController extends Controller
             'marketing_consent' => ['sometimes', 'boolean'],
             'whatsapp_consent' => ['sometimes', 'boolean'],
             'push_consent' => ['sometimes', 'boolean'],
+            'photo' => ['sometimes', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ]);
 
+        $old = null;
+        if ($request->hasFile('photo')) {
+            $old = $user->photo;
+            $data['photo'] = $request->file('photo')->store('avatars', 'public');
+        }
+
         $user->update($data);
+
+        // Prune the replaced upload only if it lived on the public disk —
+        // external avatar URLs (e.g. social login) won't resolve there.
+        if ($old !== null && Storage::disk('public')->exists($old)) {
+            Storage::disk('public')->delete($old);
+        }
 
         return response()->json(['profile' => $this->present($user->fresh() ?? $user)]);
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\BranchHomeController;
 use App\Http\Controllers\Api\BranchMenuController;
 use App\Http\Controllers\Api\BranchReviewsController;
+use App\Http\Controllers\Api\DailyCheckInController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\FavouriteController;
 use App\Http\Controllers\Api\LoyaltyController;
@@ -153,6 +154,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/spin', [SpinController::class, 'spin'])
         ->middleware('throttle:30,1')
         ->name('api.spin.spin');
+
+    // Daily check-in
+    Route::get('/check-in', [DailyCheckInController::class, 'index'])->name('api.check-in.index');
+    Route::post('/check-in', [DailyCheckInController::class, 'checkIn'])
+        ->middleware('throttle:10,1')
+        ->name('api.check-in.store');
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');

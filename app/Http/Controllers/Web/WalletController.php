@@ -124,6 +124,50 @@ class WalletController extends Controller
     }
 
     /**
+     * PUBLIC payment-return page for the MOBILE app's in-app browser (no web
+     * session, unlike topupReturn). Verifies the Billplz redirect signature for
+     * this top-up and credits if paid; the server-to-server webhook stays the
+     * primary crediting path. Renders a standalone "return to the app" page so
+     * the customer never sees the web login screen after paying.
+     */
+    public function topupAppReturn(WalletTopup $topup, Request $request, BillplzGateway $gateway, WalletService $wallet): \Illuminate\Http\Response
+    {
+        $payload = $request->query();
+        $update = $gateway->verifyWebhook($payload, (string) $request->query('x_signature'));
+        if ($update !== null && $update->reference === $topup->billplz_reference) {
+            if ($update->status === PaymentStatus::Paid && $topup->status === 'pending') {
+                $wallet->applyTopupPaid($topup);
+            } elseif ($update->status === PaymentStatus::Failed && $topup->status === 'pending') {
+                $topup->forceFill(['status' => 'failed'])->save();
+            }
+        }
+
+        $paid = ($topup->fresh()?->status ?? $topup->status) === 'paid';
+        $amount = number_format((float) $topup->amount, 2);
+        $heading = $paid ? 'Payment received' : 'Payment processing';
+        $icon = $paid ? '✅' : '⏳';
+        $msg = $paid
+            ? "RM{$amount} has been added to your wallet."
+            : 'If you completed payment, your balance will update shortly.';
+
+        $html = <<<HTML
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Star Coffee</title></head>
+<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F7F3F0;color:#1F1716;display:flex;min-height:100vh;align-items:center;justify-content:center;">
+<div style="text-align:center;max-width:340px;padding:32px;">
+<div style="font-size:56px;line-height:1;">{$icon}</div>
+<h1 style="font-size:20px;margin:16px 0 6px;">{$heading}</h1>
+<p style="font-size:14px;color:#6B5048;line-height:1.5;margin:0;">{$msg}</p>
+<p style="font-size:13px;color:#92400E;font-weight:600;margin:22px 0 0;">You can close this window and return to the Star Coffee app.</p>
+<a href="starcoffee://wallet-return" style="display:inline-block;margin-top:18px;background:#402724;color:#F7F3F0;text-decoration:none;padding:13px 26px;border-radius:999px;font-weight:700;font-size:14px;">Return to app</a>
+</div>
+</body></html>
+HTML;
+
+        return response($html);
+    }
+
+    /**
      * Re-query Billplz for any pending top-ups belonging to the user and
      * apply paid/cancelled status. Idempotent — `applyTopupPaid` no-ops if
      * already paid. Failures are logged but never thrown so the wallet page

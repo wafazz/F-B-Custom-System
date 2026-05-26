@@ -69,7 +69,14 @@ class WalletController extends Controller
         ]);
 
         try {
-            $bill = $gateway->createTopupBill($topup, $user);
+            // Mobile flow: redirect to the PUBLIC app-return page (no web
+            // session) so the customer never hits the auth-gated web return /
+            // login screen after paying. The webhook still credits server-side.
+            $bill = $gateway->createTopupBill(
+                $topup,
+                $user,
+                route('wallet.topup-app-return', ['topup' => $topup]),
+            );
         } catch (RuntimeException $e) {
             $topup->update(['status' => 'failed']);
 

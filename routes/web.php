@@ -112,6 +112,12 @@ Route::middleware('guest')->group(function () {
         ->name('password.update');
 });
 
+// Public mobile-app top-up return page — opened inside the app's in-app browser
+// after Billplz payment (no web session). The server-to-server webhook is still
+// the primary crediting path; this page just confirms + bounces back to the app.
+Route::get('wallet/topup/{topup}/app-return', [WalletController::class, 'topupAppReturn'])
+    ->name('wallet.topup-app-return');
+
 Route::middleware('auth')->group(function () {
     Route::post('logout', LogoutController::class)->name('logout');
     Route::get('profile', [ProfileController::class, 'show'])->name('profile');

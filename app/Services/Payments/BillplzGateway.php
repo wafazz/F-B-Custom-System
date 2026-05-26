@@ -77,7 +77,7 @@ class BillplzGateway implements PaymentGateway
     }
 
     /** Create a Billplz bill for a wallet top-up (different redirect target). */
-    public function createTopupBill(WalletTopup $topup, User $user): PaymentBill
+    public function createTopupBill(WalletTopup $topup, User $user, ?string $redirectUrl = null): PaymentBill
     {
         if (! $this->apiKey || ! $this->collectionId) {
             throw new RuntimeException('Billplz is not configured: missing API key or collection ID.');
@@ -98,7 +98,7 @@ class BillplzGateway implements PaymentGateway
                 'amount' => (int) round((float) $topup->amount * 100),
                 'description' => "Star Coffee wallet top-up #{$topup->id}",
                 'callback_url' => route('billplz.webhook'),
-                'redirect_url' => route('wallet.topup-return', ['topup' => $topup]),
+                'redirect_url' => $redirectUrl ?? route('wallet.topup-return', ['topup' => $topup]),
                 'reference_1_label' => 'Topup',
                 'reference_1' => 'WT-'.$topup->id,
             ], fn ($v) => $v !== null && $v !== ''));

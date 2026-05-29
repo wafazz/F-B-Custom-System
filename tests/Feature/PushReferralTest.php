@@ -14,6 +14,8 @@ use App\Models\User;
 use App\Services\Orders\OrderLinePayload;
 use App\Services\Orders\OrderPayload;
 use App\Services\Orders\OrderService;
+use App\Services\Push\PushService;
+use Mockery\MockInterface;
 use Database\Seeders\LoyaltySeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -153,6 +155,42 @@ test('referral reward not granted when user has no referrer', function () {
     }
 
     expect(ReferralReward::count())->toBe(0);
+});
+
+test('completing an order pushes the member the points they earned', function () {
+    $user = User::factory()->create();
+    [$branch, $product] = makeBranchWithProduct(); // base_price 20.00 => subtotal 20 => 20 points
+
+    $calls = [];
+    $this->mock(PushService::class, function (MockInterface $m) use (&$calls) {
+        $m->shouldReceive('sendToUser')->andReturnUsing(function (int $userId, array $payload) use (&$calls) {
+            $calls[] = ['user_id' => $userId, 'payload' => $payload];
+
+            return ['sent' => 0, 'pruned' => 0, 'delivered' => [], 'failures' => []];
+        });
+    });
+
+    $order = app(OrderService::class)->place(new OrderPayload(
+        branchId: $branch->id, userId: $user->id, orderType: OrderType::Pickup,
+        lines: [new OrderLinePayload(productId: $product->id, quantity: 1)],
+    ));
+    payReferralOrder($order);
+
+    foreach ([OrderStatus::Preparing, OrderStatus::Ready, OrderStatus::Completed] as $s) {
+        app(OrderService::class)->transition($order->fresh(), $s);
+    }
+
+    $earned = PointTransaction::where('user_id', $user->id)->where('type', 'earn')->first();
+    expect($earned)->not->toBeNull()
+        ->and($earned->points)->toBe(20);
+
+    $pointsPush = collect($calls)->first(fn ($c) => str_contains($c['payload']['tag'] ?? '', 'order-points-'));
+    expect($pointsPush)->not->toBeNull();
+    expect($pointsPush['user_id'])->toBe($user->id);
+    expect($pointsPush['payload']['title'])->toContain('20 points');
+    expect($pointsPush['payload']['body'])->toContain('20 loyalty points');
+    expect($pointsPush['payload']['data']['points_earned'])->toBe(20);
+    expect($pointsPush['payload']['data']['order_id'])->toBe($order->id);
 });
 
 test('GET /referral renders the page with code + share url', function () {

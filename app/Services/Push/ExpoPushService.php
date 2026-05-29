@@ -56,7 +56,7 @@ class ExpoPushService
                 'to' => $row->token,
                 'title' => (string) ($payload['title'] ?? 'Star Coffee'),
                 'body' => (string) ($payload['body'] ?? ''),
-                'sound' => 'default',
+                'sound' => 'sc7.wav',
                 'channelId' => (string) ($payload['channel_id'] ?? 'default'),
                 'priority' => 'high',
                 'data' => $data,

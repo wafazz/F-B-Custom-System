@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\DeviceToken;
 use App\Models\PushSubscription;
 use App\Models\ScheduledCampaign;
 use App\Models\User;
@@ -112,8 +113,16 @@ class SendScheduledCampaign implements ShouldQueue
             return $ids === [] ? null : $base->whereIn('id', $ids);
         }
 
-        // 'all' — every opted-in (subscribed) customer.
-        $subscriberIds = PushSubscription::query()->whereNotNull('user_id')->distinct()->pluck('user_id');
+        // 'all' — every reachable customer: web-push subscribers OR mobile-app
+        // device-token holders (app-only users have no PushSubscription, so
+        // selecting on subscriptions alone would silently skip them).
+        $webIds = PushSubscription::query()->whereNotNull('user_id')->distinct()->pluck('user_id');
+        $mobileIds = DeviceToken::query()
+            ->where('scope', DeviceToken::SCOPE_CUSTOMER)
+            ->whereNotNull('user_id')
+            ->distinct()
+            ->pluck('user_id');
+        $subscriberIds = $webIds->merge($mobileIds)->unique();
 
         return $subscriberIds->isEmpty() ? null : $base->whereIn('id', $subscriberIds);
     }

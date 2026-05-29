@@ -28,6 +28,21 @@ class ScheduledCampaignResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    /** Audiences that broadcast to everyone (themed presets share the 'all' query). */
+    public const BROADCAST_AUDIENCES = ['all', 'new_menu', 'social_proof', 'payday', 'event'];
+
+    /** Audiences scheduled like a broadcast: once / daily / monthly + run_days. */
+    public const SCHEDULE_AUDIENCES = ['all', 'voucher_holders', 'new_menu', 'social_proof', 'payday', 'event'];
+
+    /** Daily-scan audiences — forced to a daily scan, never once/datetime. */
+    public const SCAN_AUDIENCES = ['inactive', 'usual', 'voucher_expiry', 'birthday', 'redeemable', 'near_redeemable', 'tier_upgrade', 'review'];
+
+    /** Scan audiences that take a numeric threshold via inactivity_days. */
+    public const DAYS_FIELD_AUDIENCES = ['inactive', 'usual', 'voucher_expiry', 'near_redeemable', 'tier_upgrade', 'review'];
+
+    /** Scan audiences throttled by inactivity_cooldown_days. */
+    public const COOLDOWN_AUDIENCES = ['usual', 'redeemable', 'near_redeemable', 'tier_upgrade', 'review'];
+
     // Restricted to admin tier — hidden from the nav AND blocked at
     // the route level for everyone else.
     public static function shouldRegisterNavigation(): bool
@@ -96,11 +111,19 @@ class ScheduledCampaignResource extends Resource
                         ->live()
                         ->options([
                             'all' => 'All opted-in customers',
+                            'new_menu' => 'New menu launch (blast all)',
+                            'social_proof' => 'Social proof (blast all)',
+                            'payday' => 'Payday reminder (blast all)',
+                            'event' => 'Event / seasonal (blast all)',
                             'inactive' => 'Inactive customers (re-engagement)',
                             'usual' => 'Usual order reminder (come back & buy)',
                             'voucher_expiry' => 'Voucher expiring soon',
                             'birthday' => 'Birthday this month',
                             'voucher_holders' => 'Specific voucher holders',
+                            'redeemable' => 'Reward ready — enough points to redeem',
+                            'near_redeemable' => 'Almost enough points to redeem',
+                            'tier_upgrade' => 'Close to next membership tier',
+                            'review' => 'Review reminder (after purchase)',
                         ])
                         ->columnSpanFull(),
                     Forms\Components\Select::make('voucher_id')
@@ -133,19 +156,29 @@ class ScheduledCampaignResource extends Resource
                         ->label(fn (Forms\Get $get) => match ($get('audience')) {
                             'voucher_expiry' => 'Days before expiry',
                             'usual' => 'Remind if no order in the last',
+                            'near_redeemable' => 'Within this many points',
+                            'tier_upgrade' => 'Within this many ringgit',
+                            'review' => 'Days after the order',
                             default => 'Days inactive',
                         })
                         ->numeric()
                         ->minValue(0)
                         ->maxValue(365)
-                        ->suffix('days')
+                        ->suffix(fn (Forms\Get $get) => match ($get('audience')) {
+                            'near_redeemable' => 'points',
+                            'tier_upgrade' => 'RM',
+                            default => 'days',
+                        })
                         ->helperText(fn (Forms\Get $get) => match ($get('audience')) {
                             'voucher_expiry' => 'Fires once, this many days before an unused voucher expires (e.g. 3, 1, or 0 for expiry day).',
                             'usual' => 'Only nudges customers who haven\'t ordered in this many days, featuring their most-bought item (e.g. 14, 30).',
+                            'near_redeemable' => 'Nudge customers whose balance is within this many points of the cheapest reward (e.g. 50, 100). Use {needed} in the message for the exact gap.',
+                            'tier_upgrade' => 'Nudge customers within this many ringgit of their next tier (e.g. 50). Use {tier} and {needed} in the message.',
+                            'review' => 'Fires once, this many days after an order is completed if no review was left yet (e.g. 1, 2, 3).',
                             default => 'Fires once — the day a customer reaches this many days inactive (e.g. 7, 14, 30).',
                         })
-                        ->required(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry'], true))
-                        ->visible(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry'], true)),
+                        ->required(fn (Forms\Get $get) => in_array($get('audience'), self::DAYS_FIELD_AUDIENCES, true))
+                        ->visible(fn (Forms\Get $get) => in_array($get('audience'), self::DAYS_FIELD_AUDIENCES, true)),
                     Forms\Components\Toggle::make('inactivity_repeat')
                         ->label('Keep reminding while inactive')
                         ->default(false)
@@ -161,8 +194,8 @@ class ScheduledCampaignResource extends Resource
                         ->default(fn (Forms\Get $get) => $get('audience') === 'usual' ? 14 : 7)
                         ->suffix('days')
                         ->helperText('Minimum gap before the same customer is reminded again.')
-                        ->required(fn (Forms\Get $get) => $get('audience') === 'usual' || ($get('audience') === 'inactive' && $get('inactivity_repeat')))
-                        ->visible(fn (Forms\Get $get) => $get('audience') === 'usual' || ($get('audience') === 'inactive' && $get('inactivity_repeat'))),
+                        ->required(fn (Forms\Get $get) => in_array($get('audience'), self::COOLDOWN_AUDIENCES, true) || ($get('audience') === 'inactive' && $get('inactivity_repeat')))
+                        ->visible(fn (Forms\Get $get) => in_array($get('audience'), self::COOLDOWN_AUDIENCES, true) || ($get('audience') === 'inactive' && $get('inactivity_repeat'))),
                 ])
                 ->columns(2),
 
@@ -208,27 +241,30 @@ class ScheduledCampaignResource extends Resource
                         ->options([
                             'once' => 'Once — on a specific date & time',
                             'daily' => 'Daily — every day at a set time',
+                            'monthly' => 'Monthly — on set day(s) of the month (e.g. payday)',
                         ])
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), ['all', 'voucher_holders'], true)),
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), self::SCHEDULE_AUDIENCES, true)),
                     Forms\Components\DateTimePicker::make('scheduled_at')
                         ->label('Send at')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), ['all', 'voucher_holders'], true) && $get('frequency') === 'once')
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), ['all', 'voucher_holders'], true) && $get('frequency') === 'once'),
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), self::SCHEDULE_AUDIENCES, true) && $get('frequency') === 'once')
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), self::SCHEDULE_AUDIENCES, true) && $get('frequency') === 'once'),
                     Forms\Components\TimePicker::make('run_time')
-                        ->label(fn (Forms\Get $get) => in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry', 'birthday'], true) ? 'Daily scan time' : 'Time of day')
+                        ->label(fn (Forms\Get $get) => in_array($get('audience'), self::SCAN_AUDIENCES, true) ? 'Daily scan time' : 'Time of day')
                         ->seconds(false)
-                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry', 'birthday'], true) || $get('frequency') === 'daily'))
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), ['inactive', 'usual', 'voucher_expiry', 'birthday'], true) || $get('frequency') === 'daily')),
+                        ->required(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), self::SCAN_AUDIENCES, true) || in_array($get('frequency'), ['daily', 'monthly'], true)))
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && (in_array($get('audience'), self::SCAN_AUDIENCES, true) || in_array($get('frequency'), ['daily', 'monthly'], true))),
                     Forms\Components\CheckboxList::make('run_days')
-                        ->label('Days (peak days)')
-                        ->options([
-                            1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu',
-                            5 => 'Fri', 6 => 'Sat', 0 => 'Sun',
-                        ])
-                        ->columns(4)
-                        ->helperText('Leave empty to fire every day. Pick days for peak-hour targeting (e.g. Fri–Sun).')
-                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), ['all', 'voucher_holders'], true) && $get('frequency') === 'daily')
+                        ->label(fn (Forms\Get $get) => $get('frequency') === 'monthly' ? 'Days of the month' : 'Days (peak days)')
+                        ->options(fn (Forms\Get $get) => $get('frequency') === 'monthly'
+                            ? collect(range(1, 31))->mapWithKeys(fn ($d) => [$d => $d === 31 ? 'Last day' : (string) $d])->all()
+                            : [1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 0 => 'Sun'])
+                        ->columns(7)
+                        ->helperText(fn (Forms\Get $get) => $get('frequency') === 'monthly'
+                            ? 'Fires on these day(s) each month at the time above. Pick "Last day" (31) for end of month — it clamps to the real last day in short months.'
+                            : 'Leave empty to fire every day. Pick days for peak-hour targeting (e.g. Fri–Sun).')
+                        ->visible(fn (Forms\Get $get) => $get('trigger_type') === 'schedule' && in_array($get('audience'), self::SCHEDULE_AUDIENCES, true) && in_array($get('frequency'), ['daily', 'monthly'], true))
+                        ->required(fn (Forms\Get $get) => $get('frequency') === 'monthly')
                         ->columnSpanFull(),
                     Forms\Components\Toggle::make('is_active')
                         ->label('Active')
@@ -268,6 +304,14 @@ class ScheduledCampaignResource extends Resource
                         $state === 'voucher_expiry' => 'Voucher expiry · '.$r->inactivity_days.'d before',
                         $state === 'birthday' => 'Birthday'.($r->voucher_id ? ' · voucher' : ''),
                         $state === 'voucher_holders' => 'Voucher holders'.($r->voucher?->code ? ' · '.$r->voucher->code : ''),
+                        $state === 'redeemable' => 'Reward ready · every '.$r->inactivity_cooldown_days.'d',
+                        $state === 'near_redeemable' => 'Near reward · within '.$r->inactivity_days.'pts',
+                        $state === 'tier_upgrade' => 'Tier upgrade · within RM'.$r->inactivity_days,
+                        $state === 'review' => 'Review · '.$r->inactivity_days.'d after order',
+                        $state === 'new_menu' => 'New menu · all',
+                        $state === 'social_proof' => 'Social proof · all',
+                        $state === 'payday' => 'Payday · all',
+                        $state === 'event' => 'Event · all',
                         default => 'All customers',
                     }),
                 Tables\Columns\TextColumn::make('schedule')
@@ -275,6 +319,7 @@ class ScheduledCampaignResource extends Resource
                     ->state(fn (ScheduledCampaign $r) => match (true) {
                         $r->trigger_type === 'location' => 'Within '.$r->radius_meters.'m',
                         $r->trigger_type === 'abandoned_cart' => 'After '.$r->delay_minutes.'m idle',
+                        $r->frequency === 'monthly' => 'Monthly '.collect($r->run_days ?? [])->map(fn ($d) => (int) $d === 31 ? 'last' : (string) $d)->implode(',').' · '.\Illuminate\Support\Str::of((string) $r->run_time)->substr(0, 5),
                         $r->frequency === 'daily' => (empty($r->run_days)
                             ? 'Daily'
                             : collect($r->run_days)->map(fn ($d) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][(int) $d] ?? '')->implode(',')
@@ -355,51 +400,52 @@ class ScheduledCampaignResource extends Resource
         $data['branch_id'] = null;
         $data['radius_meters'] = null;
         $audience = $data['audience'] ?? 'all';
-        if (in_array($audience, ['inactive', 'usual', 'voucher_expiry', 'birthday'], true)) {
-            // Daily-scan audiences run every day — no weekday filter.
+        if (in_array($audience, self::SCAN_AUDIENCES, true)) {
+            // Daily-scan audiences run every day — force daily, no once/datetime.
             $data['frequency'] = 'daily';
             $data['scheduled_at'] = null;
             $data['run_days'] = null;
-            if ($audience === 'inactive') {
-                // Repeat/cooldown only apply to the inactive audience; drop the
-                // cooldown unless the admin turned repeat reminders on.
-                if (empty($data['inactivity_repeat'])) {
-                    $data['inactivity_repeat'] = false;
-                    $data['inactivity_cooldown_days'] = null;
-                }
-            } elseif ($audience === 'usual') {
-                // Usual reminder always throttles by the cooldown; it doesn't
-                // use the signal or the repeat toggle.
+
+            // The inactivity signal + repeat toggle only apply to 'inactive'.
+            if ($audience !== 'inactive') {
                 $data['inactivity_signal'] = null;
                 $data['inactivity_repeat'] = false;
-            } else {
-                $data['inactivity_repeat'] = false;
+            }
+            // Birthday + redeemable carry no numeric threshold.
+            if (in_array($audience, ['birthday', 'redeemable'], true)) {
+                $data['inactivity_days'] = null;
+            }
+            // Only the throttled audiences (and inactive when repeating) keep a
+            // cooldown; clear it everywhere else.
+            $usesCooldown = in_array($audience, self::COOLDOWN_AUDIENCES, true)
+                || ($audience === 'inactive' && ! empty($data['inactivity_repeat']));
+            if (! $usesCooldown) {
                 $data['inactivity_cooldown_days'] = null;
             }
-            if ($audience === 'voucher_expiry') {
-                $data['inactivity_signal'] = null; // not used for voucher expiry
-            }
-            if ($audience === 'birthday') {
-                $data['inactivity_signal'] = null; // birthday uses neither inactivity field
-                $data['inactivity_days'] = null;
+
+            // birthday is the only scan audience that carries a voucher.
+            if ($audience !== 'birthday') {
+                $data['voucher_id'] = null;
             }
         } elseif ($audience === 'voucher_holders') {
             // Targeted voucher blast — keeps voucher_id and schedules like the
-            // 'all' broadcast (once/daily); the inactivity fields don't apply.
+            // 'all' broadcast (once/daily/monthly); inactivity fields don't apply.
             $data['inactivity_signal'] = null;
             $data['inactivity_days'] = null;
             $data['inactivity_repeat'] = false;
             $data['inactivity_cooldown_days'] = null;
         } else {
-            $data['voucher_id'] = null; // only the birthday/voucher_holders audiences carry a voucher
+            // Broadcast presets: all / new_menu / social_proof / payday / event.
+            $data['voucher_id'] = null;
             $data['inactivity_signal'] = null;
             $data['inactivity_days'] = null;
             $data['inactivity_repeat'] = false;
             $data['inactivity_cooldown_days'] = null;
         }
 
-        // run_days only applies to the daily 'all'/voucher_holders broadcast (peak days).
-        if (! (in_array($audience, ['all', 'voucher_holders'], true) && ($data['frequency'] ?? null) === 'daily')) {
+        // run_days applies to the daily (weekdays) or monthly (days of month)
+        // broadcast/voucher-holder schedules only.
+        if (! (in_array($audience, self::SCHEDULE_AUDIENCES, true) && in_array($data['frequency'] ?? null, ['daily', 'monthly'], true))) {
             $data['run_days'] = null;
         }
 

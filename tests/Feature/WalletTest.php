@@ -185,7 +185,7 @@ test('POST /wallet/topup creates a pending top-up and redirects to gateway', fun
     {
         public function __construct() {}
 
-        public function createTopupBill(WalletTopup $topup, User $user): PaymentBill
+        public function createTopupBill(WalletTopup $topup, User $user, ?string $redirectUrl = null): PaymentBill
         {
             return new PaymentBill(reference: 'BP-fake-'.$topup->id, url: 'https://billplz.test/bills/abc', method: 'billplz');
         }

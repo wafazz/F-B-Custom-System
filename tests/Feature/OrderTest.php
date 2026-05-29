@@ -227,7 +227,7 @@ test('POST /api/orders rolls back order when gateway createBill fails', function
 
     $boom = new class implements \App\Services\Payments\PaymentGateway
     {
-        public function createBill(\App\Models\Order $order): \App\Services\Payments\PaymentBill
+        public function createBill(\App\Models\Order $order, ?string $redirectUrl = null): \App\Services\Payments\PaymentBill
         {
             throw new RuntimeException('Billplz is not configured: missing API key or collection ID.');
         }

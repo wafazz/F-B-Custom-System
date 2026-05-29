@@ -23,7 +23,7 @@ class BillplzGateway implements PaymentGateway
         protected bool $sandbox = true,
     ) {}
 
-    public function createBill(Order $order): PaymentBill
+    public function createBill(Order $order, ?string $redirectUrl = null): PaymentBill
     {
         if (! $this->apiKey || ! $this->collectionId) {
             throw new RuntimeException('Billplz is not configured: missing API key or collection ID.');
@@ -50,7 +50,7 @@ class BillplzGateway implements PaymentGateway
                 'amount' => (int) round((float) $order->total * 100), // sen
                 'description' => "Star Coffee order {$order->number}",
                 'callback_url' => route('billplz.webhook'),
-                'redirect_url' => route('billplz.return', ['order' => $order]),
+                'redirect_url' => $redirectUrl ?? route('billplz.return', ['order' => $order]),
                 'reference_1_label' => 'Order',
                 'reference_1' => $order->number,
             ], fn ($v) => $v !== null && $v !== ''));

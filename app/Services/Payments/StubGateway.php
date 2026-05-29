@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
  */
 class StubGateway implements PaymentGateway
 {
-    public function createBill(Order $order): PaymentBill
+    public function createBill(Order $order, ?string $redirectUrl = null): PaymentBill
     {
         $reference = 'STUB-'.Str::upper(Str::random(10));
 

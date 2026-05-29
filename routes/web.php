@@ -87,6 +87,11 @@ Route::get('/r/{order:number}', [ReceiptController::class, 'show'])
 Route::get('/payments/billplz/return/{order}', [BillplzWebhookController::class, 'return'])
     ->name('billplz.return');
 
+// Mobile app return — public (no web session in the in-app browser); renders a
+// confirmation page that deep-links back into the app via starcoffee://order-return.
+Route::get('/payments/billplz/app-return/{order}', [BillplzWebhookController::class, 'appReturn'])
+    ->name('billplz.app-return');
+
 Route::get('/loyalty', [LoyaltyController::class, 'show'])->middleware('auth')->name('loyalty');
 Route::get('/referral', [ReferralController::class, 'show'])->middleware('auth')->name('referral');
 

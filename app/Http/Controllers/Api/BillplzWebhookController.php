@@ -13,6 +13,7 @@ use App\Services\Wallet\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -63,6 +64,45 @@ class BillplzWebhookController extends Controller
         }
 
         return redirect()->route('orders.show', ['order' => $order]);
+    }
+
+    /**
+     * Mobile in-app browser redirected back from Billplz. The app has no web
+     * session, so we can't bounce to the auth-gated orders.show — instead render
+     * a public confirmation page that deep-links back into the app.
+     */
+    public function appReturn(Order $order, Request $request): Response
+    {
+        $payload = $request->query();
+        $update = $this->gateway->verifyWebhook($payload, $request->query('x_signature'));
+
+        if ($update !== null && $update->reference === $order->payment_reference) {
+            $this->applyUpdate($order, $update->status);
+        }
+
+        $paid = $order->payment_status === PaymentStatus::Paid;
+        $deepLink = 'starcoffee://order-return?order='.$order->id;
+        $icon = $paid ? '✅' : '⏳';
+        $heading = $paid ? 'Payment received' : 'Payment processing';
+        $msg = $paid
+            ? "Order {$order->number} is confirmed."
+            : 'If you completed payment, your order will update shortly. You can cancel safely if you did not pay.';
+
+        $html = <<<HTML
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Star Coffee</title></head>
+<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F7F3F0;color:#1F1716;display:flex;min-height:100vh;align-items:center;justify-content:center;">
+<div style="text-align:center;max-width:340px;padding:32px;">
+<div style="font-size:56px;line-height:1;">{$icon}</div>
+<h1 style="font-size:20px;margin:16px 0 6px;">{$heading}</h1>
+<p style="font-size:14px;color:#6B5048;line-height:1.5;margin:0;">{$msg}</p>
+<p style="font-size:13px;color:#92400E;font-weight:600;margin:22px 0 0;">You can close this window and return to the Star Coffee app.</p>
+<a href="{$deepLink}" style="display:inline-block;margin-top:18px;background:#402724;color:#F7F3F0;text-decoration:none;padding:13px 26px;border-radius:999px;font-weight:700;font-size:14px;">Return to app</a>
+</div>
+</body></html>
+HTML;
+
+        return response($html);
     }
 
     protected function applyUpdate(Order $order, PaymentStatus $status): void

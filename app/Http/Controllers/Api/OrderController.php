@@ -128,7 +128,7 @@ class OrderController extends Controller
         }
 
         try {
-            $bill = $this->payments->createBill($order);
+            $bill = $this->payments->createBill($order, $this->appReturnUrl($order, $request));
         } catch (RuntimeException $e) {
             Log::warning('Order placed but payment bill creation failed', [
                 'order_id' => $order->id,
@@ -241,12 +241,24 @@ class OrderController extends Controller
         ]);
     }
 
-    public function payAgain(Order $order, BillplzGateway $gateway): JsonResponse
+    /**
+     * Billplz redirect target. Mobile (Bearer token) gets the public deep-link
+     * return page (its in-app browser has no web session); web/PWA (session
+     * cookie) falls back to the gateway default (billplz.return → orders.show).
+     */
+    private function appReturnUrl(Order $order, Request $request): ?string
+    {
+        return $request->bearerToken() !== null
+            ? route('billplz.app-return', ['order' => $order])
+            : null;
+    }
+
+    public function payAgain(Order $order, Request $request, BillplzGateway $gateway): JsonResponse
     {
         abort_unless($this->canPayAgain($order), 422, 'This order is not eligible for payment.');
 
         try {
-            $bill = $gateway->createBill($order->fresh() ?? $order);
+            $bill = $gateway->createBill($order->fresh() ?? $order, $this->appReturnUrl($order, $request));
         } catch (Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage(),

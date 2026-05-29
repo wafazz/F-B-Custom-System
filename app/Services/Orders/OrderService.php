@@ -513,9 +513,20 @@ class OrderService
             && $fresh->user_id !== null
             && $fresh->payment_status === PaymentStatus::Paid
         ) {
-            $this->loyalty->earnFromOrder($fresh);
+            $earned = $this->loyalty->earnFromOrder($fresh);
             $this->loyalty->applyTierUpgrade($fresh->user_id, (float) $fresh->subtotal);
             $this->referrals->maybeAwardForCompletedOrder($fresh);
+
+            $points = (int) ($earned->points ?? 0);
+            if ($points > 0) {
+                $this->push->sendToUser($fresh->user_id, [
+                    'title' => 'You earned '.$points.' point'.($points === 1 ? '' : 's').'!',
+                    'body' => "Order {$fresh->number} earned you {$points} loyalty point".($points === 1 ? '' : 's').'.',
+                    'url' => route('loyalty'),
+                    'tag' => "order-points-{$fresh->id}",
+                    'data' => ['points_earned' => $points, 'order_id' => $fresh->id],
+                ]);
+            }
         }
         if ($next === OrderStatus::Refunded && $fresh->user_id !== null) {
             $this->loyalty->refundFromOrder($fresh);

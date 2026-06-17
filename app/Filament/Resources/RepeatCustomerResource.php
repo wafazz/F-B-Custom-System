@@ -48,7 +48,15 @@ class RepeatCustomerResource extends Resource
                     ->badge()
                     ->color('success')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => $state.'×'),
+                    ->formatStateUsing(fn ($state) => $state.'×')
+                    ->tooltip('Click to see every order and its items')
+                    ->action(
+                        Tables\Actions\Action::make('orders')
+                            ->modalHeading(fn (User $r) => "Order history — {$r->name}")
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Close')
+                            ->modalContent(fn (User $r) => new HtmlString(static::ordersBreakdown($r->getKey())))
+                    ),
                 Tables\Columns\TextColumn::make('repeated_items_count')
                     ->label('Repeated items')
                     ->badge()
@@ -182,6 +190,55 @@ class RepeatCustomerResource extends Resource
             ->get(['product_name', 'quantity'])
             ->map(fn ($row) => $row->quantity > 1 ? "{$row->product_name} ×{$row->quantity}" : $row->product_name)
             ->all();
+    }
+
+    protected static function ordersBreakdown(int $userId): string
+    {
+        $orders = DB::table('orders')
+            ->where('user_id', $userId)
+            ->where('status', OrderStatus::Completed->value)
+            ->orderByRaw('COALESCE(completed_at, created_at) DESC')
+            ->get(['id', 'number', 'total', 'completed_at', 'created_at']);
+
+        if ($orders->isEmpty()) {
+            return '<div style="padding:1rem;color:#6b7280;">No completed orders.</div>';
+        }
+
+        $items = DB::table('order_items')
+            ->whereIn('order_id', $orders->pluck('id'))
+            ->orderByDesc('quantity')
+            ->get(['order_id', 'product_name', 'quantity', 'line_total'])
+            ->groupBy('order_id');
+
+        $html = '<div style="display:flex;flex-direction:column;gap:.75rem;max-height:60vh;overflow-y:auto;">';
+        foreach ($orders as $order) {
+            $when = $order->completed_at ?? $order->created_at;
+            $date = $when ? e(\Illuminate\Support\Carbon::parse($when)->format('d M Y, H:i')) : '—';
+            $number = e($order->number);
+            $total = 'RM '.number_format((float) $order->total, 2);
+
+            $lines = '';
+            foreach (($items[$order->id] ?? collect()) as $it) {
+                $name = e($it->product_name);
+                $qty = (int) $it->quantity;
+                $lines .= "<li style=\"display:flex;justify-content:space-between;padding:.15rem 0;\">
+                    <span>{$qty}× {$name}</span>
+                    <span style=\"color:#6b7280;\">RM ".number_format((float) $it->line_total, 2)."</span>
+                </li>";
+            }
+
+            $html .= "<div style=\"border:1px solid #e5e7eb;border-radius:.5rem;padding:.75rem;\">
+                <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;\">
+                    <span style=\"font-weight:600;\">{$number}</span>
+                    <span style=\"color:#6b7280;font-size:.8rem;\">{$date}</span>
+                </div>
+                <ul style=\"list-style:none;margin:0;padding:0;font-size:.875rem;\">{$lines}</ul>
+                <div style=\"text-align:right;font-weight:600;margin-top:.4rem;border-top:1px solid #e5e7eb;padding-top:.4rem;\">{$total}</div>
+            </div>";
+        }
+        $html .= '</div>';
+
+        return $html;
     }
 
     protected static function itemsTable(int $userId): string

@@ -71,6 +71,14 @@ class RepeatCustomerResource extends Resource
                     ->label('Last order')
                     ->dateTime('d M Y, H:i')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('last_purchase')
+                    ->label('Last complete purchase')
+                    ->badge()
+                    ->separator(',')
+                    ->color('gray')
+                    ->state(fn (User $r) => static::lastPurchaseItems($r->getKey()))
+                    ->placeholder('—')
+                    ->toggleable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('min_repeat')
@@ -152,6 +160,27 @@ class RepeatCustomerResource extends Resource
             ->orderByRaw('COUNT(DISTINCT o.id) DESC')
             ->limit($limit)
             ->pluck('oi.product_name')
+            ->all();
+    }
+
+    /** @return list<string> */
+    protected static function lastPurchaseItems(int $userId): array
+    {
+        $lastOrderId = DB::table('orders')
+            ->where('user_id', $userId)
+            ->where('status', OrderStatus::Completed->value)
+            ->orderByRaw('COALESCE(completed_at, created_at) DESC')
+            ->value('id');
+
+        if (! $lastOrderId) {
+            return [];
+        }
+
+        return DB::table('order_items')
+            ->where('order_id', $lastOrderId)
+            ->orderByDesc('quantity')
+            ->get(['product_name', 'quantity'])
+            ->map(fn ($row) => $row->quantity > 1 ? "{$row->product_name} ×{$row->quantity}" : $row->product_name)
             ->all();
     }
 

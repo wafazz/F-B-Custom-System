@@ -88,10 +88,30 @@ class RepeatCustomerResource extends Resource
                     ->state(fn (User $r) => static::lastPurchaseItems($r->getKey()))
                     ->placeholder('—')
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('visit_type')
+                    ->label('On selected date')
+                    ->badge()
+                    ->color(fn ($state) => $state === 'First-time' ? 'info' : 'success')
+                    ->state(function (User $r, $livewire) {
+                        $range = static::resolveDateRange($livewire->tableFilters['order_date'] ?? []);
+
+                        if (! $range) {
+                            return null;
+                        }
+
+                        $prior = DB::table('orders')
+                            ->where('user_id', $r->getKey())
+                            ->where('status', OrderStatus::Completed->value)
+                            ->where('completed_at', '<', $range[0])
+                            ->exists();
+
+                        return $prior ? 'Repeat' : 'First-time';
+                    })
+                    ->placeholder('—'),
             ])
             ->filters([
                 Tables\Filters\Filter::make('order_date')
-                    ->label('Last order date')
+                    ->label('Ordered on date')
                     ->form([
                         Forms\Components\Select::make('period')
                             ->label('Quick range')
@@ -108,20 +128,7 @@ class RepeatCustomerResource extends Resource
                             ->maxDate(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
-                        $range = null;
-
-                        if (filled($data['date'])) {
-                            $day = \Illuminate\Support\Carbon::parse($data['date']);
-                            $range = [$day->copy()->startOfDay(), $day->copy()->endOfDay()];
-                        } elseif (filled($data['period'])) {
-                            $range = match ($data['period']) {
-                                'today' => [now()->startOfDay(), now()->endOfDay()],
-                                'yesterday' => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
-                                'last_7_days' => [now()->subDays(6)->startOfDay(), now()->endOfDay()],
-                                'this_month' => [now()->startOfMonth(), now()->endOfMonth()],
-                                default => null,
-                            };
-                        }
+                        $range = static::resolveDateRange($data);
 
                         if ($range) {
                             $query->whereHas('orders', fn (Builder $q) => $q
@@ -178,6 +185,24 @@ class RepeatCustomerResource extends Resource
         return [
             'index' => Pages\ListRepeatCustomers::route('/'),
         ];
+    }
+
+    /** @return array{0: \Illuminate\Support\Carbon, 1: \Illuminate\Support\Carbon}|null */
+    protected static function resolveDateRange(array $data): ?array
+    {
+        if (filled($data['date'] ?? null)) {
+            $day = \Illuminate\Support\Carbon::parse($data['date']);
+
+            return [$day->copy()->startOfDay(), $day->copy()->endOfDay()];
+        }
+
+        return match ($data['period'] ?? null) {
+            'today' => [now()->startOfDay(), now()->endOfDay()],
+            'yesterday' => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+            'last_7_days' => [now()->subDays(6)->startOfDay(), now()->endOfDay()],
+            'this_month' => [now()->startOfMonth(), now()->endOfMonth()],
+            default => null,
+        };
     }
 
     public static function getEloquentQuery(): Builder

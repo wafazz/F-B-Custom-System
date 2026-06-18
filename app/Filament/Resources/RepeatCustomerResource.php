@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\OrderStatus;
 use App\Filament\Resources\RepeatCustomerResource\Pages;
 use App\Models\User;
+use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -89,6 +90,60 @@ class RepeatCustomerResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
+                Tables\Filters\Filter::make('order_date')
+                    ->label('Last order date')
+                    ->form([
+                        Forms\Components\Select::make('period')
+                            ->label('Quick range')
+                            ->options([
+                                'today' => 'Today',
+                                'yesterday' => 'Yesterday',
+                                'last_7_days' => 'Last 7 days',
+                                'this_month' => 'This month',
+                            ])
+                            ->native(false),
+                        Forms\Components\DatePicker::make('date')
+                            ->label('On specific date')
+                            ->displayFormat('d M Y')
+                            ->maxDate(now()),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $range = null;
+
+                        if (filled($data['date'])) {
+                            $day = \Illuminate\Support\Carbon::parse($data['date']);
+                            $range = [$day->copy()->startOfDay(), $day->copy()->endOfDay()];
+                        } elseif (filled($data['period'])) {
+                            $range = match ($data['period']) {
+                                'today' => [now()->startOfDay(), now()->endOfDay()],
+                                'yesterday' => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+                                'last_7_days' => [now()->subDays(6)->startOfDay(), now()->endOfDay()],
+                                'this_month' => [now()->startOfMonth(), now()->endOfMonth()],
+                                default => null,
+                            };
+                        }
+
+                        if ($range) {
+                            $query->whereHas('orders', fn (Builder $q) => $q
+                                ->where('status', OrderStatus::Completed->value)
+                                ->whereBetween('completed_at', $range));
+                        }
+
+                        return $query;
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if (filled($data['date'])) {
+                            return 'Ordered on '.\Illuminate\Support\Carbon::parse($data['date'])->format('d M Y');
+                        }
+
+                        return match ($data['period'] ?? null) {
+                            'today' => 'Ordered today',
+                            'yesterday' => 'Ordered yesterday',
+                            'last_7_days' => 'Ordered in last 7 days',
+                            'this_month' => 'Ordered this month',
+                            default => null,
+                        };
+                    }),
                 Tables\Filters\SelectFilter::make('min_repeat')
                     ->label('Minimum visits')
                     ->options([

@@ -164,10 +164,12 @@ class Reports extends Page implements HasForms
             $toTime = $this->data['to_time'] ?? null;
 
             if ($fromTime) {
-                $from = $from->setTimeFromTimeString((string) $fromTime);
+                $t = \Carbon\CarbonImmutable::parse((string) $fromTime);
+                $from = $from->setTime($t->hour, $t->minute, 0);
             }
             if ($toTime) {
-                $to = $to->setTimeFromTimeString((string) $toTime);
+                $t = \Carbon\CarbonImmutable::parse((string) $toTime);
+                $to = $to->setTime($t->hour, $t->minute, 59);
             }
         }
 

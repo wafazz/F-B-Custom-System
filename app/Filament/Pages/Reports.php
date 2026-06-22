@@ -67,6 +67,7 @@ class Reports extends Page implements HasForms
                         ->helperText('Daily = this day · Weekly = this week · Monthly = this month · Yearly = this year')
                         ->default(now())
                         ->native(false)
+                        ->closeOnDateSelection()
                         ->live()
                         ->required(),
                     TimePicker::make('from_time')

@@ -195,6 +195,26 @@ class ProductResource extends Resource
                 ]),
                 Tables\Filters\TernaryFilter::make('is_featured'),
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\Filter::make('sold_period')
+                    ->label('Sold date range')
+                    ->form([
+                        Forms\Components\DatePicker::make('sold_from')->label('Sold from')->native(false)->closeOnDateSelection(),
+                        Forms\Components\DatePicker::make('sold_to')->label('Sold to')->native(false)->closeOnDateSelection(),
+                    ])
+                    ->baseQuery(fn (Builder $query, array $data): Builder => $query->addSelect([
+                        'sold_qty' => static::soldQtySubquery($data['sold_from'] ?? null, $data['sold_to'] ?? null),
+                    ]))
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if (! empty($data['sold_from'])) {
+                            $indicators[] = 'Sold from ' . $data['sold_from'];
+                        }
+                        if (! empty($data['sold_to'])) {
+                            $indicators[] = 'Sold to ' . $data['sold_to'];
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('toggleFeatured')
@@ -233,14 +253,18 @@ class ProductResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([SoftDeletingScope::class])
-            ->addSelect(['sold_qty' => OrderItem::query()
-                ->selectRaw('COALESCE(SUM(order_items.quantity), 0)')
-                ->join('orders', 'orders.id', '=', 'order_items.order_id')
-                ->whereColumn('order_items.product_id', 'products.id')
-                ->where('orders.payment_status', PaymentStatus::Paid->value)
-                ->whereNotIn('orders.status', [OrderStatus::Cancelled->value, OrderStatus::Refunded->value]),
-            ]);
+        return parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
+    }
+
+    protected static function soldQtySubquery(?string $from = null, ?string $to = null): \Illuminate\Database\Eloquent\Builder
+    {
+        return OrderItem::query()
+            ->selectRaw('COALESCE(SUM(order_items.quantity), 0)')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereColumn('order_items.product_id', 'products.id')
+            ->where('orders.payment_status', PaymentStatus::Paid->value)
+            ->whereNotIn('orders.status', [OrderStatus::Cancelled->value, OrderStatus::Refunded->value])
+            ->when($from, fn ($q) => $q->whereDate('orders.created_at', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('orders.created_at', '<=', $to));
     }
 }

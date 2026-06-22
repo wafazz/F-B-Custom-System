@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
+use App\Models\OrderItem;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -174,6 +177,12 @@ class ProductResource extends Resource
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('branches_count')->counts('branches')->label('Branches')->badge(),
+                Tables\Columns\TextColumn::make('sold_qty')
+                    ->label('Sold')
+                    ->badge()
+                    ->color('success')
+                    ->formatStateUsing(fn ($state): string => number_format((int) $state))
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('sort_order')->sortable()->toggleable(),
             ])
             ->defaultSort('category_id')
@@ -224,6 +233,14 @@ class ProductResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([SoftDeletingScope::class])
+            ->addSelect(['sold_qty' => OrderItem::query()
+                ->selectRaw('COALESCE(SUM(order_items.quantity), 0)')
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->whereColumn('order_items.product_id', 'products.id')
+                ->where('orders.payment_status', PaymentStatus::Paid->value)
+                ->whereNotIn('orders.status', [OrderStatus::Cancelled->value, OrderStatus::Refunded->value]),
+            ]);
     }
 }

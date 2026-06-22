@@ -10,6 +10,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -68,6 +69,18 @@ class Reports extends Page implements HasForms
                         ->native(false)
                         ->live()
                         ->required(),
+                    TimePicker::make('from_time')
+                        ->label('From time')
+                        ->seconds(false)
+                        ->native(false)
+                        ->live()
+                        ->visible(fn (callable $get): bool => $get('period') === 'daily'),
+                    TimePicker::make('to_time')
+                        ->label('To time')
+                        ->seconds(false)
+                        ->native(false)
+                        ->live()
+                        ->visible(fn (callable $get): bool => $get('period') === 'daily'),
                     Select::make('branch_id')
                         ->label('Branch')
                         ->options(Branch::query()->orderBy('name')->pluck('name', 'id'))
@@ -82,12 +95,11 @@ class Reports extends Page implements HasForms
     public function getViewData(): array
     {
         $period = (string) ($this->data['period'] ?? 'daily');
-        $anchor = (string) ($this->data['anchor'] ?? now()->toDateString());
         $branchId = $this->effectiveBranchId();
 
         /** @var SalesReportService $reports */
         $reports = app(SalesReportService::class);
-        [$from, $to] = $reports->range($period, $anchor);
+        [$from, $to] = $this->resolveRange();
 
         $screenCap = 100;
         $orders = $reports->orders($from, $to, $branchId, $screenCap + 1);
@@ -127,16 +139,38 @@ class Reports extends Page implements HasForms
     public function downloadExcel(): StreamedResponse
     {
         $period = (string) ($this->data['period'] ?? 'daily');
-        $anchor = (string) ($this->data['anchor'] ?? now()->toDateString());
         $branchId = $this->effectiveBranchId();
+
+        [$from, $to] = $this->resolveRange();
+
+        $branchName = $branchId ? Branch::query()->whereKey($branchId)->value('name') : null;
+
+        return app(SalesReportExporter::class)->stream($period, $from, $to, $branchId, $branchName);
+    }
+
+    /** @return array{0: \Carbon\CarbonImmutable, 1: \Carbon\CarbonImmutable} */
+    protected function resolveRange(): array
+    {
+        $period = (string) ($this->data['period'] ?? 'daily');
+        $anchor = (string) ($this->data['anchor'] ?? now()->toDateString());
 
         /** @var SalesReportService $reports */
         $reports = app(SalesReportService::class);
         [$from, $to] = $reports->range($period, $anchor);
 
-        $branchName = $branchId ? Branch::query()->whereKey($branchId)->value('name') : null;
+        if ($period === 'daily') {
+            $fromTime = $this->data['from_time'] ?? null;
+            $toTime = $this->data['to_time'] ?? null;
 
-        return app(SalesReportExporter::class)->stream($period, $from, $to, $branchId, $branchName);
+            if ($fromTime) {
+                $from = $from->setTimeFromTimeString((string) $fromTime);
+            }
+            if ($toTime) {
+                $to = $to->setTimeFromTimeString((string) $toTime);
+            }
+        }
+
+        return [$from, $to];
     }
 
     protected function effectiveBranchId(): ?int

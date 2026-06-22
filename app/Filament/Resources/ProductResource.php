@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Models\Branch;
 use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\OrderItem;
@@ -196,13 +197,22 @@ class ProductResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_featured'),
                 Tables\Filters\TrashedFilter::make(),
                 Tables\Filters\Filter::make('sold_period')
-                    ->label('Sold date range')
+                    ->label('Sold by date / branch')
                     ->form([
                         Forms\Components\DatePicker::make('sold_from')->label('Sold from')->native(false)->closeOnDateSelection(),
                         Forms\Components\DatePicker::make('sold_to')->label('Sold to')->native(false)->closeOnDateSelection(),
+                        Forms\Components\Select::make('sold_branch')
+                            ->label('Branch')
+                            ->options(Branch::query()->orderBy('name')->pluck('name', 'id'))
+                            ->placeholder('All branches')
+                            ->searchable(),
                     ])
                     ->baseQuery(fn (Builder $query, array $data): Builder => $query->addSelect([
-                        'sold_qty' => static::soldQtySubquery($data['sold_from'] ?? null, $data['sold_to'] ?? null),
+                        'sold_qty' => static::soldQtySubquery(
+                            $data['sold_from'] ?? null,
+                            $data['sold_to'] ?? null,
+                            ! empty($data['sold_branch']) ? (int) $data['sold_branch'] : null,
+                        ),
                     ]))
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
@@ -211,6 +221,9 @@ class ProductResource extends Resource
                         }
                         if (! empty($data['sold_to'])) {
                             $indicators[] = 'Sold to ' . $data['sold_to'];
+                        }
+                        if (! empty($data['sold_branch'])) {
+                            $indicators[] = 'Branch: ' . (Branch::find($data['sold_branch'])?->name ?? $data['sold_branch']);
                         }
 
                         return $indicators;
@@ -256,7 +269,7 @@ class ProductResource extends Resource
         return parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
-    protected static function soldQtySubquery(?string $from = null, ?string $to = null): \Illuminate\Database\Eloquent\Builder
+    protected static function soldQtySubquery(?string $from = null, ?string $to = null, ?int $branchId = null): \Illuminate\Database\Eloquent\Builder
     {
         return OrderItem::query()
             ->selectRaw('COALESCE(SUM(order_items.quantity), 0)')
@@ -265,6 +278,7 @@ class ProductResource extends Resource
             ->where('orders.payment_status', PaymentStatus::Paid->value)
             ->whereNotIn('orders.status', [OrderStatus::Cancelled->value, OrderStatus::Refunded->value])
             ->when($from, fn ($q) => $q->whereDate('orders.created_at', '>=', $from))
-            ->when($to, fn ($q) => $q->whereDate('orders.created_at', '<=', $to));
+            ->when($to, fn ($q) => $q->whereDate('orders.created_at', '<=', $to))
+            ->when($branchId, fn ($q) => $q->where('orders.branch_id', $branchId));
     }
 }

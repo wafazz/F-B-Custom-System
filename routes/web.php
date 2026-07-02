@@ -14,6 +14,7 @@ use App\Http\Controllers\Pos\WalkInController;
 use App\Http\Controllers\Web\AccountController;
 use App\Http\Controllers\Web\DailyCheckInController;
 use App\Http\Controllers\Web\DisplayController;
+use App\Http\Controllers\Web\MenuDisplayController;
 use App\Http\Controllers\Web\FavouriteController;
 use App\Http\Controllers\Web\InfoPagesController;
 use App\Http\Controllers\Web\LoyaltyController;
@@ -219,4 +220,8 @@ Route::prefix('pos')->name('pos.')->group(function () {
 // TV Display (token-authed, no user session)
 Route::get('branch/{branch}/display', [DisplayController::class, 'show'])->name('display.show');
 Route::post('branch/{branch}/display/heartbeat', [DisplayController::class, 'heartbeat'])->name('display.heartbeat');
+
+// TV Menu Board (token-authed slider, no user session)
+Route::get('menu-display/{token}', [MenuDisplayController::class, 'show'])->name('menu-display.show');
+Route::post('menu-display/{token}/heartbeat', [MenuDisplayController::class, 'heartbeat'])->name('menu-display.heartbeat');
 

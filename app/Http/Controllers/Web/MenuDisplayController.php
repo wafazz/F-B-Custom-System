@@ -62,6 +62,11 @@ class MenuDisplayController extends Controller
             'token' => $token,
             'slides' => $slides,
             'posters' => collect($display->posters ?? [])->values(),
+            'videos' => collect($display->videos ?? [])
+                ->map(fn ($row) => is_array($row) ? ($row['url'] ?? '') : (string) $row)
+                ->map(fn ($url) => $this->youtubeId((string) $url))
+                ->filter()
+                ->values(),
         ]);
     }
 
@@ -76,5 +81,23 @@ class MenuDisplayController extends Controller
         $display->forceFill(['last_seen_at' => now()])->save();
 
         return response()->json(['ok' => true, 'at' => now()->toIso8601String()]);
+    }
+
+    private function youtubeId(string $url): ?string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('~(?:youtu\.be/|youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/|v/))([\w-]{11})~', $url, $m)) {
+            return $m[1];
+        }
+
+        if (preg_match('~^[\w-]{11}$~', $url)) {
+            return $url;
+        }
+
+        return null;
     }
 }

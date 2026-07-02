@@ -77,6 +77,20 @@ class MenuDisplayResource extends Resource
                 ->imagePreviewHeight('120')
                 ->columnSpanFull()
                 ->helperText('Optional promo images shown full-screen in the rotation. Recommended 1920×1080 (16:9).'),
+            Forms\Components\Repeater::make('videos')
+                ->label('YouTube video slides')
+                ->schema([
+                    Forms\Components\TextInput::make('url')
+                        ->label('YouTube URL')
+                        ->url()
+                        ->required()
+                        ->placeholder('https://www.youtube.com/watch?v=...'),
+                ])
+                ->reorderable()
+                ->maxItems(5)
+                ->columnSpanFull()
+                ->addActionLabel('Add video')
+                ->helperText('Videos autoplay muted and full-screen, then advance to the next slide when finished.'),
         ])->columns(2);
     }
 

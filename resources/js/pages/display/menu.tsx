@@ -1,6 +1,14 @@
 import { Head, router } from '@inertiajs/react';
-import { Maximize, Minimize, Wifi, WifiOff } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Maximize, Minimize } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+declare global {
+    interface Window {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        YT?: any;
+        onYouTubeIframeAPIReady?: () => void;
+    }
+}
 
 interface Item {
     id: number;
@@ -30,17 +38,17 @@ interface Props {
     token: string;
     slides: Slide[];
     posters: string[];
+    videos: string[];
 }
 
 function imageUrl(path: string | null): string {
     return path ? `/storage/${path}` : '/images/logo.jpg';
 }
 
-export default function MenuDisplay({ display, branch, token, slides, posters }: Props) {
-    const [now, setNow] = useState(new Date());
-    const [connected, setConnected] = useState(true);
+export default function MenuDisplay({ display, token, slides, posters, videos }: Props) {
     const [index, setIndex] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const playerRef = useRef<unknown>(null);
 
     const toggleFullscreen = () => {
         if (document.fullscreenElement) {
@@ -74,37 +82,112 @@ export default function MenuDisplay({ display, branch, token, slides, posters }:
             image,
         }));
 
-        return [...menuFrames, ...posterFrames];
-    }, [slides, posters, display.layout]);
+        const videoFrames = (videos ?? []).map((videoId, i) => ({
+            kind: 'video' as const,
+            id: i,
+            videoId,
+        }));
+
+        return [...menuFrames, ...posterFrames, ...videoFrames];
+    }, [slides, posters, videos, display.layout]);
 
     const total = frames.length;
+    const current = frames[Math.min(index, total - 1)];
+    const activeVideo = current?.kind === 'video' ? current : null;
+
+    const advance = useCallback(() => {
+        setIndex((prev) => (total > 0 ? (prev + 1) % total : 0));
+    }, [total]);
 
     useEffect(() => {
         if (index >= total && total > 0) setIndex(0);
     }, [total, index]);
 
+    // Timed auto-advance for non-video slides. Video slides advance themselves on end.
     useEffect(() => {
-        if (total <= 1) return;
+        if (total <= 1 || current?.kind === 'video') return;
         const seconds = Math.max(3, display.seconds || 8);
-        const timer = window.setInterval(() => {
-            setIndex((prev) => (prev + 1) % total);
-        }, seconds * 1000);
-        return () => window.clearInterval(timer);
-    }, [total, display.seconds]);
+        const timer = window.setTimeout(advance, seconds * 1000);
+        return () => window.clearTimeout(timer);
+    }, [index, total, current?.kind, display.seconds, advance]);
 
+    // YouTube player: play the active video slide, advance when it ends.
     useEffect(() => {
-        const tick = window.setInterval(() => setNow(new Date()), 1000);
-        return () => window.clearInterval(tick);
-    }, []);
+        if (!activeVideo) return;
+        const elementId = `yt-player-${activeVideo.id}`;
+        let cancelled = false;
 
+        const build = () => {
+            if (cancelled || !window.YT?.Player) return;
+            playerRef.current = new window.YT.Player(elementId, {
+                videoId: activeVideo.videoId,
+                width: '100%',
+                height: '100%',
+                playerVars: {
+                    autoplay: 1,
+                    mute: 1,
+                    controls: 0,
+                    rel: 0,
+                    modestbranding: 1,
+                    playsinline: 1,
+                    fs: 0,
+                    disablekb: 1,
+                },
+                events: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    onReady: (e: any) => e.target.playVideo(),
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    onStateChange: (e: any) => {
+                        if (e.data === window.YT.PlayerState.ENDED) advance();
+                    },
+                    onError: () => advance(),
+                },
+            });
+        };
+
+        if (window.YT?.Player) {
+            build();
+        } else {
+            if (!document.getElementById('yt-iframe-api')) {
+                const tag = document.createElement('script');
+                tag.id = 'yt-iframe-api';
+                tag.src = 'https://www.youtube.com/iframe_api';
+                document.body.appendChild(tag);
+            }
+            const poll = window.setInterval(() => {
+                if (window.YT?.Player) {
+                    window.clearInterval(poll);
+                    build();
+                }
+            }, 200);
+            // Safety: if the API never loads, don't get stuck on this slide.
+            const fallback = window.setTimeout(advance, 20_000);
+            return () => {
+                cancelled = true;
+                window.clearInterval(poll);
+                window.clearTimeout(fallback);
+            };
+        }
+
+        return () => {
+            cancelled = true;
+            const p = playerRef.current as { destroy?: () => void } | null;
+            try {
+                p?.destroy?.();
+            } catch {
+                /* noop */
+            }
+            playerRef.current = null;
+        };
+    }, [activeVideo, advance]);
+
+    // Heartbeat so the admin sees the screen as online (updates last_seen_at).
     useEffect(() => {
         const ping = window.setInterval(() => {
             fetch(`/menu-display/${token}/heartbeat`, {
                 method: 'POST',
                 credentials: 'same-origin',
-            })
-                .then((r) => setConnected(r.ok))
-                .catch(() => setConnected(false));
+            }).catch(() => {});
         }, 30_000);
         return () => window.clearInterval(ping);
     }, [token]);
@@ -117,7 +200,7 @@ export default function MenuDisplay({ display, branch, token, slides, posters }:
         return () => window.clearInterval(refresh);
     }, []);
 
-    const frame = frames[Math.min(index, total - 1)];
+    const frame = current;
 
     return (
         <>
@@ -130,45 +213,6 @@ export default function MenuDisplay({ display, branch, token, slides, posters }:
                 {isFullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
             </button>
             <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-950 to-amber-950 text-white">
-                <header className="flex items-center justify-between border-b border-white/10 px-12 py-6">
-                    <div className="flex items-center gap-4">
-                        <img
-                            src={branch?.logo ? `/storage/${branch.logo}` : '/images/logo.jpg'}
-                            alt={branch?.name ?? 'Star Coffee'}
-                            className="size-16 rounded-full object-cover ring-2 ring-amber-500/30"
-                        />
-                        <div>
-                            <h1 className="text-3xl font-bold">
-                                {display.heading ?? branch?.name ?? 'Our Menu'}
-                            </h1>
-                            <p className="text-sm text-amber-200/80">
-                                {frame?.kind === 'grid'
-                                    ? frame.slide.title
-                                    : frame?.kind === 'single'
-                                      ? frame.title
-                                      : 'Menu Board'}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-3xl font-bold tabular-nums">
-                            {now.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                        <p className="flex items-center justify-end gap-1 text-xs text-white/70">
-                            {connected ? (
-                                <Wifi className="size-3 text-emerald-400" />
-                            ) : (
-                                <WifiOff className="size-3 text-red-400" />
-                            )}
-                            {now.toLocaleDateString('en-MY', {
-                                weekday: 'long',
-                                month: 'short',
-                                day: 'numeric',
-                            })}
-                        </p>
-                    </div>
-                </header>
-
                 <main className="relative flex-1 overflow-hidden p-2">
                     {total === 0 && (
                         <div className="flex h-full items-center justify-center text-4xl text-white/30">
@@ -266,22 +310,14 @@ export default function MenuDisplay({ display, branch, token, slides, posters }:
                             }}
                         />
                     )}
+
+                    {frame && frame.kind === 'video' && (
+                        <div key={`video-${frame.id}`} className="absolute inset-0 bg-black">
+                            <div id={`yt-player-${frame.id}`} className="h-full w-full" />
+                        </div>
+                    )}
                 </main>
 
-                {total > 1 && (
-                    <div className="flex justify-center gap-2 pb-6">
-                        {frames.map((_, i) => (
-                            <span
-                                key={i}
-                                className={`h-2 rounded-full transition-all ${
-                                    i === Math.min(index, total - 1)
-                                        ? 'w-8 bg-amber-400'
-                                        : 'w-2 bg-white/25'
-                                }`}
-                            />
-                        ))}
-                    </div>
-                )}
             </div>
         </>
     );

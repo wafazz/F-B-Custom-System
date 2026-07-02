@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Wifi, WifiOff } from 'lucide-react';
+import { Maximize, Minimize, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 interface Item {
@@ -40,6 +40,21 @@ export default function MenuDisplay({ display, branch, token, slides, posters }:
     const [now, setNow] = useState(new Date());
     const [connected, setConnected] = useState(true);
     const [index, setIndex] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    const toggleFullscreen = () => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        } else {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+    };
+
+    useEffect(() => {
+        const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', onChange);
+        return () => document.removeEventListener('fullscreenchange', onChange);
+    }, []);
 
     const frames = useMemo(() => {
         const menuFrames =
@@ -107,6 +122,13 @@ export default function MenuDisplay({ display, branch, token, slides, posters }:
     return (
         <>
             <Head title={`Menu — ${display.name}`} />
+            <button
+                onClick={toggleFullscreen}
+                title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                className="fixed top-3 right-3 z-50 rounded-full bg-black/40 p-2 text-white/70 opacity-40 backdrop-blur transition hover:bg-black/70 hover:text-white hover:opacity-100"
+            >
+                {isFullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+            </button>
             <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-br from-slate-950 to-amber-950 text-white">
                 <header className="flex items-center justify-between border-b border-white/10 px-12 py-6">
                     <div className="flex items-center gap-4">

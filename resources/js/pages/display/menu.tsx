@@ -136,14 +136,21 @@ export default function MenuDisplay({ display, token, slides, posters, videos }:
         return () => window.clearTimeout(timer);
     }, [index, total, current?.kind, display.seconds, advance]);
 
-    // YouTube player: play the active video slide, advance when it ends.
+    // YouTube player: play the active video slide, advance ONLY when it ends.
     useEffect(() => {
         if (!activeVideo) return;
         const elementId = `yt-player-${activeVideo.id}`;
         let cancelled = false;
+        let poll: number | undefined;
+        let loadGuard: number | undefined;
 
         const build = () => {
             if (cancelled || !window.YT?.Player) return;
+            // Player is loading — cancel the API-load guard so long videos aren't cut off.
+            if (loadGuard) {
+                window.clearTimeout(loadGuard);
+                loadGuard = undefined;
+            }
             playerRef.current = new window.YT.Player(elementId, {
                 videoId: activeVideo.videoId,
                 width: '100%',
@@ -185,23 +192,23 @@ export default function MenuDisplay({ display, token, slides, posters, videos }:
                 tag.src = 'https://www.youtube.com/iframe_api';
                 document.body.appendChild(tag);
             }
-            const poll = window.setInterval(() => {
+            poll = window.setInterval(() => {
                 if (window.YT?.Player) {
                     window.clearInterval(poll);
                     build();
                 }
             }, 200);
-            // Safety: if the API never loads, don't get stuck on this slide.
-            const fallback = window.setTimeout(advance, 20_000);
-            return () => {
-                cancelled = true;
-                window.clearInterval(poll);
-                window.clearTimeout(fallback);
-            };
+            // Guard ONLY against the API never loading — cleared once the player builds.
+            loadGuard = window.setTimeout(() => {
+                if (poll) window.clearInterval(poll);
+                if (!window.YT?.Player) advance();
+            }, 15_000);
         }
 
         return () => {
             cancelled = true;
+            if (poll) window.clearInterval(poll);
+            if (loadGuard) window.clearTimeout(loadGuard);
             const p = playerRef.current as { destroy?: () => void } | null;
             try {
                 p?.destroy?.();

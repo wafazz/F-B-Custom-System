@@ -49,8 +49,22 @@ export default function MenuDisplay({ display, token, slides, posters, videos }:
     const [index, setIndex] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const playerRef = useRef<unknown>(null);
+    const soundEnabledRef = useRef(false);
+
+    // Turn on sound after a user gesture (browsers block unmuted autoplay otherwise).
+    const enableSound = useCallback(() => {
+        soundEnabledRef.current = true;
+        const p = playerRef.current as { unMute?: () => void; setVolume?: (v: number) => void } | null;
+        try {
+            p?.unMute?.();
+            p?.setVolume?.(100);
+        } catch {
+            /* noop */
+        }
+    }, []);
 
     const toggleFullscreen = () => {
+        enableSound();
         if (document.fullscreenElement) {
             document.exitFullscreen().catch(() => {});
         } else {
@@ -63,6 +77,17 @@ export default function MenuDisplay({ display, token, slides, posters, videos }:
         document.addEventListener('fullscreenchange', onChange);
         return () => document.removeEventListener('fullscreenchange', onChange);
     }, []);
+
+    // First tap/key anywhere unmutes video sound for the rest of the session.
+    useEffect(() => {
+        const on = () => enableSound();
+        window.addEventListener('pointerdown', on);
+        window.addEventListener('keydown', on);
+        return () => {
+            window.removeEventListener('pointerdown', on);
+            window.removeEventListener('keydown', on);
+        };
+    }, [enableSound]);
 
     const frames = useMemo(() => {
         const menuFrames =
@@ -135,7 +160,13 @@ export default function MenuDisplay({ display, token, slides, posters, videos }:
                 },
                 events: {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    onReady: (e: any) => e.target.playVideo(),
+                    onReady: (e: any) => {
+                        if (soundEnabledRef.current) {
+                            e.target.unMute();
+                            e.target.setVolume(100);
+                        }
+                        e.target.playVideo();
+                    },
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onStateChange: (e: any) => {
                         if (e.data === window.YT.PlayerState.ENDED) advance();

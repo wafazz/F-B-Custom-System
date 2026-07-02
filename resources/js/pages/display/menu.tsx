@@ -132,7 +132,7 @@ export default function MenuDisplay({ display, branch, token, slides }: Props) {
                     </div>
                 </header>
 
-                <main className="relative flex-1 overflow-hidden p-12">
+                <main className="relative flex-1 overflow-hidden p-2">
                     {total === 0 && (
                         <div className="flex h-full items-center justify-center text-4xl text-white/30">
                             No menu items to display
@@ -141,7 +141,7 @@ export default function MenuDisplay({ display, branch, token, slides }: Props) {
 
                     {frame && frame.kind === 'grid' && (
                         <div key={frame.slide.id} className="flex h-full flex-col">
-                            <h2 className="mb-8 text-5xl font-black tracking-wide text-amber-200">
+                            <h2 className="mb-2 text-5xl font-black tracking-wide text-amber-200">
                                 {frame.slide.title}
                             </h2>
                             <div className="grid flex-1 auto-rows-min grid-cols-3 gap-8 overflow-hidden">

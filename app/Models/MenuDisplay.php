@@ -33,6 +33,7 @@ class MenuDisplay extends Model
         'layout',
         'seconds_per_slide',
         'show_price',
+        'posters',
         'last_seen_at',
         'settings',
     ];
@@ -43,6 +44,7 @@ class MenuDisplay extends Model
             'is_active' => 'boolean',
             'show_price' => 'boolean',
             'seconds_per_slide' => 'integer',
+            'posters' => 'array',
             'last_seen_at' => 'datetime',
             'settings' => 'array',
         ];

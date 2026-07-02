@@ -29,25 +29,38 @@ interface Props {
     branch: { name: string; logo: string | null } | null;
     token: string;
     slides: Slide[];
+    posters: string[];
 }
 
 function imageUrl(path: string | null): string {
     return path ? `/storage/${path}` : '/images/logo.jpg';
 }
 
-export default function MenuDisplay({ display, branch, token, slides }: Props) {
+export default function MenuDisplay({ display, branch, token, slides, posters }: Props) {
     const [now, setNow] = useState(new Date());
     const [connected, setConnected] = useState(true);
     const [index, setIndex] = useState(0);
 
     const frames = useMemo(() => {
-        if (display.layout === 'single') {
-            return slides.flatMap((slide) =>
-                slide.items.map((item) => ({ kind: 'single' as const, title: slide.title, item })),
-            );
-        }
-        return slides.map((slide) => ({ kind: 'grid' as const, slide }));
-    }, [slides, display.layout]);
+        const menuFrames =
+            display.layout === 'single'
+                ? slides.flatMap((slide) =>
+                      slide.items.map((item) => ({
+                          kind: 'single' as const,
+                          title: slide.title,
+                          item,
+                      })),
+                  )
+                : slides.map((slide) => ({ kind: 'grid' as const, slide }));
+
+        const posterFrames = (posters ?? []).map((image, i) => ({
+            kind: 'poster' as const,
+            id: i,
+            image,
+        }));
+
+        return [...menuFrames, ...posterFrames];
+    }, [slides, posters, display.layout]);
 
     const total = frames.length;
 
@@ -107,9 +120,11 @@ export default function MenuDisplay({ display, branch, token, slides }: Props) {
                                 {display.heading ?? branch?.name ?? 'Our Menu'}
                             </h1>
                             <p className="text-sm text-amber-200/80">
-                                {frame && frame.kind === 'grid'
+                                {frame?.kind === 'grid'
                                     ? frame.slide.title
-                                    : frame?.title ?? 'Menu Board'}
+                                    : frame?.kind === 'single'
+                                      ? frame.title
+                                      : 'Menu Board'}
                             </p>
                         </div>
                     </div>
@@ -186,34 +201,48 @@ export default function MenuDisplay({ display, branch, token, slides }: Props) {
                     {frame && frame.kind === 'single' && (
                         <div
                             key={frame.item.id}
-                            className="flex h-full items-center justify-center gap-16"
+                            className="absolute inset-0 flex items-end justify-start"
+                            style={{
+                                backgroundImage: `linear-gradient(0deg, rgba(10,8,6,0.92) 0%, rgba(10,8,6,0.45) 45%, rgba(10,8,6,0.15) 100%), url(${imageUrl(frame.item.image)})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                            }}
                         >
-                            <img
-                                src={imageUrl(frame.item.image)}
-                                alt={frame.item.name}
-                                className="max-h-[70vh] w-1/2 rounded-[2.5rem] object-cover shadow-2xl"
-                            />
-                            <div className="w-1/2 max-w-2xl">
+                            <div className="max-w-4xl p-16">
                                 {frame.item.badge && (
                                     <span className="inline-block rounded-full bg-amber-500/20 px-4 py-1 text-lg font-semibold text-amber-200">
                                         {frame.item.badge}
                                     </span>
                                 )}
-                                <h2 className="mt-4 text-7xl font-black leading-tight">
+                                <h2 className="mt-4 text-8xl font-black leading-none drop-shadow-lg">
                                     {frame.item.name}
                                 </h2>
                                 {frame.item.description && (
-                                    <p className="mt-6 text-2xl text-white/70">
+                                    <p className="mt-6 text-3xl text-white/80">
                                         {frame.item.description}
                                     </p>
                                 )}
                                 {frame.item.price && (
-                                    <p className="mt-8 text-6xl font-black text-amber-300">
+                                    <p className="mt-8 text-7xl font-black text-amber-300 drop-shadow-lg">
                                         RM {frame.item.price}
                                     </p>
                                 )}
                             </div>
                         </div>
+                    )}
+
+                    {frame && frame.kind === 'poster' && (
+                        <div
+                            key={`poster-${frame.id}`}
+                            className="absolute inset-0"
+                            style={{
+                                backgroundImage: `url(/storage/${frame.image})`,
+                                backgroundSize: 'contain',
+                                backgroundPosition: 'center',
+                                backgroundRepeat: 'no-repeat',
+                                backgroundColor: '#0a0806',
+                            }}
+                        />
                     )}
                 </main>
 

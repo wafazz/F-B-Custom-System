@@ -61,6 +61,7 @@ class MenuDisplayController extends Controller
             ] : null,
             'token' => $token,
             'slides' => $slides,
+            'posters' => collect($display->posters ?? [])->values(),
         ]);
     }
 

@@ -64,6 +64,19 @@ class MenuDisplayResource extends Resource
                 ->required(),
             Forms\Components\Toggle::make('show_price')->default(true),
             Forms\Components\Toggle::make('is_active')->default(true),
+            Forms\Components\FileUpload::make('posters')
+                ->label('Full-screen poster slides')
+                ->image()
+                ->multiple()
+                ->reorderable()
+                ->directory('menu-posters')
+                ->disk('public')
+                ->visibility('public')
+                ->maxFiles(10)
+                ->maxSize(4096)
+                ->imagePreviewHeight('120')
+                ->columnSpanFull()
+                ->helperText('Optional promo images shown full-screen in the rotation. Recommended 1920×1080 (16:9).'),
         ])->columns(2);
     }
 

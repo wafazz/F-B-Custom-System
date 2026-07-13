@@ -1,6 +1,8 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Coffee, LogIn, Minus, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { UpsellSheet, type UpsellProduct } from '@/components/storefront/upsell-sheet';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
 import type { BranchContext } from '@/types/menu';
@@ -14,12 +16,19 @@ interface RecommendedProduct {
     tumbler_discount: number;
 }
 
+interface Upsell {
+    enabled: boolean;
+    title: string;
+    products: UpsellProduct[];
+}
+
 interface Props {
     branch: BranchContext;
     recommendations: RecommendedProduct[];
+    upsell: Upsell;
 }
 
-export default function Cart({ branch, recommendations }: Props) {
+export default function Cart({ branch, recommendations, upsell }: Props) {
     const { auth } = usePage().props as unknown as { auth: { user: { id: number } | null } };
     const isAuthed = auth.user !== null;
     const lines = useCartStore((s) => s.lines);
@@ -29,6 +38,7 @@ export default function Cart({ branch, recommendations }: Props) {
     const decrement = useCartStore((s) => s.decrement);
     const remove = useCartStore((s) => s.remove);
     const cartBranchId = useCartStore((s) => s.branchId);
+    const [upsellOpen, setUpsellOpen] = useState(false);
 
     const { itemCount, subtotal } = cartTotals(lines);
     const sst = branch.sst_enabled ? subtotal * (branch.sst_rate / 100) : 0;
@@ -37,6 +47,19 @@ export default function Cart({ branch, recommendations }: Props) {
         : 0;
     const total = subtotal + sst + serviceCharge;
     const isMatch = cartBranchId === null || cartBranchId === branch.id;
+
+    const checkoutUrl = `/branches/${branch.id}/checkout`;
+    const availableUpsells = upsell.enabled
+        ? upsell.products.filter((p) => !lines.some((l) => l.product_id === p.id))
+        : [];
+
+    const goToCheckout = () => {
+        if (availableUpsells.length > 0) {
+            setUpsellOpen(true);
+        } else {
+            router.visit(checkoutUrl);
+        }
+    };
 
     return (
         <StorefrontLayout>
@@ -227,16 +250,13 @@ export default function Cart({ branch, recommendations }: Props) {
 
                     <div className="mt-4">
                         {isAuthed ? (
-                            <Link href={`/branches/${branch.id}/checkout`}>
-                                <Button
-                                    className="w-full"
-                                    disabled={
-                                        !isMatch || !branch.accepts_orders || !branch.is_open_now
-                                    }
-                                >
-                                    {branch.is_open_now ? 'Continue to checkout' : 'Branch closed'}
-                                </Button>
-                            </Link>
+                            <Button
+                                className="w-full"
+                                disabled={!isMatch || !branch.accepts_orders || !branch.is_open_now}
+                                onClick={goToCheckout}
+                            >
+                                {branch.is_open_now ? 'Continue to checkout' : 'Branch closed'}
+                            </Button>
                         ) : (
                             <Link href={`/login?redirect=/branches/${branch.id}/checkout`}>
                                 <Button className="w-full" disabled={!branch.is_open_now}>
@@ -248,6 +268,15 @@ export default function Cart({ branch, recommendations }: Props) {
                     </div>
                 </>
             )}
+
+            <UpsellSheet
+                open={upsellOpen}
+                onOpenChange={setUpsellOpen}
+                title={upsell.title}
+                products={availableUpsells}
+                branchId={branch.id}
+                onContinue={() => router.visit(checkoutUrl)}
+            />
         </StorefrontLayout>
     );
 }

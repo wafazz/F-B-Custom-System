@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\VoucherClaim;
 use App\Services\Orders\OrderService;
 use App\Services\Payments\BillplzGateway;
+use App\Services\Settings\SettingsRepository;
 use App\Services\Wallet\WalletService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ use Throwable;
 
 class OrderPagesController extends Controller
 {
-    public function cart(Branch $branch): Response
+    public function cart(Branch $branch, SettingsRepository $settings): Response
     {
         $recommendations = Product::active()
             ->featured()
@@ -41,6 +42,7 @@ class OrderPagesController extends Controller
         return Inertia::render('storefront/cart', [
             'branch' => $this->branchSummary($branch),
             'recommendations' => $recommendations,
+            'upsell' => $this->upsellPayload($branch, $settings),
         ]);
     }
 

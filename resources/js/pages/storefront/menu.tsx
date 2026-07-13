@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ComboSheet } from '@/components/storefront/combo-sheet';
 import { ModifierSheet } from '@/components/storefront/modifier-sheet';
 import { ProductCard } from '@/components/storefront/product-card';
+import { UpsellSheet, type UpsellProduct } from '@/components/storefront/upsell-sheet';
 import { useBranchMenu, useStockSubscription } from '@/hooks/use-branch-menu';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { useBranchStore } from '@/stores/branch-store';
@@ -58,17 +59,26 @@ type Section = {
     products: MenuProduct[];
 };
 
+interface Upsell {
+    enabled: boolean;
+    title: string;
+    products: UpsellProduct[];
+}
+
 interface Props {
     branch: BranchContext;
     reverb: { channel: string; event: string };
+    upsell: Upsell;
 }
 
-export default function Menu({ branch }: Props) {
+export default function Menu({ branch, upsell }: Props) {
     const setBranch = useBranchStore((s) => s.setBranch);
     const addToCart = useCartStore((s) => s.add);
     const addComboToCart = useCartStore((s) => s.addCombo);
     const [activeCombo, setActiveCombo] = useState<MenuCombo | null>(null);
     const rebindBranch = useCartStore((s) => s.rebindBranch);
+    const cartLines = useCartStore((s) => s.lines);
+    const [upsellOpen, setUpsellOpen] = useState(false);
 
     useEffect(() => {
         rebindBranch(branch.id);
@@ -327,17 +337,40 @@ export default function Menu({ branch }: Props) {
 
     const { auth } = usePage().props as unknown as { auth: { user: { id: number } | null } };
 
+    const checkoutUrl = `/branches/${branch.id}/checkout`;
+    const loginUrl = `/login?redirect=/branches/${branch.id}/checkout`;
+    const availableUpsells = upsell.enabled
+        ? upsell.products.filter((p) => !cartLines.some((l) => l.product_id === p.id))
+        : [];
+
+    // Buy Now adds the item then either offers upsells (authed customers only,
+    // when there's something left to offer) or heads straight to checkout/login.
+    function proceedAfterBuyNow() {
+        if (!auth.user) {
+            router.visit(loginUrl);
+            return;
+        }
+        const lines = useCartStore.getState().lines;
+        const remaining = upsell.enabled
+            ? upsell.products.filter((p) => !lines.some((l) => l.product_id === p.id))
+            : [];
+        if (remaining.length > 0) {
+            setUserPickedProduct(null);
+            setInitialDismissed(true);
+            setActiveCombo(null);
+            setUpsellOpen(true);
+        } else {
+            router.visit(checkoutUrl);
+        }
+    }
+
     function handleAdd(product: MenuProduct, modifiers: SelectedModifier[], qty: number) {
         addToCart(product, modifiers, qty, branch.id);
     }
 
     function handleBuyNow(product: MenuProduct, modifiers: SelectedModifier[], qty: number) {
         addToCart(product, modifiers, qty, branch.id);
-        if (auth.user) {
-            router.visit(`/branches/${branch.id}/checkout`);
-        } else {
-            router.visit(`/login?redirect=/branches/${branch.id}/checkout`);
-        }
+        proceedAfterBuyNow();
     }
 
     function handleProductSelect(product: MenuProduct) {
@@ -366,11 +399,7 @@ export default function Menu({ branch }: Props) {
 
     function handleBuyNowCombo(combo: MenuCombo, qty: number) {
         addComboToCart(combo, qty, branch.id);
-        router.visit(
-            auth.user
-                ? `/branches/${branch.id}/checkout`
-                : `/login?redirect=/branches/${branch.id}/checkout`,
-        );
+        proceedAfterBuyNow();
     }
 
     return (
@@ -605,6 +634,15 @@ export default function Menu({ branch }: Props) {
                 }}
                 onAdd={handleAddCombo}
                 onBuyNow={handleBuyNowCombo}
+            />
+
+            <UpsellSheet
+                open={upsellOpen}
+                onOpenChange={setUpsellOpen}
+                title={upsell.title}
+                products={availableUpsells}
+                branchId={branch.id}
+                onContinue={() => router.visit(checkoutUrl)}
             />
         </StorefrontLayout>
     );

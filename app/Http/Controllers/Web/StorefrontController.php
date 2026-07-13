@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Category;
 use App\Models\HomeSlide;
 use App\Models\Product;
+use App\Services\Settings\SettingsRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -245,7 +246,7 @@ class StorefrontController extends Controller
         ]);
     }
 
-    public function menu(Branch $branch): Response
+    public function menu(Branch $branch, SettingsRepository $settings): Response
     {
         return Inertia::render('storefront/menu', [
             'branch' => [
@@ -266,6 +267,7 @@ class StorefrontController extends Controller
                 'channel' => "branch.{$branch->id}.stock",
                 'event' => 'stock.changed',
             ],
+            'upsell' => $this->upsellPayload($branch, $settings),
         ]);
     }
 }

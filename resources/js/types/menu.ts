@@ -146,6 +146,8 @@ export interface CartLine {
     /** Set when this line was added through the buy-X-get-Y picker page. */
     voucher_code?: string;
     voucher_role?: 'paid' | 'free';
+    /** Set when this line was added from the pre-checkout upsell (HQ price). */
+    is_upsell?: boolean;
 }
 
 /** Items chosen from the buy-X-get-Y picker, ready to splat into the cart. */

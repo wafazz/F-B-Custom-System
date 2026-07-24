@@ -51,6 +51,7 @@ class OrderController extends Controller
                 voucherRole: in_array($line['voucher_role'] ?? null, ['paid', 'free'], true)
                     ? (string) $line['voucher_role']
                     : null,
+                isUpsell: (bool) ($line['is_upsell'] ?? false),
             ))->all(),
             dineInTable: $request->input('dine_in_table'),
             pickupAt: $request->input('pickup_at'),

@@ -2,7 +2,11 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Coffee, LogIn, Minus, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { UpsellSheet, type UpsellProduct } from '@/components/storefront/upsell-sheet';
+import {
+    UpsellSheet,
+    type UpsellProduct,
+    type UpsellVoucher,
+} from '@/components/storefront/upsell-sheet';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { cartTotals, useCartStore } from '@/stores/cart-store';
 import type { BranchContext } from '@/types/menu';
@@ -20,6 +24,7 @@ interface Upsell {
     enabled: boolean;
     title: string;
     products: UpsellProduct[];
+    vouchers: UpsellVoucher[];
 }
 
 interface Props {
@@ -52,9 +57,10 @@ export default function Cart({ branch, recommendations, upsell }: Props) {
     const availableUpsells = upsell.enabled
         ? upsell.products.filter((p) => !lines.some((l) => l.product_id === p.id))
         : [];
+    const upsellVouchers = upsell.enabled ? upsell.vouchers : [];
 
     const goToCheckout = () => {
-        if (availableUpsells.length > 0) {
+        if (availableUpsells.length > 0 || upsellVouchers.length > 0) {
             setUpsellOpen(true);
         } else {
             router.visit(checkoutUrl);
@@ -274,6 +280,7 @@ export default function Cart({ branch, recommendations, upsell }: Props) {
                 onOpenChange={setUpsellOpen}
                 title={upsell.title}
                 products={availableUpsells}
+                vouchers={upsellVouchers}
                 branchId={branch.id}
                 onContinue={() => router.visit(checkoutUrl)}
             />

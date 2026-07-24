@@ -16,5 +16,7 @@ class OrderLinePayload
         /** Buy-X-Get-Y picker output: voucher code + 'paid'|'free' role. */
         public ?string $voucherCode = null,
         public ?string $voucherRole = null,
+        /** Added from the pre-checkout upsell — priced at the HQ upsell price. */
+        public bool $isUpsell = false,
     ) {}
 }

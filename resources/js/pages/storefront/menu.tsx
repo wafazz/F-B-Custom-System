@@ -16,7 +16,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ComboSheet } from '@/components/storefront/combo-sheet';
 import { ModifierSheet } from '@/components/storefront/modifier-sheet';
 import { ProductCard } from '@/components/storefront/product-card';
-import { UpsellSheet, type UpsellProduct } from '@/components/storefront/upsell-sheet';
+import {
+    UpsellSheet,
+    type UpsellProduct,
+    type UpsellVoucher,
+} from '@/components/storefront/upsell-sheet';
 import { useBranchMenu, useStockSubscription } from '@/hooks/use-branch-menu';
 import StorefrontLayout from '@/layouts/storefront-layout';
 import { useBranchStore } from '@/stores/branch-store';
@@ -63,6 +67,7 @@ interface Upsell {
     enabled: boolean;
     title: string;
     products: UpsellProduct[];
+    vouchers: UpsellVoucher[];
 }
 
 interface Props {
@@ -342,6 +347,7 @@ export default function Menu({ branch, upsell }: Props) {
     const availableUpsells = upsell.enabled
         ? upsell.products.filter((p) => !cartLines.some((l) => l.product_id === p.id))
         : [];
+    const upsellVouchers = upsell.enabled ? upsell.vouchers : [];
 
     // Buy Now adds the item then either offers upsells (authed customers only,
     // when there's something left to offer) or heads straight to checkout/login.
@@ -354,7 +360,7 @@ export default function Menu({ branch, upsell }: Props) {
         const remaining = upsell.enabled
             ? upsell.products.filter((p) => !lines.some((l) => l.product_id === p.id))
             : [];
-        if (remaining.length > 0) {
+        if (remaining.length > 0 || upsellVouchers.length > 0) {
             setUserPickedProduct(null);
             setInitialDismissed(true);
             setActiveCombo(null);
@@ -641,6 +647,7 @@ export default function Menu({ branch, upsell }: Props) {
                 onOpenChange={setUpsellOpen}
                 title={upsell.title}
                 products={availableUpsells}
+                vouchers={upsellVouchers}
                 branchId={branch.id}
                 onContinue={() => router.visit(checkoutUrl)}
             />

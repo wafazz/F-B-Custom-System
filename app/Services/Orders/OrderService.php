@@ -21,6 +21,7 @@ use App\Notifications\OrderReadyNotification;
 use App\Services\Loyalty\LoyaltyService;
 use App\Services\Push\PushService;
 use App\Services\Referrals\ReferralService;
+use App\Services\Settings\SettingsRepository;
 use App\Services\Vouchers\VoucherService;
 use App\Services\Wallet\WalletService;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,36 @@ class OrderService
         protected PushService $push,
         protected ReferralService $referrals,
         protected WalletService $wallet,
+        protected SettingsRepository $settings,
     ) {}
+
+    /**
+     * HQ-set upsell prices, product id => price. Only products still listed in
+     * the upsell settings are priced this way.
+     *
+     * @return array<int, float>
+     */
+    protected function upsellPrices(): array
+    {
+        if ($this->settings->get('upsell.enabled', '0') !== '1') {
+            return [];
+        }
+
+        $ids = json_decode($this->settings->get('upsell.product_ids', '[]') ?? '[]', true);
+        $prices = json_decode($this->settings->get('upsell.prices', '{}') ?? '{}', true);
+        if (! is_array($ids) || ! is_array($prices)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($ids as $id) {
+            if (isset($prices[(string) $id])) {
+                $out[(int) $id] = (float) $prices[(string) $id];
+            }
+        }
+
+        return $out;
+    }
 
     public function place(OrderPayload $payload): Order
     {
@@ -102,6 +132,7 @@ class OrderService
 
             $itemsToInsert = [];
             $stockToDecrement = [];
+            $upsellPrices = $this->upsellPrices();
 
             foreach ($payload->lines as $line) {
                 if ($line->comboId !== null) {
@@ -153,6 +184,9 @@ class OrderService
                 }
 
                 $unitBase = (float) ($branchPivotRel->getAttribute('price_override') ?? $product->base_price);
+                if ($line->isUpsell && isset($upsellPrices[$product->id])) {
+                    $unitBase = $upsellPrices[$product->id];
+                }
                 $modifiers = [];
                 foreach ($line->modifierOptionIds as $optionId) {
                     $option = $options->get($optionId);
@@ -392,6 +426,7 @@ class OrderService
         $sstAmount = 0.0;
         $tumblerDiscount = 0.0;
         $voucherItems = [];
+        $upsellPrices = $this->upsellPrices();
 
         foreach ($payload->lines as $line) {
             /** @var Product|null $product */
@@ -401,6 +436,9 @@ class OrderService
             }
             $branchPivot = $product->branches->first();
             $unitBase = (float) ($branchPivot?->getRelationValue('pivot')?->getAttribute('price_override') ?? $product->base_price);
+            if ($line->isUpsell && isset($upsellPrices[$product->id])) {
+                $unitBase = $upsellPrices[$product->id];
+            }
             foreach ($line->modifierOptionIds as $optionId) {
                 $option = $options->get($optionId);
                 if ($option) {

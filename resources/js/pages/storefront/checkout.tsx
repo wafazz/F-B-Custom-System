@@ -195,6 +195,7 @@ export default function Checkout({
                         notes: line.notes,
                         voucher_code: line.voucher_code,
                         voucher_role: line.voucher_role,
+                        is_upsell: line.is_upsell ?? false,
                     })),
                 }),
             });

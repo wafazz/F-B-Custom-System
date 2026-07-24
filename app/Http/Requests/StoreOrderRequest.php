@@ -31,6 +31,7 @@ class StoreOrderRequest extends FormRequest
             'lines.*.notes' => ['nullable', 'string', 'max:200'],
             'lines.*.voucher_code' => ['nullable', 'string', 'max:40'],
             'lines.*.voucher_role' => ['nullable', Rule::in(['paid', 'free'])],
+            'lines.*.is_upsell' => ['nullable', 'boolean'],
             'voucher_code' => ['nullable', 'string', 'max:40'],
             'loyalty_redeem_points' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'payment_method' => ['nullable', Rule::in(['gateway', 'wallet'])],

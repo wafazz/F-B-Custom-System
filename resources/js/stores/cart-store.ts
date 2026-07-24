@@ -17,6 +17,7 @@ interface CartState {
         modifiers: SelectedModifier[],
         quantity: number,
         branchId: number,
+        isUpsell?: boolean,
     ) => void;
     addCombo: (combo: MenuCombo, quantity: number, branchId: number) => void;
     addBundle: (voucherCode: string, picks: BxgyBundlePick[], branchId: number) => void;
@@ -72,8 +73,12 @@ export const useCartStore = create<CartState>()(
                       ];
                 set({ lines, branchId });
             },
-            add: (product, modifiers, quantity, branchId) => {
-                const key = lineKey(product.id, modifiers);
+            add: (product, modifiers, quantity, branchId, isUpsell = false) => {
+                // Upsell lines keep their own key so the HQ upsell price never
+                // merges into a line bought at the normal price.
+                const key = isUpsell
+                    ? `upsell:${lineKey(product.id, modifiers)}`
+                    : lineKey(product.id, modifiers);
                 const existing = get().lines.find((l) => l.id === key);
                 const lines = existing
                     ? get().lines.map((l) =>
@@ -90,6 +95,7 @@ export const useCartStore = create<CartState>()(
                               tumbler_discount: Number(product.tumbler_discount ?? 0),
                               quantity,
                               modifiers,
+                              is_upsell: isUpsell,
                           },
                       ];
                 set({ lines, branchId });

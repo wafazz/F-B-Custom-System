@@ -91,9 +91,22 @@ class StorefrontController extends Controller
         $channel = \App\Support\RequestChannel::detect($request);
         $channelColumn = \App\Support\RequestChannel::availableColumn($channel);
 
+        // Only show a category tile when this branch actually sells something
+        // in it (directly or via an active child), so a category assigned to a
+        // different branch doesn't appear here and open an empty menu.
+        $hasBranchProducts = fn ($q) => $q
+            ->visibleAtBranch($branch->id)
+            ->where($channelColumn, true)
+            ->whereHas('category', fn ($c) => $c->where(Category::channelColumn($channel), true));
+
         $categories = Category::active()
             ->visibleOn($channel)
             ->root()
+            ->where(function ($q) use ($hasBranchProducts) {
+                $q->whereHas('products', $hasBranchProducts)
+                    ->orWhereHas('children', fn ($c) => $c->where('status', 'active')
+                        ->whereHas('products', $hasBranchProducts));
+            })
             ->orderBy('sort_order')
             ->with([
                 'children' => fn ($q) => $q->where('status', 'active')
